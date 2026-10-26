@@ -1,3 +1,4 @@
+import { propertyTransaction } from '../properties/properties.repository.js';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { z } from 'zod';
@@ -19,7 +20,7 @@ export function createStaffOperator(auth: StaffAuth, database: PrismaClient) {
     async create(input: z.input<typeof staffInput>, bootstrap = false) {
       const data = staffInput.parse(input);
 
-      return database.$transaction(async (tx) => {
+      return propertyTransaction(database, async (tx) => {
         if (
           bootstrap &&
           (data.role !== 'admin' ||
@@ -54,7 +55,7 @@ export function createStaffOperator(auth: StaffAuth, database: PrismaClient) {
       // Use Better Auth's configured primitive, then atomically replace/revoke.
       const hash = await (await auth.$context).password.hash(password);
 
-      await database.$transaction(async (tx) => {
+      await propertyTransaction(database, async (tx) => {
         const account = await tx.account.updateMany({
           where: { userId: user.id, providerId: 'credential' },
           data: { password: hash },
@@ -72,7 +73,10 @@ export function createStaffOperator(auth: StaffAuth, database: PrismaClient) {
     },
 
     async deactivate(email: string) {
-      await database.$transaction(async (tx) => {
+      return propertyTransaction(database, async (tx) => {
+        // Acquire SQLite's writer lock before eligibility reads so assignment
+        // and deactivation agree across independent database clients too.
+        await tx.$executeRaw`UPDATE User SET id=id WHERE email=${normalizeEmail(email)}`;
         const user = await tx.user.findUnique({
           where: { email: normalizeEmail(email) },
         });
@@ -97,6 +101,11 @@ export function createStaffOperator(auth: StaffAuth, database: PrismaClient) {
           data: { disabled: true },
         });
         await tx.session.deleteMany({ where: { userId: user.id } });
+        const assignedLeadCount = await tx.lead.count({
+          where: { assignedAgentId: user.id },
+        });
+
+        return { assignedLeadCount };
       });
     },
   };

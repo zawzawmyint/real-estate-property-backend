@@ -1,3 +1,4 @@
+import { mountLeads } from './modules/leads/leads.routes.js';
 import express from 'express';
 import { mountAuth } from './modules/auth/auth.routes.js';
 import type { StaffAuth } from './modules/auth/auth.js';
@@ -48,6 +49,7 @@ export function createApp(
   });
 
   mountAuth(app, auth, env);
+  mountLeads(app, auth, env, database);
   mountProperties(app, auth, env, database, propertyStorage ?? storage, logger);
 
   app.use(express.json({ limit: '100kb' }));

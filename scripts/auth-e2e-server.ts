@@ -3,8 +3,12 @@ import { authFixture } from '../tests/auth-fixture.js';
 import { writeFile } from 'node:fs/promises';
 import { LocalStorage } from '../src/infrastructure/storage/local-storage.js';
 import { seedDemoProperties } from '../src/modules/properties/demo-seed.js';
+import { leadSearch } from '../src/modules/leads/leads.repository.js';
 
 const password = process.env.STAFF_E2E_PASSWORD;
+
+process.env.INQUIRY_RELAY_SECRET ??=
+  'test-only-inquiry-relay-secret-for-browser-fixtures';
 
 if (!password || password.length < 12 || password.length > 128)
   throw new Error('STAFF_E2E_PASSWORD must be 12-128 characters');
@@ -56,6 +60,45 @@ for (const project of ['desktop', 'mobile'])
     password,
     role: 'manager',
   });
+
+// Lead workflows have independent identities so permissions and reassignment
+// checks cannot interfere with property/authentication test accounts.
+for (const project of ['desktop', 'mobile'])
+  for (const identity of ['admin', 'manager', 'agent', 'other-agent'] as const)
+    await fixture.operator.create({
+      name: `Lead E2E ${project} ${identity}`,
+      email: `e2e-lead-${project}-${identity}@example.com`,
+      password,
+      role: identity === 'other-agent' ? 'agent' : identity,
+    });
+
+for (const project of ['desktop', 'mobile']) {
+  const email = `e2e-lead-${project}-inactive@example.com`;
+  const inactive = await fixture.operator.create({
+    name: `Lead E2E ${project} inactive agent`,
+    email,
+    password,
+    role: 'agent',
+  });
+  const data = {
+    name: `Inactive assignment ${project}`,
+    phone: '+971 50 123 4567',
+    email: null,
+    propertyTitleSnapshot: null,
+  };
+
+  await fixture.database.lead.create({
+    data: {
+      ...data,
+      ...leadSearch(data),
+      purpose: 'sale',
+      source: 'call',
+      assignedAgentId: inactive.id,
+      assignedAgentNameSnapshot: inactive.name,
+    },
+  });
+  await fixture.operator.deactivate(email);
+}
 
 const port = Number(process.env.PORT ?? 4311);
 const server = fixture.app.listen(port, '127.0.0.1', () =>

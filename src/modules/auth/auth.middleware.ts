@@ -22,6 +22,7 @@ export function requireStaff(
 
       res.locals.staff = {
         id: session.user.id,
+        sessionId: session.session.id,
         name: session.user.name,
         email: session.user.email,
         role: session.user.role,

@@ -1,3 +1,4 @@
+import { verifyLeadSearch } from '../src/modules/leads/lead-search.js';
 import { parseEnv } from '../src/config/env.js';
 import { createDatabase } from '../src/infrastructure/database/client.js';
 import { verifyPropertySearch } from '../src/modules/properties/property-search.js';
@@ -21,10 +22,15 @@ try {
     db.verification.count(),
     db.property.count(),
     db.propertyPhoto.count(),
+    db.lead.count(),
+    db.leadNote.count(),
+    db.leadActivity.count(),
+    db.leadSubmissionReceipt.count(),
   ]);
   await verifyPropertySearch(db);
+  await verifyLeadSearch(db);
   console.info(
-    'SQLite connection, staff-authentication and property schemas verified.',
+    'SQLite connection, staff-authentication, property and lead schemas/search verified.',
   );
 } finally {
   await db.$disconnect();

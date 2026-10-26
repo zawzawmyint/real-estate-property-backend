@@ -5,11 +5,11 @@ import { join, resolve } from 'node:path';
 import { expect, it } from 'vitest';
 import { createDatabase } from '../src/infrastructure/database/client.js';
 import { createStaffAuth } from '../src/modules/auth/auth.js';
-import { createStaffOperator } from '../src/modules/auth/staff-operator.js';
 import { createApp } from '../src/app.js';
 import { parseEnv } from '../src/config/env.js';
 import request from 'supertest';
 import { backfillPropertySearch } from '../src/modules/properties/property-search.js';
+import { backfillLeadSearch } from '../src/modules/leads/lead-search.js';
 
 it('deploys auth migrations into a missing nested SQLite file and can be rerun', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'agency-migrate-test-'));
@@ -62,6 +62,10 @@ it('deploys auth migrations into a missing nested SQLite file and can be rerun',
           'Account',
           'Property',
           'PropertyPhoto',
+          'Lead',
+          'LeadNote',
+          'LeadActivity',
+          'LeadSubmissionReceipt',
         ]),
       );
     } finally {
@@ -110,15 +114,18 @@ it('upgrades an existing auth database without losing credentials and persists p
 
     const auth = createStaffAuth(env, database);
 
-    await createStaffOperator(auth, database).create(
-      {
-        name: 'Existing Admin',
-        email: 'existing@example.test',
-        password: 'Existing-password-123!',
-        role: 'admin',
-      },
-      true,
-    );
+    // Write a genuine pre-upgrade credential using the installed native hash
+    // primitive. The current generated Prisma User model includes new columns
+    // and intentionally cannot operate against this older schema yet.
+    const password = await (
+      await auth.$context
+    ).password.hash('Existing-password-123!');
+    await database.$executeRaw`INSERT INTO User
+      (id,name,email,emailVerified,role,disabled,createdAt,updatedAt)
+      VALUES ('legacy-admin','Éxisting Admin','existing@example.test',false,'admin',false,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)`;
+    await database.$executeRaw`INSERT INTO Account
+      (id,accountId,providerId,userId,password,createdAt,updatedAt)
+      VALUES ('legacy-credential','legacy-admin','credential','legacy-admin',${password},CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)`;
 
     await apply(names[propertyMigrationIndex]!);
     await database.$executeRaw`INSERT INTO Property (id, title, purpose, city, community, updatedAt)
@@ -127,6 +134,12 @@ it('upgrades an existing auth database without losing credentials and persists p
       await apply(name);
     await backfillPropertySearch(database);
     await backfillPropertySearch(database);
+    await backfillLeadSearch(database);
+    await backfillLeadSearch(database);
+    expect(
+      (await database.user.findUniqueOrThrow({ where: { id: 'legacy-admin' } }))
+        .searchName,
+    ).toBe('éxisting admin');
     const legacy = await database.property.findUniqueOrThrow({
       where: { id: 'legacy-search' },
     });

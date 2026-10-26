@@ -13,6 +13,7 @@ export async function authFixture() {
   const directory = await mkdtemp(join(tmpdir(), 'agency-auth-'));
   const env = parseEnv({
     NODE_ENV: 'test',
+    INQUIRY_RELAY_SECRET: process.env.INQUIRY_RELAY_SECRET,
     LOG_LEVEL: 'silent',
     BETTER_AUTH_SECRET: testSecret,
     DATABASE_URL: `file:${join(directory, 'auth.db')}`,

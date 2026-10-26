@@ -2,7 +2,7 @@
 
 ## Setup and configuration
 
-Follow README installation steps from the backend working directory. `.env.example` documents every supported variable. Copy it to `.env`, replace `BETTER_AUTH_SECRET` with an independently generated random value of at least 32 characters, then run `bun run db:generate`, `bun run db:migrate` and `bun run db:check`. Runtime scripts use Node's environment-file loader.
+Follow README installation steps from the backend working directory. `.env.example` documents every supported variable. Copy it to `.env`, replace `BETTER_AUTH_SECRET` and `INQUIRY_RELAY_SECRET` with independently generated random values of at least 32 characters each, then run `bun run db:generate`, `bun run db:migrate` and `bun run db:check`. Runtime scripts use Node's environment-file loader.
 
 - `NODE_ENV`: development, test or production.
 - `HOST`: defaults to loopback `127.0.0.1`; set appropriately for a container deployment.
@@ -14,12 +14,14 @@ Follow README installation steps from the backend working directory. `.env.examp
 - `APP_ORIGIN`: exact frontend origin permitted to make native auth POST requests; default `http://localhost:3100`.
 - `BETTER_AUTH_URL`: exact public auth base URL, `${APP_ORIGIN}/api/v1/auth`.
 - `BETTER_AUTH_SECRET`: server-only random secret, at least 32 characters; never commit it.
+- `INQUIRY_RELAY_SECRET`: server-only random secret, at least 32 characters and independent of the auth secret. It must exactly match the trusted frontend relay configuration; never commit it.
+- Public inquiry identity is accepted only from the relay or direct loopback development fallback. The backend verifies the signed relay header and socket identity; it does not trust arbitrary `X-Forwarded-For` values.
 
-No Redis, queue, email or S3 integration is installed. Staff auth and property/photo models are implemented; leads are not. Environment validation names invalid fields without printing input values.
+No Redis, queue, email or S3 integration is installed. The inquiry limiter is in-process: five attempts per identity in 15 minutes, capped at 10,000 live identities; restart resets it and a multi-instance deployment requires a shared limiter decision. Staff auth, property/photo and lead models are implemented. Environment validation names invalid fields without printing input values.
 
 ## Database maintenance and browser fixtures
 
-For an existing database, migrations require a maintenance window: stop the backend and all operator writes, back up SQLite (including any WAL files) and its matching media, then deploy the updated source and run `bun run db:generate`, `bun run db:migrate`, and `bun run db:check` before restarting. The migration command also backfills NFC/lowercase property search fields in bounded batches without changing business timestamps; running `prisma migrate deploy` alone does not complete this data migration. Keep writes stopped until the updated application starts. The backfill is idempotent, so a failed run can be retried while offline. Restore the compatible database/media/application backup together if rolling back. This is a single-process offline migration, not a rolling-deployment procedure.
+For an existing database, migrations require a maintenance window: stop the backend and all operator writes, back up SQLite (including any WAL files) and its matching media, then deploy the updated source and run `bun run db:generate`, `bun run db:migrate`, and `bun run db:check` before restarting. The migration command also backfills NFC/lowercase property, lead and staff search fields in bounded batches without changing business timestamps; running `prisma migrate deploy` alone does not complete this data migration. Keep writes stopped until the updated application starts. The backfill is idempotent, so a failed run can be retried while offline. Restore the compatible database/media/application backup together if rolling back. This is a single-process offline migration, not a rolling-deployment procedure.
 
 The disposable browser fixture includes fictional featured demo listings by default so public photo tests do not depend on other tests. Set `STAFF_E2E_SEED_PROPERTIES=0` only for targeted suites that do not require public property media. Ordinary application startup never seeds data.
 
@@ -37,7 +39,7 @@ Run `bun run check`, then `bun run db:generate`, `bun run db:migrate` and `bun r
 
 For the frontend browser suite, do not start a manually provisioned database on port 4311. Run `bun run db:generate`, set a temporary 12–128 character `STAFF_E2E_PASSWORD` with PowerShell `Read-Host -MaskInput`, then start `bun run test:auth:e2e-server`. The fixture creates a disposable SQLite database, applies migrations and provisions Admin, Manager, Agent, a dedicated transition-test Agent, and separate desktop/mobile navigation Manager accounts; Ctrl+C removes it. Set the same temporary password and `API_URL=http://127.0.0.1:4311` in the frontend test terminal before `bun run test:e2e`. The frontend runs this suite with four workers. Do not use a production password or database for this suite.
 
-For manual checks, start the migrated backend on 4311 and sibling frontend on 3100, bootstrap an Admin using `bun run staff -- bootstrap-admin`, then sign in at `/login` and confirm `/crm` protection. Build before `bun run start`; clean builds generate the ignored Prisma client automatically. Use a coordinated HTTPS deployment to validate production `__Host-` cookie behavior; local HTTP uses the development cookie name.
+For manual checks, start the migrated backend on 4311 and sibling frontend on 3100, bootstrap an Admin using `bun run staff -- bootstrap-admin`, then sign in at `/login` and confirm `/crm` protection. `bun run staff -- deactivate` reports assigned-lead count; redistribute through the lead workflow before or after deactivation as appropriate. Build before `bun run start`; clean builds generate the ignored Prisma client automatically. Use a coordinated HTTPS deployment to validate production `__Host-` cookie behavior; local HTTP uses the development cookie name.
 
 ## Demo data
 
