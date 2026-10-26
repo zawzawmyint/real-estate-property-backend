@@ -1,3 +1,4 @@
+import { backfillLeadSearch } from '../src/modules/leads/lead-search.js';
 import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { parseEnv } from '../src/config/env.js';
@@ -39,6 +40,7 @@ if (process.exitCode === 0) {
   const migrated = await createDatabase(databaseUrl);
   try {
     await backfillPropertySearch(migrated);
+    await backfillLeadSearch(migrated);
     console.info('Property search data verified and backfilled.');
   } finally {
     await migrated.$disconnect();

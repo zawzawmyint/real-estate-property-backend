@@ -93,8 +93,13 @@ if (
     );
     const email = await prompt('Email: ');
 
-    if (command === 'deactivate') await operator.deactivate(email);
-    else {
+    if (command === 'deactivate') {
+      const result = await operator.deactivate(email);
+      console.info(
+        'Assigned leads requiring manager review:',
+        result.assignedLeadCount,
+      );
+    } else {
       const name =
         command === 'reset-password'
           ? undefined

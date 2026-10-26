@@ -69,6 +69,12 @@ export function createStaffAuth(
     },
     user: {
       additionalFields: {
+        searchName: {
+          type: 'string',
+          defaultValue: '',
+          input: false,
+          returned: false,
+        },
         credentialVersion: {
           type: 'number',
           defaultValue: 0,
@@ -110,6 +116,26 @@ export function createStaffAuth(
     rateLimit: { enabled: false },
     logger: { disabled: true },
     databaseHooks: {
+      user: {
+        create: {
+          before: async (user) => ({
+            data: {
+              ...user,
+              searchName: user.name.normalize('NFC').toLowerCase(),
+            },
+          }),
+        },
+        update: {
+          before: async (user) => ({
+            data: {
+              ...user,
+              ...(user.name !== undefined
+                ? { searchName: user.name.normalize('NFC').toLowerCase() }
+                : {}),
+            },
+          }),
+        },
+      },
       session: {
         create: {
           before: async (session, ctx) => {

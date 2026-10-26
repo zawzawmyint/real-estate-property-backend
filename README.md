@@ -2,7 +2,7 @@
 
 Start with the [project specification](spec.md) for scope, boundaries and current status, then read the relevant feature spec before implementation. Keep the root spec synchronized after verified feature delivery.
 
-Express 5 + strict TypeScript + Prisma 7 with SQLite. This repository is independent of the sibling frontend. It provides foundation infrastructure, public image delivery, staff authentication, and property-management/public-discovery APIs. Leads and other business features remain pending.
+Express 5 + strict TypeScript + Prisma 7 with SQLite. This repository is independent of the sibling frontend. It provides foundation infrastructure, public image delivery, staff authentication, property-management/public-discovery APIs, public inquiries and role-scoped lead management.
 
 ## Local development
 
@@ -34,12 +34,14 @@ API: `http://localhost:4311/api/v1/health`. Frontend development origin: `http:/
 - `bun run test`: HTTP, configuration and filesystem regression tests.
 - `bun run check`: lint, formatting, type checking, tests and build.
 - `bun run db:generate`: generate the ignored Prisma client.
-- `bun run db:migrate`: initialize a missing SQLite file when needed, run the committed Prisma migrations, and backfill normalized property search fields. Stop application writes and back up existing data first.
-- `bun run db:check`: verify the SQLite connection, delivered auth/property tables, and normalized property search data. Run generation and migration first on a clean checkout.
+- `bun run db:migrate`: initialize a missing SQLite file when needed, run the committed Prisma migrations, and backfill normalized property and lead/staff search fields. Stop application writes and back up existing data first.
+- `bun run db:check`: verify the SQLite connection, delivered auth/property/lead tables, and normalized search data. Run generation and migration first on a clean checkout.
 - `bun run demo:seed -- --confirm-demo`: add any missing fictional demo properties and generated illustrative images to a non-production database. It refuses production and any argument other than the explicit confirmation; it never resets or overwrites records.
-- `bun run staff -- bootstrap-admin|create|reset-password|deactivate`: trusted, interactive staff lifecycle commands; password prompts are masked. This is not an HTTP management API.
+- `bun run staff -- bootstrap-admin|create|reset-password|deactivate`: trusted, interactive staff lifecycle commands; password prompts are masked. Deactivation reports the assigned-lead count and does not redistribute leads. This is not an HTTP management API.
 
-SQLite files and uploaded files live under ignored `var/`. The committed migrations create Better Auth identity/session tables plus `Property` and `PropertyPhoto`; leads have not been added. Generate a fresh `BETTER_AUTH_SECRET` of at least 32 characters before startup, then bootstrap the first Admin locally. Read the [development guide](docs/development.md#media-reconciliation) before manually reconciling media after a logged cleanup failure.
+SQLite files and uploaded files live under ignored `var/`. The committed migrations create Better Auth identity/session, property/photo and lead/activity/receipt tables. Generate a fresh `BETTER_AUTH_SECRET` and `INQUIRY_RELAY_SECRET`, each at least 32 characters and with independent values, before startup, then bootstrap the first Admin locally. Read the [development guide](docs/development.md#media-reconciliation) before manually reconciling media after a logged cleanup failure.
+
+`INQUIRY_RELAY_SECRET` is required at startup and must be an independent server-only value of at least 32 characters matching the trusted frontend relay; do not expose it. Real-customer collection additionally requires ingress that overwrites the configured identity header and blocks direct Next access, plus operator-approved privacy/retention wording.
 
 Read [architecture](docs/architecture.md), [development](docs/development.md), [API contract](docs/api/openapi.yaml), [property contract](specs/property-management/contract.md), [staff-authentication specification](specs/staff-authentication-and-roles/spec.md) and [spec workflow](specs/README.md). Foundation and staff authentication are verified; property acceptance is recorded after final cross-repository validation.
 

@@ -8,7 +8,7 @@
 
 Track every Phase 1, 2 and 3 feature from the original **Real Estate CRM Checklist**, without treating project setup as completed business functionality.
 
-**Current baseline:** Foundation, P1-01/P1-02 and the verified property delivery are complete; 35 Phase 1–3 checklist items remain pending. The original five portfolio delivery items are retained separately. This roadmap is the workspace-wide source of truth for feature progress; repository-local specifications define implementation and acceptance.
+**Current baseline:** Foundation is complete; 18 verified Phase 1 checklist items are complete and 24 Phase 1–3 checklist items remain pending. The original five portfolio delivery items are retained separately. This roadmap is the workspace-wide source of truth for feature progress; repository-local specifications define implementation and acceptance.
 
 ---
 
@@ -36,7 +36,7 @@ Track every Phase 1, 2 and 3 feature from the original **Real Estate CRM Checkli
 - Installed tools, planned tools and adoption rules are recorded in the [tech stack document](TECH_STACK.md). Deferred packages remain uninstalled until their features need them.
 - Separate `frontend/` and `backend/` Git repositories inside this workspace. Express owns business rules, permissions, persistence and file storage; Next.js consumes its API.
 - SQLite and backend local-disk image storage initially. PostgreSQL and S3 remain future migration options requiring explicit data transfer.
-- Public discovery, CRM property inventory/lifecycle and listing-photo workflows are implemented with backend-enforced resource authorization. CRM authentication and Admin/Manager/Agent roles are implemented; inquiries, leads, assignments, pipeline and dashboards remain future work.
+- Public discovery, CRM property inventory/lifecycle and listing-photo workflows are implemented with backend-enforced resource authorization. CRM authentication and Admin/Manager/Agent roles, public inquiries, lead ownership and follow-up are implemented; pipeline and dashboards remain future work.
 - Demo property images are generated illustrative fixtures. The source checklist's free-photo wording is preserved below; this records the agreed change in image sourcing.
 
 **Product / Business**
@@ -84,9 +84,11 @@ Foundation evidence: [workspace specification](docs/shared/foundation-spec.md), 
 - When an item is verified, add dated evidence and spec links to the delivery record. Keep this roadmap and the affected specs synchronized in the same delivery.
 - Keep the frontend roadmap as the editing source and synchronize the backend copy in the same delivery. Preserve matching checklist IDs and status in both repositories. Each repository's specs remain independently usable if it moves elsewhere.
 
-**Delivered slice:** [staff authentication and roles](specs/staff-authentication-and-roles/spec.md) verifies P1-01 and staff identities for P1-02 using Better Auth 1.7.12 and SQLite. P1-03 remains pending until lead ownership is implemented and verified.
+**Delivered slices:** [staff authentication and roles](specs/staff-authentication-and-roles/spec.md) verifies P1-01 and staff identities for P1-02. [Inquiry capture and lead management](specs/lead-management/spec.md) verifies P1-03–P1-09, P1-16 and P1-20–P1-22.
 
 **Verified maintenance (2026-10-23):** the frontend specifications at `frontend/specs/header-sidebar-polish/spec.md` and `frontend/specs/typography/spec.md` improve the delivered public/CRM experience without completing an additional roadmap item. P1-18 remains unchecked because its wider public mobile-layout scope is still incomplete.
+
+**Verified (2026-10-26):** [inquiry capture and lead management](specs/lead-management/spec.md) delivers P1-03–P1-09, P1-16 and P1-20–P1-22: manager-distributed inbox, manual and website leads, ownership, stage changes, notes/calls and timeline. P1-10 Kanban, viewings/tasks, notifications and wider P1-18 mobile acceptance remain separate.
 
 ---
 
@@ -112,23 +114,23 @@ Foundation evidence: [workspace specification](docs/shared/foundation-spec.md), 
 
 - [x] **P1-01** Staff login and logout
 - [x] **P1-02** Three roles: Admin, Manager, Agent
-- [ ] **P1-03** Agents only see their own leads
+- [x] **P1-03** Agents only see their own leads
 
 #### Lead management
 
-**Proposed spec slug:** `lead-management`.
+**Verified specification:** [lead management](specs/lead-management/spec.md).
 
-- [ ] **P1-04** Create leads manually (call, walk-in)
-- [ ] **P1-05** Create leads automatically from the website inquiry form
-- [ ] **P1-06** Fields: name, phone, email, budget, buy or rent, property, source, status, agent
-- [ ] **P1-07** List with search, filters (status, source, agent) and sorting
-- [ ] **P1-08** Assign and reassign leads to agents
+- [x] **P1-04** Create leads manually (call, walk-in)
+- [x] **P1-05** Create leads automatically from the website inquiry form
+- [x] **P1-06** Fields: name, phone, email, budget, buy or rent, property, source, status, agent
+- [x] **P1-07** List with search, filters (status, source, agent) and sorting
+- [x] **P1-08** Assign and reassign leads to agents
 
 #### Sales pipeline
 
 **Proposed spec slug:** `sales-pipeline`.
 
-- [ ] **P1-09** Stages: New, Contacted, Viewing Scheduled, Offer, Won, Lost
+- [x] **P1-09** Stages: New, Contacted, Viewing Scheduled, Offer, Won, Lost
 - [ ] **P1-10** Kanban board with drag-and-drop between stages
 
 #### Property management
@@ -143,11 +145,11 @@ Foundation evidence: [workspace specification](docs/shared/foundation-spec.md), 
 
 **Current specs:** [property management and public discovery](specs/property-management/spec.md), [demo property presentation](specs/demo-property-data/spec.md); `public-contact-and-agents` remains proposed.
 
-The verified property delivery covers filtered listings P1-15, search/featured portions of P1-14, detail/gallery portions of P1-16 and responsive property screens within P1-18. Those multi-part items stay unchecked until their remaining scope is delivered. P1-19 is complete with generated illustrative fixture images, not the source checklist's free photos.
+The verified property and lead deliveries cover filtered listings P1-15, search/featured portions of P1-14, the complete P1-16 detail/gallery/inquiry flow, and responsive property screens within P1-18. P1-14 and P1-18 remain unchecked because their wider scope is incomplete. P1-19 is complete with generated illustrative fixture images, not the source checklist's free photos.
 
 - [ ] **P1-14** Home page with search bar and featured listings
 - [x] **P1-15** Listings page with filters
-- [ ] **P1-16** Property detail page with gallery and inquiry form
+- [x] **P1-16** Property detail page with gallery and inquiry form
 - [ ] **P1-17** Contact and agent pages
 - [ ] **P1-18** Mobile-friendly layout
 - [x] **P1-19** Sample data: 15 to 30 demo properties with free photos
@@ -156,11 +158,11 @@ P1-18 covers the delivered public feature screens, not just the responsive found
 
 #### Client profile and activity
 
-**Proposed spec slug:** `lead-profile-and-activity`.
+**Verified specification:** [lead management](specs/lead-management/spec.md).
 
-- [ ] **P1-20** One page per lead with all details
-- [ ] **P1-21** Notes and call logs
-- [ ] **P1-22** Activity timeline
+- [x] **P1-20** One page per lead with all details
+- [x] **P1-21** Notes and call logs
+- [x] **P1-22** Activity timeline
 
 This is an internal staff view of a lead, not the Phase 3 client portal. Its activity timeline is also distinct from the Phase 3 audit log of who changed records.
 
@@ -291,7 +293,8 @@ Foundation smoke-test screenshots do not complete D-04: capture the delivered bu
 - **2026-10-21 — Foundation verified:** Existing foundation specs contain verification evidence. No Phase 1–3 checklist item or delivery item had been completed at this point.
 - **2026-10-22 — Staff authentication verified:** P1-01 and P1-02 completed through the [staff authentication and roles specification](specs/staff-authentication-and-roles/spec.md). Evidence: frontend `bun run check` (38 tests), backend `bun run check` (34 tests across 11 files), real SQLite migration and database check, 26 real desktop/mobile browser tests, and six live browser lifecycle checks for deleted, expired and disabled sessions, password reset, current role changes, and outage recovery. P1-03 remains pending.
 - **2026-10-22 — Login form refactor verified:** The delivered P1-01 form now uses React Hook Form, Zod and local Base Nova field/input primitives without changing the native authentication protocol. Evidence: frontend `bun run check` (39 tests), backend `bun run check` (34 tests across 11 files), and 28 real desktop/mobile browser tests, including same-tick duplicate submission and held request/navigation transitions. P1-03 remains pending.
-- **2026-10-23 — Frontend data/forms maintenance verified:** The [data/forms refactor specification](specs/frontend-data-and-form-refactor/spec.md) records separated property API/read/mutation modules, authenticated Server Actions for existing property writes, shared form controls, hydration readiness and streamed CRM results. This is maintenance of delivered property workflows, not a new roadmap feature; checklist IDs and completion states are unchanged. Evidence: `bun run api:check`, lint, format check, typecheck and production Webpack build passed; 75 unit tests in 11 files and 44/44 desktop/mobile fixture browser tests passed. Production HTTPS/secure-cookie browser topology remains unverified.
+- **2026-10-26 — Lead management verified:** P1-03–P1-09, P1-16 and P1-20–P1-22 completed through the [lead-management specification](specs/lead-management/spec.md). Evidence: frontend 122 unit tests in 21 files and production build passed; backend 78 tests in 20 files, SQLite migration and database check passed; browser regression passed 96 tests with 4 existing conditional viewport skips, plus focused lead coverage 18/18 and supplemental desktop/mobile search normalization checks 2/2. Production deployment is not claimed; real-customer collection requires operator-approved privacy/retention wording and trusted ingress configuration.
+- **2026-10-23 — Frontend data/forms maintenance verified:** The data/forms refactor specification (`../frontend/specs/frontend-data-and-form-refactor/spec.md`) records separated property API/read/mutation modules, authenticated Server Actions for existing property writes, shared form controls, hydration readiness and streamed CRM results. This is maintenance of delivered property workflows, not a new roadmap feature; checklist IDs and completion states are unchanged. Evidence: `bun run api:check`, lint, format check, typecheck and production Webpack build passed; 75 unit tests in 11 files and 44/44 desktop/mobile fixture browser tests passed. Production HTTPS/secure-cookie browser topology remains unverified.
 - For later deliveries, append the date, checklist IDs, actual feature-spec links, verification evidence and any remaining gaps.
 
 ---

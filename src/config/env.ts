@@ -46,8 +46,16 @@ const schema = z
     APP_ORIGIN: origin.default('http://localhost:3100'),
     BETTER_AUTH_URL: z.url().default('http://localhost:3100/api/v1/auth'),
     BETTER_AUTH_SECRET: z.string().min(32),
+    INQUIRY_RELAY_SECRET: z.string().min(32).optional(),
   })
   .superRefine((env, ctx) => {
+    if (env.NODE_ENV === 'production' && !env.INQUIRY_RELAY_SECRET)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['INQUIRY_RELAY_SECRET'],
+        message:
+          'Production inquiry capture requires a server-only relay secret',
+      });
     if (env.BETTER_AUTH_URL !== `${env.APP_ORIGIN}/api/v1/auth`)
       ctx.addIssue({
         code: 'custom',

@@ -954,6 +954,1538 @@ paths:
             },
         },
     }
+  /api/v1/public/properties/{propertyId}/inquiries:
+    {
+      'post':
+        {
+          'operationId': 'submitPropertyInquiry',
+          'summary': 'Capture an unassigned website lead',
+          'description': 'Exact APP_ORIGIN and JSON <=16KiB. Forces New/unassigned website lead with property purpose/snapshots. No lead identifiers returned. Same canonical submission replays even after property unavailability. Five attempts per signed client/socket in rolling 15 minutes; invalid attempts and replays count. Single-process bounded limiter; saturated map fails closed. Server relay sends HMAC-SHA256(INQUIRY_RELAY_SECRET, real ingress identity) as x-inquiry-client-key and HMAC-SHA256(secret, clientKey) as x-inquiry-relay-signature. Untrusted relay headers rejected; raw forwarded headers ignored; direct calls use socket identity.',
+          'parameters':
+            [
+              {
+                'in': 'path',
+                'name': 'propertyId',
+                'required': true,
+                'schema': { 'type': 'string', 'format': 'uuid' },
+              },
+            ],
+          'requestBody':
+            {
+              'required': true,
+              'content':
+                {
+                  'application/json':
+                    {
+                      'schema': { '$ref': '#/components/schemas/InquiryInput' },
+                    },
+                },
+            },
+          'responses':
+            {
+              '200':
+                {
+                  'description': 'Matching submission replay',
+                  'headers':
+                    {
+                      'Cache-Control':
+                        { 'schema': { 'type': 'string', 'const': 'no-store' } },
+                    },
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/InquiryReceipt' },
+                        },
+                    },
+                },
+              '201':
+                {
+                  'description': 'Committed inquiry',
+                  'headers':
+                    {
+                      'Cache-Control':
+                        { 'schema': { 'type': 'string', 'const': 'no-store' } },
+                    },
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/InquiryReceipt' },
+                        },
+                    },
+                },
+              '400':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '403':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '404':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '409':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '413':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '415':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '429':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                  'headers':
+                    {
+                      'Retry-After':
+                        { 'schema': { 'type': 'integer', 'minimum': 1 } },
+                    },
+                },
+              '500':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '503':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+            },
+        },
+    }
+  /api/v1/staff/leads:
+    {
+      'get':
+        {
+          'operationId': 'listLeads',
+          'description': 'Live native staff session required. Admin/Manager access all; Agent only current assigned leads. Inaccessible resource IDs return 404. All mutation access/session/eligibility/version checks occur inside SQLite transactions. Writes require exact APP_ORIGIN, application/json and <=16KiB body.',
+          'security': [{ 'staffCookie': [] }],
+          'responses':
+            {
+              '200':
+                {
+                  'description': 'Success; matching submissionId replay also returns 200.',
+                  'headers':
+                    {
+                      'Cache-Control':
+                        { 'schema': { 'type': 'string', 'const': 'no-store' } },
+                    },
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema': { '$ref': '#/components/schemas/LeadPage' },
+                        },
+                    },
+                },
+              '400':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '401':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '403':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '404':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '409':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '413':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '415':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '500':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+            },
+          'parameters':
+            [
+              {
+                'in': 'query',
+                'name': 'view',
+                'required': false,
+                'schema':
+                  { 'type': 'string', 'enum': ['unassigned', 'all', 'mine'] },
+              },
+              {
+                'in': 'query',
+                'name': 'q',
+                'required': false,
+                'schema': { 'type': 'string', 'maxLength': 120 },
+              },
+              {
+                'in': 'query',
+                'name': 'stage',
+                'required': false,
+                'schema':
+                  {
+                    'type': 'string',
+                    'enum':
+                      [
+                        'new',
+                        'contacted',
+                        'viewing_scheduled',
+                        'offer',
+                        'won',
+                        'lost',
+                      ],
+                  },
+              },
+              {
+                'in': 'query',
+                'name': 'source',
+                'required': false,
+                'schema':
+                  { 'type': 'string', 'enum': ['website', 'call', 'walk_in'] },
+              },
+              {
+                'in': 'query',
+                'name': 'agentId',
+                'required': false,
+                'schema': { 'type': 'string' },
+              },
+              {
+                'in': 'query',
+                'name': 'sort',
+                'required': false,
+                'schema':
+                  {
+                    'type': 'string',
+                    'enum': ['newest', 'oldest', 'updated'],
+                    'default': 'newest',
+                  },
+              },
+              {
+                'in': 'query',
+                'name': 'page',
+                'required': false,
+                'schema':
+                  {
+                    'type': 'integer',
+                    'minimum': 1,
+                    'maximum': 1000000,
+                    'default': 1,
+                  },
+              },
+            ],
+        },
+      'post':
+        {
+          'operationId': 'createLead',
+          'description': 'Live native staff session required. Admin/Manager access all; Agent only current assigned leads. Inaccessible resource IDs return 404. All mutation access/session/eligibility/version checks occur inside SQLite transactions. Writes require exact APP_ORIGIN, application/json and <=16KiB body.',
+          'security': [{ 'staffCookie': [] }],
+          'requestBody':
+            {
+              'required': true,
+              'content':
+                {
+                  'application/json':
+                    {
+                      'schema':
+                        { '$ref': '#/components/schemas/LeadCreateInput' },
+                    },
+                },
+            },
+          'responses':
+            {
+              '200':
+                {
+                  'description': 'Current authorized replay',
+                  'headers':
+                    {
+                      'Cache-Control':
+                        { 'schema': { 'type': 'string', 'const': 'no-store' } },
+                    },
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadDetail' },
+                        },
+                    },
+                },
+              '201':
+                {
+                  'description': 'Created lead',
+                  'headers':
+                    {
+                      'Cache-Control':
+                        { 'schema': { 'type': 'string', 'const': 'no-store' } },
+                    },
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadDetail' },
+                        },
+                    },
+                },
+              '400':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '401':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '403':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '409':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '413':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '415':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '500':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+            },
+        },
+    }
+  /api/v1/staff/leads/assignment-candidates:
+    {
+      'get':
+        {
+          'operationId': 'listLeadAssignmentCandidates',
+          'description': 'Live native staff session required. Admin/Manager access all; Agent only current assigned leads. Inaccessible resource IDs return 404. All mutation access/session/eligibility/version checks occur inside SQLite transactions. Writes require exact APP_ORIGIN, application/json and <=16KiB body. Admin/Manager only. Active nonbanned agent name/id summaries. NFC lowercase name search, alphabetical then id order.',
+          'security': [{ 'staffCookie': [] }],
+          'responses':
+            {
+              '200':
+                {
+                  'description': 'Success; matching submissionId replay also returns 200.',
+                  'headers':
+                    {
+                      'Cache-Control':
+                        { 'schema': { 'type': 'string', 'const': 'no-store' } },
+                    },
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              '$ref': '#/components/schemas/LeadCandidatesPage',
+                            },
+                        },
+                    },
+                },
+              '400':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '401':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '403':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '404':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '409':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '413':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '415':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '500':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+            },
+          'parameters':
+            [
+              {
+                'in': 'query',
+                'name': 'q',
+                'required': false,
+                'schema': { 'type': 'string', 'maxLength': 120 },
+              },
+              {
+                'in': 'query',
+                'name': 'page',
+                'required': false,
+                'schema':
+                  {
+                    'type': 'integer',
+                    'minimum': 1,
+                    'maximum': 1000000,
+                    'default': 1,
+                  },
+              },
+            ],
+        },
+    }
+  /api/v1/staff/leads/{id}:
+    {
+      'parameters':
+        [
+          {
+            'in': 'path',
+            'name': 'id',
+            'required': true,
+            'schema': { 'type': 'string', 'format': 'uuid' },
+          },
+        ],
+      'get':
+        {
+          'operationId': 'getLead',
+          'description': 'Live native staff session required. Admin/Manager access all; Agent only current assigned leads. Inaccessible resource IDs return 404. All mutation access/session/eligibility/version checks occur inside SQLite transactions. Writes require exact APP_ORIGIN, application/json and <=16KiB body.',
+          'security': [{ 'staffCookie': [] }],
+          'responses':
+            {
+              '200':
+                {
+                  'description': 'Success; matching submissionId replay also returns 200.',
+                  'headers':
+                    {
+                      'Cache-Control':
+                        { 'schema': { 'type': 'string', 'const': 'no-store' } },
+                    },
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadDetail' },
+                        },
+                    },
+                },
+              '400':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '401':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '403':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '404':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '409':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '413':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '415':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '500':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+            },
+        },
+      'patch':
+        {
+          'operationId': 'patchLead',
+          'description': 'Live native staff session required. Admin/Manager access all; Agent only current assigned leads. Inaccessible resource IDs return 404. All mutation access/session/eligibility/version checks occur inside SQLite transactions. Writes require exact APP_ORIGIN, application/json and <=16KiB body.',
+          'security': [{ 'staffCookie': [] }],
+          'requestBody':
+            {
+              'required': true,
+              'content':
+                {
+                  'application/json':
+                    {
+                      'schema':
+                        { '$ref': '#/components/schemas/LeadPatchInput' },
+                    },
+                },
+            },
+          'responses':
+            {
+              '200':
+                {
+                  'description': 'Success; matching submissionId replay also returns 200.',
+                  'headers':
+                    {
+                      'Cache-Control':
+                        { 'schema': { 'type': 'string', 'const': 'no-store' } },
+                    },
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadDetail' },
+                        },
+                    },
+                },
+              '400':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '401':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '403':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '404':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '409':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '413':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '415':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '500':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+            },
+        },
+    }
+  /api/v1/staff/leads/{id}/assignment:
+    {
+      'parameters':
+        [
+          {
+            'in': 'path',
+            'name': 'id',
+            'required': true,
+            'schema': { 'type': 'string', 'format': 'uuid' },
+          },
+        ],
+      'patch':
+        {
+          'operationId': 'assignLead',
+          'description': 'Live native staff session required. Admin/Manager access all; Agent only current assigned leads. Inaccessible resource IDs return 404. All mutation access/session/eligibility/version checks occur inside SQLite transactions. Writes require exact APP_ORIGIN, application/json and <=16KiB body. Admin/Manager only. Only active Agent targets allowed; unavailable target returns 409. Null unassigns.',
+          'security': [{ 'staffCookie': [] }],
+          'requestBody':
+            {
+              'required': true,
+              'content':
+                {
+                  'application/json':
+                    {
+                      'schema':
+                        { '$ref': '#/components/schemas/LeadAssignmentInput' },
+                    },
+                },
+            },
+          'responses':
+            {
+              '200':
+                {
+                  'description': 'Success; matching submissionId replay also returns 200.',
+                  'headers':
+                    {
+                      'Cache-Control':
+                        { 'schema': { 'type': 'string', 'const': 'no-store' } },
+                    },
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadDetail' },
+                        },
+                    },
+                },
+              '400':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '401':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '403':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '404':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '409':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '413':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '415':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '500':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+            },
+        },
+    }
+  /api/v1/staff/leads/{id}/stage:
+    {
+      'parameters':
+        [
+          {
+            'in': 'path',
+            'name': 'id',
+            'required': true,
+            'schema': { 'type': 'string', 'format': 'uuid' },
+          },
+        ],
+      'patch':
+        {
+          'operationId': 'changeLeadStage',
+          'description': 'Live native staff session required. Admin/Manager access all; Agent only current assigned leads. Inaccessible resource IDs return 404. All mutation access/session/eligibility/version checks occur inside SQLite transactions. Writes require exact APP_ORIGIN, application/json and <=16KiB body.',
+          'security': [{ 'staffCookie': [] }],
+          'requestBody':
+            {
+              'required': true,
+              'content':
+                {
+                  'application/json':
+                    {
+                      'schema':
+                        { '$ref': '#/components/schemas/LeadStageInput' },
+                    },
+                },
+            },
+          'responses':
+            {
+              '200':
+                {
+                  'description': 'Success; matching submissionId replay also returns 200.',
+                  'headers':
+                    {
+                      'Cache-Control':
+                        { 'schema': { 'type': 'string', 'const': 'no-store' } },
+                    },
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadDetail' },
+                        },
+                    },
+                },
+              '400':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '401':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '403':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '404':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '409':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '413':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '415':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '500':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+            },
+        },
+    }
+  /api/v1/staff/leads/{id}/notes:
+    {
+      'parameters':
+        [
+          {
+            'in': 'path',
+            'name': 'id',
+            'required': true,
+            'schema': { 'type': 'string', 'format': 'uuid' },
+          },
+        ],
+      'post':
+        {
+          'operationId': 'appendLeadNote',
+          'description': 'Live native staff session required. Admin/Manager access all; Agent only current assigned leads. Inaccessible resource IDs return 404. All mutation access/session/eligibility/version checks occur inside SQLite transactions. Writes require exact APP_ORIGIN, application/json and <=16KiB body. Append-only note/call and activity. Receipt compares leadId/kind/body, excluding expectedVersion; replay precedes version check and returns current version after ownership recheck.',
+          'security': [{ 'staffCookie': [] }],
+          'requestBody':
+            {
+              'required': true,
+              'content':
+                {
+                  'application/json':
+                    {
+                      'schema':
+                        { '$ref': '#/components/schemas/LeadNoteInput' },
+                    },
+                },
+            },
+          'responses':
+            {
+              '200':
+                {
+                  'description': 'Matching authorized replay',
+                  'headers':
+                    {
+                      'Cache-Control':
+                        { 'schema': { 'type': 'string', 'const': 'no-store' } },
+                    },
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadNoteResult' },
+                        },
+                    },
+                },
+              '201':
+                {
+                  'description': 'Appended note/call',
+                  'headers':
+                    {
+                      'Cache-Control':
+                        { 'schema': { 'type': 'string', 'const': 'no-store' } },
+                    },
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadNoteResult' },
+                        },
+                    },
+                },
+              '400':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '401':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '403':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '404':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '409':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '413':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '415':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '500':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+            },
+        },
+    }
+  /api/v1/staff/leads/{id}/activity:
+    {
+      'parameters':
+        [
+          {
+            'in': 'path',
+            'name': 'id',
+            'required': true,
+            'schema': { 'type': 'string', 'format': 'uuid' },
+          },
+        ],
+      'get':
+        {
+          'operationId': 'listLeadActivity',
+          'description': 'Live native staff session required. Admin/Manager access all; Agent only current assigned leads. Inaccessible resource IDs return 404. All mutation access/session/eligibility/version checks occur inside SQLite transactions. Writes require exact APP_ORIGIN, application/json and <=16KiB body.',
+          'security': [{ 'staffCookie': [] }],
+          'responses':
+            {
+              '200':
+                {
+                  'description': 'Success; matching submissionId replay also returns 200.',
+                  'headers':
+                    {
+                      'Cache-Control':
+                        { 'schema': { 'type': 'string', 'const': 'no-store' } },
+                    },
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadActivityPage' },
+                        },
+                    },
+                },
+              '400':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '401':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '403':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '404':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '409':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '413':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '415':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+              '500':
+                {
+                  'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/LeadApiError' },
+                        },
+                    },
+                },
+            },
+          'parameters':
+            [
+              {
+                'in': 'query',
+                'name': 'page',
+                'required': false,
+                'schema':
+                  {
+                    'type': 'integer',
+                    'minimum': 1,
+                    'maximum': 1000000,
+                    'default': 1,
+                  },
+              },
+            ],
+        },
+    }
 components:
   securitySchemes:
     staffCookie:
@@ -1611,6 +3143,612 @@ components:
         updatedAt:
           type: string
           format: date-time
+    LeadStage:
+      {
+        'type': 'string',
+        'enum':
+          ['new', 'contacted', 'viewing_scheduled', 'offer', 'won', 'lost'],
+      }
+    LeadStaffSummary:
+      {
+        'type': 'object',
+        'additionalProperties': false,
+        'required': ['id', 'name', 'available'],
+        'properties':
+          {
+            'id': { 'type': 'string' },
+            'name': { 'type': 'string' },
+            'available': { 'type': 'boolean' },
+          },
+      }
+    LeadPropertyContext:
+      {
+        'type': 'object',
+        'additionalProperties': false,
+        'required': ['id', 'title', 'location', 'available'],
+        'properties':
+          {
+            'id': { 'type': ['string', 'null'] },
+            'title': { 'type': 'string' },
+            'location': { 'type': ['string', 'null'] },
+            'available': { 'type': 'boolean' },
+          },
+      }
+    LeadSummary:
+      {
+        'type': 'object',
+        'additionalProperties': false,
+        'required':
+          [
+            'id',
+            'name',
+            'phone',
+            'email',
+            'purpose',
+            'budgetFils',
+            'source',
+            'stage',
+            'assignedAgent',
+            'previousAgentName',
+            'property',
+            'createdAt',
+            'updatedAt',
+            'version',
+          ],
+        'properties':
+          {
+            'id': { 'type': 'string', 'format': 'uuid' },
+            'name': { 'type': 'string', 'minLength': 1, 'maxLength': 120 },
+            'phone':
+              {
+                'type': ['string', 'null'],
+                'minLength': 3,
+                'maxLength': 40,
+                'pattern': "^[+\\d ()-]+$",
+                'description': 'Must contain a digit; at least one phone or email required.',
+              },
+            'email':
+              {
+                'type': ['string', 'null'],
+                'format': 'email',
+                'maxLength': 254,
+              },
+            'purpose': { 'type': 'string', 'enum': ['sale', 'rent'] },
+            'budgetFils':
+              {
+                'type': ['integer', 'null'],
+                'minimum': 1,
+                'maximum': 1000000000000,
+              },
+            'source':
+              { 'type': 'string', 'enum': ['website', 'call', 'walk_in'] },
+            'stage':
+              {
+                'type': 'string',
+                'enum':
+                  [
+                    'new',
+                    'contacted',
+                    'viewing_scheduled',
+                    'offer',
+                    'won',
+                    'lost',
+                  ],
+              },
+            'assignedAgent':
+              {
+                'anyOf':
+                  [
+                    { '$ref': '#/components/schemas/LeadStaffSummary' },
+                    { 'type': 'null' },
+                  ],
+              },
+            'previousAgentName': { 'type': ['string', 'null'] },
+            'property':
+              {
+                'anyOf':
+                  [
+                    { '$ref': '#/components/schemas/LeadPropertyContext' },
+                    { 'type': 'null' },
+                  ],
+              },
+            'createdAt': { 'type': 'string', 'format': 'date-time' },
+            'updatedAt': { 'type': 'string', 'format': 'date-time' },
+            'version': { 'type': 'integer', 'minimum': 1 },
+          },
+      }
+    LeadActor:
+      {
+        'type': 'object',
+        'additionalProperties': false,
+        'required': ['id', 'name'],
+        'properties':
+          {
+            'id': { 'type': ['string', 'null'] },
+            'name': { 'type': 'string' },
+          },
+      }
+    InquiryInput:
+      {
+        'type': 'object',
+        'additionalProperties': false,
+        'required': ['submissionId', 'name'],
+        'properties':
+          {
+            'submissionId': { 'type': 'string', 'format': 'uuid' },
+            'name': { 'type': 'string', 'minLength': 1, 'maxLength': 120 },
+            'phone':
+              {
+                'type': ['string', 'null'],
+                'minLength': 3,
+                'maxLength': 40,
+                'pattern': "^[+\\d ()-]+$",
+                'description': 'Must contain a digit; at least one phone or email required.',
+              },
+            'email':
+              {
+                'type': ['string', 'null'],
+                'format': 'email',
+                'maxLength': 254,
+              },
+            'message':
+              { 'type': ['string', 'null'], 'minLength': 1, 'maxLength': 2000 },
+          },
+      }
+    LeadCreateInput:
+      {
+        'type': 'object',
+        'additionalProperties': false,
+        'required': ['submissionId', 'name', 'purpose', 'source'],
+        'properties':
+          {
+            'submissionId': { 'type': 'string', 'format': 'uuid' },
+            'name': { 'type': 'string', 'minLength': 1, 'maxLength': 120 },
+            'phone':
+              {
+                'type': ['string', 'null'],
+                'minLength': 3,
+                'maxLength': 40,
+                'pattern': "^[+\\d ()-]+$",
+                'description': 'Must contain a digit; at least one phone or email required.',
+              },
+            'email':
+              {
+                'type': ['string', 'null'],
+                'format': 'email',
+                'maxLength': 254,
+              },
+            'purpose': { 'type': 'string', 'enum': ['sale', 'rent'] },
+            'budgetFils':
+              {
+                'type': ['integer', 'null'],
+                'minimum': 1,
+                'maximum': 1000000000000,
+              },
+            'propertyId':
+              {
+                'anyOf':
+                  [{ 'type': 'string', 'format': 'uuid' }, { 'type': 'null' }],
+              },
+            'source': { 'type': 'string', 'enum': ['call', 'walk_in'] },
+            'assignedAgentId': { 'type': ['string', 'null'] },
+          },
+      }
+    LeadPatchInput:
+      {
+        'type': 'object',
+        'additionalProperties': false,
+        'required': ['expectedVersion'],
+        'properties':
+          {
+            'name': { 'type': 'string', 'minLength': 1, 'maxLength': 120 },
+            'phone':
+              {
+                'type': ['string', 'null'],
+                'minLength': 3,
+                'maxLength': 40,
+                'pattern': "^[+\\d ()-]+$",
+                'description': 'Must contain a digit; at least one phone or email required.',
+              },
+            'email':
+              {
+                'type': ['string', 'null'],
+                'format': 'email',
+                'maxLength': 254,
+              },
+            'purpose': { 'type': 'string', 'enum': ['sale', 'rent'] },
+            'budgetFils':
+              {
+                'type': ['integer', 'null'],
+                'minimum': 1,
+                'maximum': 1000000000000,
+              },
+            'propertyId':
+              {
+                'anyOf':
+                  [{ 'type': 'string', 'format': 'uuid' }, { 'type': 'null' }],
+              },
+            'expectedVersion': { 'type': 'integer', 'minimum': 1 },
+          },
+        'minProperties': 2,
+      }
+    LeadAssignmentInput:
+      {
+        'type': 'object',
+        'additionalProperties': false,
+        'required': ['expectedVersion', 'assignedAgentId'],
+        'properties':
+          {
+            'expectedVersion': { 'type': 'integer', 'minimum': 1 },
+            'assignedAgentId': { 'type': ['string', 'null'] },
+          },
+      }
+    LeadStageInput:
+      {
+        'type': 'object',
+        'additionalProperties': false,
+        'required': ['expectedVersion', 'stage'],
+        'properties':
+          {
+            'expectedVersion': { 'type': 'integer', 'minimum': 1 },
+            'stage':
+              {
+                'type': 'string',
+                'enum':
+                  [
+                    'new',
+                    'contacted',
+                    'viewing_scheduled',
+                    'offer',
+                    'won',
+                    'lost',
+                  ],
+              },
+          },
+      }
+    LeadNoteInput:
+      {
+        'type': 'object',
+        'additionalProperties': false,
+        'required': ['submissionId', 'expectedVersion', 'kind', 'body'],
+        'properties':
+          {
+            'submissionId': { 'type': 'string', 'format': 'uuid' },
+            'expectedVersion': { 'type': 'integer', 'minimum': 1 },
+            'kind': { 'type': 'string', 'enum': ['note', 'call'] },
+            'body': { 'type': 'string', 'minLength': 1, 'maxLength': 5000 },
+          },
+      }
+    InquiryReceipt:
+      {
+        'type': 'object',
+        'additionalProperties': false,
+        'required': ['received'],
+        'properties': { 'received': { 'const': true, 'type': 'boolean' } },
+      }
+    LeadApiError:
+      {
+        'type': 'object',
+        'additionalProperties': false,
+        'required': ['error'],
+        'properties':
+          {
+            'error':
+              {
+                'type': 'object',
+                'additionalProperties': false,
+                'required': ['code', 'message', 'requestId'],
+                'properties':
+                  {
+                    'code': { 'type': 'string' },
+                    'message': { 'type': 'string' },
+                    'requestId': { 'type': 'string', 'format': 'uuid' },
+                  },
+              },
+          },
+      }
+    LeadDetail:
+      {
+        'type': 'object',
+        'additionalProperties': false,
+        'required':
+          [
+            'id',
+            'name',
+            'phone',
+            'email',
+            'purpose',
+            'budgetFils',
+            'source',
+            'stage',
+            'assignedAgent',
+            'previousAgentName',
+            'property',
+            'createdAt',
+            'updatedAt',
+            'version',
+            'originalMessage',
+          ],
+        'properties':
+          {
+            'id': { 'type': 'string', 'format': 'uuid' },
+            'name': { 'type': 'string', 'minLength': 1, 'maxLength': 120 },
+            'phone':
+              {
+                'type': ['string', 'null'],
+                'minLength': 3,
+                'maxLength': 40,
+                'pattern': "^[+\\d ()-]+$",
+                'description': 'Must contain a digit; at least one phone or email required.',
+              },
+            'email':
+              {
+                'type': ['string', 'null'],
+                'format': 'email',
+                'maxLength': 254,
+              },
+            'purpose': { 'type': 'string', 'enum': ['sale', 'rent'] },
+            'budgetFils':
+              {
+                'type': ['integer', 'null'],
+                'minimum': 1,
+                'maximum': 1000000000000,
+              },
+            'source':
+              { 'type': 'string', 'enum': ['website', 'call', 'walk_in'] },
+            'stage':
+              {
+                'type': 'string',
+                'enum':
+                  [
+                    'new',
+                    'contacted',
+                    'viewing_scheduled',
+                    'offer',
+                    'won',
+                    'lost',
+                  ],
+              },
+            'assignedAgent':
+              {
+                'anyOf':
+                  [
+                    { '$ref': '#/components/schemas/LeadStaffSummary' },
+                    { 'type': 'null' },
+                  ],
+              },
+            'previousAgentName': { 'type': ['string', 'null'] },
+            'property':
+              {
+                'anyOf':
+                  [
+                    { '$ref': '#/components/schemas/LeadPropertyContext' },
+                    { 'type': 'null' },
+                  ],
+              },
+            'createdAt': { 'type': 'string', 'format': 'date-time' },
+            'updatedAt': { 'type': 'string', 'format': 'date-time' },
+            'version': { 'type': 'integer', 'minimum': 1 },
+            'originalMessage': { 'type': ['string', 'null'] },
+          },
+      }
+    LeadActivity:
+      {
+        'type': 'object',
+        'additionalProperties': false,
+        'required':
+          [
+            'id',
+            'type',
+            'actor',
+            'createdAt',
+            'note',
+            'assignment',
+            'stageChange',
+            'changedFields',
+          ],
+        'properties':
+          {
+            'id': { 'type': 'string', 'format': 'uuid' },
+            'type':
+              {
+                'type': 'string',
+                'enum':
+                  [
+                    'created',
+                    'assigned',
+                    'unassigned',
+                    'stage_changed',
+                    'details_updated',
+                    'note_added',
+                    'call_logged',
+                  ],
+              },
+            'actor':
+              {
+                'anyOf':
+                  [
+                    { '$ref': '#/components/schemas/LeadActor' },
+                    { 'type': 'null' },
+                  ],
+              },
+            'createdAt': { 'type': 'string', 'format': 'date-time' },
+            'note':
+              {
+                'anyOf':
+                  [
+                    {
+                      'type': 'object',
+                      'additionalProperties': false,
+                      'required': ['id', 'kind', 'body'],
+                      'properties':
+                        {
+                          'id': { 'type': 'string', 'format': 'uuid' },
+                          'kind':
+                            { 'type': 'string', 'enum': ['note', 'call'] },
+                          'body': { 'type': 'string' },
+                        },
+                    },
+                    { 'type': 'null' },
+                  ],
+              },
+            'assignment':
+              {
+                'anyOf':
+                  [
+                    {
+                      'type': 'object',
+                      'additionalProperties': false,
+                      'required': ['from', 'to'],
+                      'properties':
+                        {
+                          'from':
+                            {
+                              'anyOf':
+                                [
+                                  { '$ref': '#/components/schemas/LeadActor' },
+                                  { 'type': 'null' },
+                                ],
+                            },
+                          'to':
+                            {
+                              'anyOf':
+                                [
+                                  { '$ref': '#/components/schemas/LeadActor' },
+                                  { 'type': 'null' },
+                                ],
+                            },
+                        },
+                    },
+                    { 'type': 'null' },
+                  ],
+              },
+            'stageChange':
+              {
+                'anyOf':
+                  [
+                    {
+                      'type': 'object',
+                      'additionalProperties': false,
+                      'required': ['from', 'to'],
+                      'properties':
+                        {
+                          'from':
+                            {
+                              'type': 'string',
+                              'enum':
+                                [
+                                  'new',
+                                  'contacted',
+                                  'viewing_scheduled',
+                                  'offer',
+                                  'won',
+                                  'lost',
+                                ],
+                            },
+                          'to':
+                            {
+                              'type': 'string',
+                              'enum':
+                                [
+                                  'new',
+                                  'contacted',
+                                  'viewing_scheduled',
+                                  'offer',
+                                  'won',
+                                  'lost',
+                                ],
+                            },
+                        },
+                    },
+                    { 'type': 'null' },
+                  ],
+              },
+            'changedFields':
+              {
+                'type': 'array',
+                'items':
+                  {
+                    'type': 'string',
+                    'enum':
+                      [
+                        'name',
+                        'phone',
+                        'email',
+                        'purpose',
+                        'budgetFils',
+                        'propertyId',
+                      ],
+                  },
+              },
+          },
+      }
+    LeadPage:
+      {
+        'type': 'object',
+        'additionalProperties': false,
+        'required': ['items', 'page', 'pageSize', 'total', 'unassignedCount'],
+        'properties':
+          {
+            'items':
+              {
+                'type': 'array',
+                'items': { '$ref': '#/components/schemas/LeadSummary' },
+                'maxItems': 20,
+              },
+            'page': { 'type': 'integer', 'minimum': 1, 'maximum': 1000000 },
+            'pageSize': { 'type': 'integer', 'const': 20 },
+            'total': { 'type': 'integer', 'minimum': 0 },
+            'unassignedCount': { 'type': ['integer', 'null'], 'minimum': 0 },
+          },
+      }
+    LeadActivityPage:
+      {
+        'type': 'object',
+        'additionalProperties': false,
+        'required': ['items', 'page', 'pageSize', 'total'],
+        'properties':
+          {
+            'items':
+              {
+                'type': 'array',
+                'items': { '$ref': '#/components/schemas/LeadActivity' },
+                'maxItems': 20,
+              },
+            'page': { 'type': 'integer', 'minimum': 1, 'maximum': 1000000 },
+            'pageSize': { 'type': 'integer', 'const': 20 },
+            'total': { 'type': 'integer', 'minimum': 0 },
+          },
+      }
+    LeadCandidatesPage:
+      {
+        'type': 'object',
+        'additionalProperties': false,
+        'required': ['items', 'page', 'pageSize', 'total'],
+        'properties':
+          {
+            'items':
+              {
+                'type': 'array',
+                'items': { '$ref': '#/components/schemas/LeadStaffSummary' },
+                'maxItems': 20,
+              },
+            'page': { 'type': 'integer', 'minimum': 1, 'maximum': 1000000 },
+            'pageSize': { 'type': 'integer', 'const': 20 },
+            'total': { 'type': 'integer', 'minimum': 0 },
+          },
+      }
+    LeadNoteResult:
+      {
+        'type': 'object',
+        'additionalProperties': false,
+        'required': ['note', 'leadVersion'],
+        'properties':
+          {
+            'note': { '$ref': '#/components/schemas/LeadActivity' },
+            'leadVersion': { 'type': 'integer', 'minimum': 1 },
+          },
+      }
     ApiError:
       type: object
       additionalProperties: false

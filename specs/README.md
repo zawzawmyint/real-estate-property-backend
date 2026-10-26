@@ -8,7 +8,9 @@ The root [project specification](../spec.md) summarizes project-wide scope and t
 
 ## Verified features
 
-- [Staff authentication and roles](staff-authentication-and-roles/spec.md): verified staff login/logout, SQLite-backed database sessions and Admin/Manager/Agent identities. Lead ownership remains separate P1-03 work.
+- [Inquiry capture and lead management](lead-management/spec.md): verified persistence, ownership, inquiry capture, assignment and follow-up. [Backend-owned contract](lead-management/contract.md) and delivered [OpenAPI](../docs/api/leads.openapi.yaml).
+
+- [Staff authentication and roles](staff-authentication-and-roles/spec.md): verified staff login/logout, SQLite-backed database sessions and Admin/Manager/Agent identities. Lead ownership is verified in [lead management](lead-management/spec.md).
 
 ## Verified current delivery
 

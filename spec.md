@@ -21,17 +21,17 @@ This file defines project-wide scope and boundaries and indexes existing specifi
 - An explicit local/demo seed command for 15 fictional, labelled listings and generated illustrative images. See the [demo-property-data specification](specs/demo-property-data/spec.md).
 - Disposable Manager identities support the frontend desktop/mobile navigation browser suite without changing production authentication or authorization behavior. See the [navigation test-fixture specification](specs/navigation-test-fixture/spec.md).
 
-Leads, inquiries, viewings and reporting are not implemented. This delivery has no lead ownership rules. The [property-management specification](specs/property-management/spec.md) and [contract](specs/property-management/contract.md) describe the delivered API.
+Public inquiries and staff lead management are implemented with role-enforced ownership, optimistic versioning, receipts and append-only activity. See the [lead-management specification](specs/lead-management/spec.md) and [backend-owned API contract](docs/api/leads.openapi.yaml).
 
 The [project review remediation](specs/project-review-remediation/spec.md) verifies SQLite-side literal Unicode search/count/pagination with bounded application reads, normalized search-field migration/backfill, and default fictional media in disposable browser fixtures. API contracts, roles and roadmap scope are preserved.
 
 ## Planned product scope
 
-Remaining backend work includes inquiry capture, lead creation and follow-up, assignment and ownership permissions, pipeline, viewing, task and reporting workflows. Later enhancements and the optional client portal remain subject to the roadmap.
+Remaining backend work includes pipeline Kanban, viewing, task and reporting workflows. Later enhancements and the optional client portal remain subject to the roadmap.
 
-Staff authentication and Admin/Manager/Agent identities, property management and public discovery APIs are already delivered within the verified baseline above. Resource ownership for future leads remains separate work; existing staff roles do not establish that policy.
+Staff authentication and Admin/Manager/Agent identities, property management, public discovery APIs and lead ownership are delivered within the verified baseline above.
 
-The [roadmap](ROADMAP.md) owns checklist IDs and progress. The [authentication feature spec](specs/staff-authentication-and-roles/spec.md) is verified for P1-01 and the identity portion of P1-02. It defines staff provisioning. Verify agent-owned lead access separately when lead records and routes exist.
+The [roadmap](ROADMAP.md) owns checklist IDs and progress. The [authentication feature spec](specs/staff-authentication-and-roles/spec.md) is verified for P1-01 and the identity portion of P1-02. The [lead-management specification](specs/lead-management/spec.md) verifies ownership and delivery of P1-03–P1-09, P1-20–P1-22 and P1-16.
 
 The auth implementation uses Better Auth 1.7.12's native server handler in Express with a Better Auth React client in Next.js. SQLite is the only database for this delivery. No PostgreSQL provider/driver, migrations or compatibility tests are included; any future database migration is separate work.
 
@@ -41,7 +41,7 @@ The auth implementation uses Better Auth 1.7.12's native server handler in Expre
 - Express owns persistence, validation, business rules, permissions and storage. The frontend consumes the API and never imports backend source.
 - The [OpenAPI contract](docs/api/openapi.yaml) owns implemented HTTP contracts. Define schemas, validation, errors and permissions alongside each new endpoint.
 - Health is liveness, not database readiness or proof of staff authorization.
-- Public responses must exclude private owner details and staff-only lead data. Enforce permissions on the server when the corresponding feature is delivered.
+- Public inquiry responses exclude lead data; staff lead data remains role-scoped and excludes property-owner details, staff email and receipt material.
 - SQLite and local public-image storage are current choices. PostgreSQL and S3 are deferred migrations; private documents need separate authorized storage and delivery.
 - Define session lifecycle, browser/proxy behavior and authenticated server requests in the authentication specs before implementation.
 
