@@ -1,0 +1,117 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// Better Auth 1.7.12 core + Admin plugin schema, reviewed against installed getAuthTables.
+model User {
+  id                String    @id
+  name              String
+  email             String    @unique
+  emailVerified     Boolean   @default(false)
+  image             String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  role              String    @default("agent")
+  disabled          Boolean   @default(false)
+  credentialVersion Int       @default(0)
+  banned            Boolean?  @default(false)
+  banReason         String?
+  banExpires        DateTime?
+  sessions          Session[]
+  accounts          Account[]
+}
+
+model Session {
+  id                String   @id
+  expiresAt         DateTime
+  token             String   @unique
+  credentialVersion Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  ipAddress         String?
+  userAgent         String?
+  userId            String
+  impersonatedBy    String?
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+}
+
+model Property {
+  id              String          @id @default(uuid())
+  demoKey         String?         @unique
+  isDemo          Boolean         @default(false)
+  title           String
+  purpose         String
+  type            String?
+  description     String?
+  priceFils       BigInt?
+  city            String?
+  community       String?
+  searchTitle     String          @default("")
+  searchCity      String          @default("")
+  searchCommunity String          @default("")
+  bedrooms        Int?
+  bathrooms       Int?
+  areaHundredths  Int?
+  ownerName       String?
+  ownerPhone      String?
+  publishingState String          @default("draft")
+  availability    String          @default("available")
+  featured        Boolean         @default(false)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  photos          PropertyPhoto[]
+
+  @@index([publishingState, availability, createdAt])
+  @@index([purpose, type, city])
+  @@index([updatedAt])
+}
+
+model PropertyPhoto {
+  id         String   @id @default(uuid())
+  propertyId String
+  storageKey String   @unique
+  position   Int
+  width      Int
+  height     Int
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId, position])
+}

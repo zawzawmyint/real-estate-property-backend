@@ -1,0 +1,1630 @@
+openapi: 3.1.0
+info:
+  title: Real Estate API
+  version: 0.1.0
+  description: Public foundation routes and the supported Better Auth 1.7.12 native staff-authentication subset. Property management and privacy-safe public discovery are implemented.
+servers:
+  - url: http://localhost:4311
+paths:
+  /api/v1/health:
+    get:
+      operationId: getHealth
+      summary: Process liveness, independent of database readiness
+      responses:
+        '200':
+          description: Process is running
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [status, service]
+                properties:
+                  status:
+                    const: ok
+                  service:
+                    const: real-estate-api
+  /media/{key}:
+    get:
+      operationId: getPublicImage
+      summary: Retrieve a saved public image
+      parameters:
+        - in: path
+          name: key
+          required: true
+          schema:
+            type: string
+          description: Generated UUID key with an allowed image extension. Property uploads produce generated public WebP keys.
+      responses:
+        '200':
+          description: Public image, with Cross-Origin-Resource-Policy cross-origin
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            image/*:
+              schema:
+                type: string
+                format: binary
+        '404':
+          $ref: '#/components/responses/Error'
+        '500':
+          $ref: '#/components/responses/Error'
+  /api/v1/auth/sign-in/email:
+    post:
+      operationId: signInEmail
+      summary: Sign in provisioned staff using the native Better Auth protocol
+      description: Requires Origin equal to APP_ORIGIN. No signup or administration HTTP endpoints exist. Auth request bodies are limited to 100 KiB before native JSON parsing, including chunked requests. Account throttling allows five attempts per normalized email in fifteen minutes and one hundred attempts per service per minute (single process).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [email, password, rememberMe]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  maxLength: 254
+                  description: Trimmed and lowercased before validation and credential lookup.
+                password:
+                  type: string
+                  minLength: 1
+                  maxLength: 128
+                  writeOnly: true
+                rememberMe:
+                  const: true
+                  description: Fixed policy; eight-hour absolute sessions, no sliding refresh.
+      responses:
+        '200':
+          description: Native successful sign-in; token metadata is protocol data and must never be logged, rendered, persisted in browser storage or used as a bearer credential.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Set-Cookie:
+              description: Signed HttpOnly SameSite=Lax Path=/ host-only agency.session cookie; production uses Secure __Host-agency.session. Max-Age=28800.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [redirect, token, user]
+                properties:
+                  redirect:
+                    const: false
+                  token:
+                    type: string
+                    description: Native protocol metadata, not an application bearer API.
+                  user:
+                    $ref: '#/components/schemas/StaffUser'
+        '400':
+          $ref: '#/components/responses/AuthFailure'
+        '401':
+          $ref: '#/components/responses/AuthFailure'
+        '403':
+          $ref: '#/components/responses/AuthFailure'
+        '413':
+          $ref: '#/components/responses/AuthFailure'
+        '415':
+          $ref: '#/components/responses/AuthFailure'
+        '429':
+          description: Login throttled; all attempts including successful attempts count.
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+              description: Seconds until retry is permitted.
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthError'
+        '500':
+          $ref: '#/components/responses/AuthFailure'
+  /api/v1/auth/get-session:
+    get:
+      operationId: getSession
+      summary: Read the current database session and staff identity
+      description: Cookie caching and sliding refresh are disabled. Current database role and disabled state are authoritative. Missing, invalid, tampered, expired, revoked or disabled sessions return native 200 null. A store failure returns a non-2xx error. Server callers may omit Origin.
+      security:
+        - staffCookie: []
+        - {}
+      responses:
+        '200':
+          description: Native session/user or null; never infer authorization solely from cookie presence. Session token fields are native protocol metadata.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: 'null'
+                  - type: object
+                    required: [user, session]
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/StaffUser'
+                      session:
+                        $ref: '#/components/schemas/StaffSession'
+        '500':
+          $ref: '#/components/responses/AuthFailure'
+  /api/v1/auth/sign-out:
+    post:
+      operationId: signOut
+      summary: Revoke only the current session and expire its cookie
+      description: Requires exact trusted Origin even without a session. Native empty body or JSON object is accepted. Missing or expired sessions succeed idempotently. Password reset and deactivation revoke all sessions through trusted operator commands only.
+      security:
+        - staffCookie: []
+        - {}
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Native logout success, with expiration of the matching signed session cookie.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+            Set-Cookie:
+              description: Expire the same session cookie name and path with Max-Age=0.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success]
+                properties:
+                  success:
+                    const: true
+        '403':
+          $ref: '#/components/responses/AuthFailure'
+        '413':
+          $ref: '#/components/responses/AuthFailure'
+        '415':
+          $ref: '#/components/responses/AuthFailure'
+        '500':
+          $ref: '#/components/responses/AuthFailure'
+  /api/v1/properties:
+    {
+      'get':
+        {
+          'operationId': 'listPublicProperties',
+          'summary': 'List published available public properties',
+          'description': 'Filters combine with AND except location city/community OR. No private fields. Featured is optional; no fallback inventory. All property responses use Cache-Control: no-store. Unknown/duplicate query keys and malformed numeric strings return 400. Stable sorting uses ID ascending as tie-breaker.',
+          'parameters':
+            [
+              {
+                'in': 'query',
+                'name': 'purpose',
+                'required': false,
+                'schema': { 'type': 'string', 'enum': ['sale', 'rent'] },
+              },
+              {
+                'in': 'query',
+                'name': 'type',
+                'required': false,
+                'schema':
+                  {
+                    'type': 'string',
+                    'enum': ['apartment', 'villa', 'townhouse', 'penthouse'],
+                  },
+              },
+              {
+                'in': 'query',
+                'name': 'location',
+                'required': false,
+                'schema':
+                  {
+                    'type': 'string',
+                    'minLength': 1,
+                    'maxLength': 120,
+                    'description': 'Trimmed case-insensitive city OR community substring.',
+                  },
+              },
+              {
+                'in': 'query',
+                'name': 'minPriceFils',
+                'required': false,
+                'schema':
+                  { 'type': 'integer', 'minimum': 0, 'maximum': 1000000000000 },
+              },
+              {
+                'in': 'query',
+                'name': 'maxPriceFils',
+                'required': false,
+                'schema':
+                  { 'type': 'integer', 'minimum': 0, 'maximum': 1000000000000 },
+              },
+              {
+                'in': 'query',
+                'name': 'minBedrooms',
+                'required': false,
+                'schema': { 'type': 'integer', 'minimum': 0, 'maximum': 20 },
+              },
+              {
+                'in': 'query',
+                'name': 'featured',
+                'required': false,
+                'schema': { 'type': 'string', 'enum': ['true', 'false'] },
+              },
+              {
+                'in': 'query',
+                'name': 'sort',
+                'required': false,
+                'schema':
+                  {
+                    'type': 'string',
+                    'enum': ['newest', 'price_asc', 'price_desc'],
+                    'default': 'newest',
+                  },
+              },
+              {
+                'in': 'query',
+                'name': 'page',
+                'required': false,
+                'schema':
+                  {
+                    'type': 'integer',
+                    'minimum': 1,
+                    'maximum': 10000,
+                    'default': 1,
+                  },
+              },
+              {
+                'in': 'query',
+                'name': 'pageSize',
+                'required': false,
+                'schema':
+                  {
+                    'type': 'integer',
+                    'minimum': 1,
+                    'maximum': 48,
+                    'default': 12,
+                  },
+              },
+            ],
+          'responses':
+            {
+              '200':
+                {
+                  'description': 'Success',
+                  'headers':
+                    {
+                      'Cache-Control':
+                        { '$ref': '#/components/headers/NoStore' },
+                      'X-Request-Id':
+                        { '$ref': '#/components/headers/RequestId' },
+                    },
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              '$ref': '#/components/schemas/PublicPropertyList',
+                            },
+                        },
+                    },
+                },
+              '400': { '$ref': '#/components/responses/PropertyError' },
+              '404': { '$ref': '#/components/responses/PropertyError' },
+              '500': { '$ref': '#/components/responses/PropertyError' },
+            },
+        },
+    }
+  /api/v1/properties/{id}:
+    {
+      'get':
+        {
+          'operationId': 'getPublicProperty',
+          'summary': 'Read one eligible public property',
+          'description': 'Missing, draft, archived, sold and rented records all return 404. All property responses use Cache-Control: no-store. Unknown/duplicate query keys and malformed numeric strings return 400. Stable sorting uses ID ascending as tie-breaker.',
+          'parameters':
+            [
+              {
+                'in': 'path',
+                'name': 'id',
+                'required': true,
+                'schema': { 'type': 'string', 'format': 'uuid' },
+              },
+            ],
+          'responses':
+            {
+              '200':
+                {
+                  'description': 'Success',
+                  'headers':
+                    {
+                      'Cache-Control':
+                        { '$ref': '#/components/headers/NoStore' },
+                      'X-Request-Id':
+                        { '$ref': '#/components/headers/RequestId' },
+                    },
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              '$ref': '#/components/schemas/PublicPropertyDetail',
+                            },
+                        },
+                    },
+                },
+              '400': { '$ref': '#/components/responses/PropertyError' },
+              '404': { '$ref': '#/components/responses/PropertyError' },
+              '500': { '$ref': '#/components/responses/PropertyError' },
+            },
+        },
+    }
+  /api/v1/staff/properties:
+    {
+      'get':
+        {
+          'operationId': 'listStaffProperties',
+          'summary': 'Search all staff inventory',
+          'description': 'Admin/Manager/Agent. q matches title/city/community only; owner contact is never searched. All property responses use Cache-Control: no-store. Unknown/duplicate query keys and malformed numeric strings return 400. Stable sorting uses ID ascending as tie-breaker.',
+          'security': [{ 'staffCookie': [] }],
+          'parameters':
+            [
+              {
+                'in': 'query',
+                'name': 'purpose',
+                'required': false,
+                'schema': { 'type': 'string', 'enum': ['sale', 'rent'] },
+              },
+              {
+                'in': 'query',
+                'name': 'type',
+                'required': false,
+                'schema':
+                  {
+                    'type': 'string',
+                    'enum': ['apartment', 'villa', 'townhouse', 'penthouse'],
+                  },
+              },
+              {
+                'in': 'query',
+                'name': 'location',
+                'required': false,
+                'schema':
+                  {
+                    'type': 'string',
+                    'minLength': 1,
+                    'maxLength': 120,
+                    'description': 'Trimmed case-insensitive city OR community substring.',
+                  },
+              },
+              {
+                'in': 'query',
+                'name': 'minPriceFils',
+                'required': false,
+                'schema':
+                  { 'type': 'integer', 'minimum': 0, 'maximum': 1000000000000 },
+              },
+              {
+                'in': 'query',
+                'name': 'maxPriceFils',
+                'required': false,
+                'schema':
+                  { 'type': 'integer', 'minimum': 0, 'maximum': 1000000000000 },
+              },
+              {
+                'in': 'query',
+                'name': 'minBedrooms',
+                'required': false,
+                'schema': { 'type': 'integer', 'minimum': 0, 'maximum': 20 },
+              },
+              {
+                'in': 'query',
+                'name': 'featured',
+                'required': false,
+                'schema': { 'type': 'string', 'enum': ['true', 'false'] },
+              },
+              {
+                'in': 'query',
+                'name': 'sort',
+                'required': false,
+                'schema':
+                  {
+                    'type': 'string',
+                    'enum':
+                      ['newest', 'price_asc', 'price_desc', 'updated_desc'],
+                    'default': 'updated_desc',
+                  },
+              },
+              {
+                'in': 'query',
+                'name': 'page',
+                'required': false,
+                'schema':
+                  {
+                    'type': 'integer',
+                    'minimum': 1,
+                    'maximum': 10000,
+                    'default': 1,
+                  },
+              },
+              {
+                'in': 'query',
+                'name': 'pageSize',
+                'required': false,
+                'schema':
+                  {
+                    'type': 'integer',
+                    'minimum': 1,
+                    'maximum': 48,
+                    'default': 12,
+                  },
+              },
+              {
+                'in': 'query',
+                'name': 'q',
+                'required': false,
+                'schema':
+                  { 'type': 'string', 'minLength': 1, 'maxLength': 160 },
+              },
+              {
+                'in': 'query',
+                'name': 'publishingState',
+                'required': false,
+                'schema':
+                  {
+                    'type': 'string',
+                    'enum': ['draft', 'published', 'archived'],
+                  },
+              },
+              {
+                'in': 'query',
+                'name': 'availability',
+                'required': false,
+                'schema':
+                  { 'type': 'string', 'enum': ['available', 'sold', 'rented'] },
+              },
+            ],
+          'responses':
+            {
+              '200':
+                {
+                  'description': 'Success',
+                  'headers':
+                    {
+                      'Cache-Control':
+                        { '$ref': '#/components/headers/NoStore' },
+                      'X-Request-Id':
+                        { '$ref': '#/components/headers/RequestId' },
+                    },
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              '$ref': '#/components/schemas/StaffPropertyList',
+                            },
+                        },
+                    },
+                },
+              '400': { '$ref': '#/components/responses/PropertyError' },
+              '401': { '$ref': '#/components/responses/PropertyError' },
+              '403': { '$ref': '#/components/responses/PropertyError' },
+              '404': { '$ref': '#/components/responses/PropertyError' },
+              '500': { '$ref': '#/components/responses/PropertyError' },
+            },
+        },
+      'post':
+        {
+          'operationId': 'createProperty',
+          'summary': 'Create a draft property',
+          'description': 'Admin/Manager only. All property responses use Cache-Control: no-store. Unknown/duplicate query keys and malformed numeric strings return 400. Stable sorting uses ID ascending as tie-breaker.',
+          'security': [{ 'staffCookie': [] }],
+          'parameters':
+            [
+              {
+                'in': 'header',
+                'name': 'Origin',
+                'required': true,
+                'schema': { 'type': 'string' },
+                'description': 'Exact configured APP_ORIGIN; checked before request-body parsing.',
+              },
+            ],
+          'requestBody':
+            {
+              'required': true,
+              'content':
+                {
+                  'application/json':
+                    {
+                      'schema':
+                        { '$ref': '#/components/schemas/CreateProperty' },
+                    },
+                },
+            },
+          'responses':
+            {
+              '201':
+                {
+                  'description': 'Created',
+                  'headers':
+                    {
+                      'Cache-Control':
+                        { '$ref': '#/components/headers/NoStore' },
+                      'X-Request-Id':
+                        { '$ref': '#/components/headers/RequestId' },
+                      'Location':
+                        {
+                          'schema': { 'type': 'string' },
+                          'description': 'Created staff property resource (property creation only).',
+                        },
+                    },
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/StaffProperty' },
+                        },
+                    },
+                },
+              '400': { '$ref': '#/components/responses/PropertyError' },
+              '401': { '$ref': '#/components/responses/PropertyError' },
+              '403': { '$ref': '#/components/responses/PropertyError' },
+              '404': { '$ref': '#/components/responses/PropertyError' },
+              '409': { '$ref': '#/components/responses/PropertyError' },
+              '413': { '$ref': '#/components/responses/PropertyError' },
+              '415': { '$ref': '#/components/responses/PropertyError' },
+              '500': { '$ref': '#/components/responses/PropertyError' },
+            },
+        },
+    }
+  /api/v1/staff/properties/{id}:
+    {
+      'get':
+        {
+          'operationId': 'getStaffProperty',
+          'summary': 'Read staff property details',
+          'description': ' All property responses use Cache-Control: no-store. Unknown/duplicate query keys and malformed numeric strings return 400. Stable sorting uses ID ascending as tie-breaker.',
+          'security': [{ 'staffCookie': [] }],
+          'parameters':
+            [
+              {
+                'in': 'path',
+                'name': 'id',
+                'required': true,
+                'schema': { 'type': 'string', 'format': 'uuid' },
+              },
+            ],
+          'responses':
+            {
+              '200':
+                {
+                  'description': 'Success',
+                  'headers':
+                    {
+                      'Cache-Control':
+                        { '$ref': '#/components/headers/NoStore' },
+                      'X-Request-Id':
+                        { '$ref': '#/components/headers/RequestId' },
+                    },
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/StaffProperty' },
+                        },
+                    },
+                },
+              '400': { '$ref': '#/components/responses/PropertyError' },
+              '401': { '$ref': '#/components/responses/PropertyError' },
+              '403': { '$ref': '#/components/responses/PropertyError' },
+              '404': { '$ref': '#/components/responses/PropertyError' },
+              '500': { '$ref': '#/components/responses/PropertyError' },
+            },
+        },
+      'patch':
+        {
+          'operationId': 'patchProperty',
+          'summary': 'Edit, publish, unpublish, archive or restore a property',
+          'description': 'Admin/Manager. Archive hides listing. Restore becomes draft. Scalar edits are last committed write wins; never automatically retry ambiguous writes. All property responses use Cache-Control: no-store. Unknown/duplicate query keys and malformed numeric strings return 400. Stable sorting uses ID ascending as tie-breaker.',
+          'security': [{ 'staffCookie': [] }],
+          'parameters':
+            [
+              {
+                'in': 'path',
+                'name': 'id',
+                'required': true,
+                'schema': { 'type': 'string', 'format': 'uuid' },
+              },
+              {
+                'in': 'header',
+                'name': 'Origin',
+                'required': true,
+                'schema': { 'type': 'string' },
+                'description': 'Exact configured APP_ORIGIN; checked before request-body parsing.',
+              },
+            ],
+          'requestBody':
+            {
+              'required': true,
+              'content':
+                {
+                  'application/json':
+                    {
+                      'schema':
+                        { '$ref': '#/components/schemas/PatchProperty' },
+                    },
+                },
+            },
+          'responses':
+            {
+              '200':
+                {
+                  'description': 'Success',
+                  'headers':
+                    {
+                      'Cache-Control':
+                        { '$ref': '#/components/headers/NoStore' },
+                      'X-Request-Id':
+                        { '$ref': '#/components/headers/RequestId' },
+                    },
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/StaffProperty' },
+                        },
+                    },
+                },
+              '400': { '$ref': '#/components/responses/PropertyError' },
+              '401': { '$ref': '#/components/responses/PropertyError' },
+              '403': { '$ref': '#/components/responses/PropertyError' },
+              '404': { '$ref': '#/components/responses/PropertyError' },
+              '409': { '$ref': '#/components/responses/PropertyError' },
+              '413': { '$ref': '#/components/responses/PropertyError' },
+              '415': { '$ref': '#/components/responses/PropertyError' },
+              '500': { '$ref': '#/components/responses/PropertyError' },
+            },
+        },
+      'delete':
+        {
+          'operationId': 'deleteProperty',
+          'summary': 'Permanently delete an archived property',
+          'description': 'Admin only. Existing nonarchived property returns 409. Missing record returns 404, including retry after deletion. All property responses use Cache-Control: no-store. Unknown/duplicate query keys and malformed numeric strings return 400. Stable sorting uses ID ascending as tie-breaker.',
+          'security': [{ 'staffCookie': [] }],
+          'parameters':
+            [
+              {
+                'in': 'path',
+                'name': 'id',
+                'required': true,
+                'schema': { 'type': 'string', 'format': 'uuid' },
+              },
+              {
+                'in': 'header',
+                'name': 'Origin',
+                'required': true,
+                'schema': { 'type': 'string' },
+                'description': 'Exact configured APP_ORIGIN; checked before request-body parsing.',
+              },
+            ],
+          'responses':
+            {
+              '204':
+                {
+                  'description': 'Deleted; no body. File cleanup follows DB commit; failures are logged for maintenance reconciliation.',
+                  'headers':
+                    {
+                      'Cache-Control':
+                        { '$ref': '#/components/headers/NoStore' },
+                    },
+                },
+              '400': { '$ref': '#/components/responses/PropertyError' },
+              '401': { '$ref': '#/components/responses/PropertyError' },
+              '403': { '$ref': '#/components/responses/PropertyError' },
+              '404': { '$ref': '#/components/responses/PropertyError' },
+              '409': { '$ref': '#/components/responses/PropertyError' },
+              '500': { '$ref': '#/components/responses/PropertyError' },
+            },
+        },
+    }
+  /api/v1/staff/properties/{id}/photos:
+    {
+      'post':
+        {
+          'operationId': 'uploadPropertyPhoto',
+          'summary': 'Append one processed public property image',
+          'description': 'Admin/Manager. One raw file, not multipart/base64. 5 MiB streamed and declared limit; 25 million decoded pixels; max 12 photos. MIME must match decoded single-frame JPEG/PNG/WebP; SVG/GIF/animation rejected. Auto-orient, strip metadata, WebP max 2400px without enlargement. Authorization/origin/resource checked before buffering. Draft images are public by direct URL. Failed attachment removes only files confirmed unreferenced; unknown database outcomes retain files for maintenance reconciliation. All property responses use Cache-Control: no-store. Unknown/duplicate query keys and malformed numeric strings return 400. Stable sorting uses ID ascending as tie-breaker.',
+          'security': [{ 'staffCookie': [] }],
+          'parameters':
+            [
+              {
+                'in': 'path',
+                'name': 'id',
+                'required': true,
+                'schema': { 'type': 'string', 'format': 'uuid' },
+              },
+              {
+                'in': 'header',
+                'name': 'Origin',
+                'required': true,
+                'schema': { 'type': 'string' },
+                'description': 'Exact configured APP_ORIGIN; checked before request-body parsing.',
+              },
+            ],
+          'requestBody':
+            {
+              'required': true,
+              'content':
+                {
+                  'image/jpeg':
+                    { 'schema': { 'type': 'string', 'format': 'binary' } },
+                  'image/png':
+                    { 'schema': { 'type': 'string', 'format': 'binary' } },
+                  'image/webp':
+                    { 'schema': { 'type': 'string', 'format': 'binary' } },
+                },
+            },
+          'responses':
+            {
+              '201':
+                {
+                  'description': 'Created',
+                  'headers':
+                    {
+                      'Cache-Control':
+                        { '$ref': '#/components/headers/NoStore' },
+                      'X-Request-Id':
+                        { '$ref': '#/components/headers/RequestId' },
+                      'Location':
+                        {
+                          'schema': { 'type': 'string' },
+                          'description': 'Created staff property resource (property creation only).',
+                        },
+                    },
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/StaffProperty' },
+                        },
+                    },
+                },
+              '400': { '$ref': '#/components/responses/PropertyError' },
+              '401': { '$ref': '#/components/responses/PropertyError' },
+              '403': { '$ref': '#/components/responses/PropertyError' },
+              '404': { '$ref': '#/components/responses/PropertyError' },
+              '409': { '$ref': '#/components/responses/PropertyError' },
+              '413': { '$ref': '#/components/responses/PropertyError' },
+              '415': { '$ref': '#/components/responses/PropertyError' },
+              '500': { '$ref': '#/components/responses/PropertyError' },
+            },
+        },
+    }
+  /api/v1/staff/properties/{id}/photos/order:
+    {
+      'patch':
+        {
+          'operationId': 'orderPropertyPhotos',
+          'summary': 'Set exact current photo order and cover',
+          'description': 'Admin/Manager. First photo becomes cover. Stale/foreign/duplicate/incomplete set returns 409. Archived writes fail. All property responses use Cache-Control: no-store. Unknown/duplicate query keys and malformed numeric strings return 400. Stable sorting uses ID ascending as tie-breaker.',
+          'security': [{ 'staffCookie': [] }],
+          'parameters':
+            [
+              {
+                'in': 'path',
+                'name': 'id',
+                'required': true,
+                'schema': { 'type': 'string', 'format': 'uuid' },
+              },
+              {
+                'in': 'header',
+                'name': 'Origin',
+                'required': true,
+                'schema': { 'type': 'string' },
+                'description': 'Exact configured APP_ORIGIN; checked before request-body parsing.',
+              },
+            ],
+          'requestBody':
+            {
+              'required': true,
+              'content':
+                {
+                  'application/json':
+                    {
+                      'schema':
+                        { '$ref': '#/components/schemas/PropertyPhotoOrder' },
+                    },
+                },
+            },
+          'responses':
+            {
+              '200':
+                {
+                  'description': 'Success',
+                  'headers':
+                    {
+                      'Cache-Control':
+                        { '$ref': '#/components/headers/NoStore' },
+                      'X-Request-Id':
+                        { '$ref': '#/components/headers/RequestId' },
+                    },
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/StaffProperty' },
+                        },
+                    },
+                },
+              '400': { '$ref': '#/components/responses/PropertyError' },
+              '401': { '$ref': '#/components/responses/PropertyError' },
+              '403': { '$ref': '#/components/responses/PropertyError' },
+              '404': { '$ref': '#/components/responses/PropertyError' },
+              '409': { '$ref': '#/components/responses/PropertyError' },
+              '413': { '$ref': '#/components/responses/PropertyError' },
+              '415': { '$ref': '#/components/responses/PropertyError' },
+              '500': { '$ref': '#/components/responses/PropertyError' },
+            },
+        },
+    }
+  /api/v1/staff/properties/{id}/photos/{photoId}:
+    {
+      'delete':
+        {
+          'operationId': 'removePropertyPhoto',
+          'summary': 'Remove a property photo and preserve relative order',
+          'description': 'Admin/Manager. Wrong membership 404. Published last-photo removal 409. Archived writes fail. DB removal commits before disk cleanup; cleanup failure does not resurrect a photo. All property responses use Cache-Control: no-store. Unknown/duplicate query keys and malformed numeric strings return 400. Stable sorting uses ID ascending as tie-breaker.',
+          'security': [{ 'staffCookie': [] }],
+          'parameters':
+            [
+              {
+                'in': 'path',
+                'name': 'id',
+                'required': true,
+                'schema': { 'type': 'string', 'format': 'uuid' },
+              },
+              {
+                'in': 'path',
+                'name': 'photoId',
+                'required': true,
+                'schema': { 'type': 'string', 'format': 'uuid' },
+              },
+              {
+                'in': 'header',
+                'name': 'Origin',
+                'required': true,
+                'schema': { 'type': 'string' },
+                'description': 'Exact configured APP_ORIGIN; checked before request-body parsing.',
+              },
+            ],
+          'responses':
+            {
+              '200':
+                {
+                  'description': 'Success',
+                  'headers':
+                    {
+                      'Cache-Control':
+                        { '$ref': '#/components/headers/NoStore' },
+                      'X-Request-Id':
+                        { '$ref': '#/components/headers/RequestId' },
+                    },
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/StaffProperty' },
+                        },
+                    },
+                },
+              '400': { '$ref': '#/components/responses/PropertyError' },
+              '401': { '$ref': '#/components/responses/PropertyError' },
+              '403': { '$ref': '#/components/responses/PropertyError' },
+              '404': { '$ref': '#/components/responses/PropertyError' },
+              '409': { '$ref': '#/components/responses/PropertyError' },
+              '413': { '$ref': '#/components/responses/PropertyError' },
+              '415': { '$ref': '#/components/responses/PropertyError' },
+              '500': { '$ref': '#/components/responses/PropertyError' },
+            },
+        },
+    }
+components:
+  securitySchemes:
+    staffCookie:
+      type: apiKey
+      in: cookie
+      name: agency.session
+      description: Local HTTP cookie; production uses __Host-agency.session with Secure.
+  headers:
+    NoStore:
+      description: Authentication and property responses are never cacheable.
+      schema:
+        const: no-store
+    RequestId:
+      description: Server-generated UUID for request correlation
+      schema:
+        type: string
+        format: uuid
+  responses:
+    AuthFailure:
+      description: Native auth failure. Validation 400; generic wrong, unknown or disabled credentials 401; origin 403; auth body over 100 KiB 413; unsupported media 415; safe service failure 500. Auth errors do not use the business error envelope.
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/RequestId'
+        Cache-Control:
+          $ref: '#/components/headers/NoStore'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AuthError'
+    Error:
+      description: Structured failure; unknown routes use 404, malformed JSON 400, oversized JSON 413, unexpected failures 500.
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/RequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    PropertyError:
+      {
+        'description': 'Property business error envelope: validation/invalid image 400; live-session 401; role/origin 403; missing/ineligible 404; workflow/photo invariant 409; bytes 413; media 415; safe infrastructure 500. Messages never echo private values.',
+        'headers':
+          {
+            'Cache-Control': { '$ref': '#/components/headers/NoStore' },
+            'X-Request-Id': { '$ref': '#/components/headers/RequestId' },
+          },
+        'content':
+          {
+            'application/json':
+              { 'schema': { '$ref': '#/components/schemas/ApiError' } },
+          },
+      }
+  schemas:
+    Photo:
+      {
+        'type': 'object',
+        'additionalProperties': false,
+        'required': ['id', 'url', 'width', 'height'],
+        'properties':
+          {
+            'id': { 'type': 'string', 'format': 'uuid' },
+            'url': { 'type': 'string', 'format': 'uri' },
+            'width': { 'type': 'integer', 'minimum': 1, 'maximum': 2400 },
+            'height': { 'type': 'integer', 'minimum': 1, 'maximum': 2400 },
+          },
+      }
+    PublicPropertySummary:
+      {
+        'type': 'object',
+        'additionalProperties': false,
+        'required':
+          [
+            'id',
+            'isDemo',
+            'title',
+            'purpose',
+            'type',
+            'priceFils',
+            'city',
+            'community',
+            'bedrooms',
+            'bathrooms',
+            'areaSqft',
+            'coverPhoto',
+          ],
+        'properties':
+          {
+            'id': { 'type': 'string', 'format': 'uuid' },
+            'isDemo':
+              {
+                'type': 'boolean',
+                'description': 'True for explicitly seeded illustrative demo inventory.',
+              },
+            'title': { 'type': 'string', 'minLength': 1, 'maxLength': 160 },
+            'purpose': { 'type': 'string', 'enum': ['sale', 'rent'] },
+            'type':
+              {
+                'type': 'string',
+                'enum': ['apartment', 'villa', 'townhouse', 'penthouse'],
+              },
+            'priceFils':
+              { 'type': 'integer', 'minimum': 1, 'maximum': 1000000000000 },
+            'city': { 'type': 'string', 'minLength': 1, 'maxLength': 120 },
+            'community': { 'type': 'string', 'minLength': 1, 'maxLength': 120 },
+            'bedrooms': { 'type': 'integer', 'minimum': 0, 'maximum': 20 },
+            'bathrooms': { 'type': 'integer', 'minimum': 0, 'maximum': 20 },
+            'areaSqft':
+              {
+                'type': 'string',
+                'pattern': "^(?:0|[1-9]\\d*)(?:\\.\\d{1,2})?$",
+                'description': 'Positive sqft decimal, at most 1000000, at most two decimal places. Responses always use two decimal places.',
+              },
+            'coverPhoto': { '$ref': '#/components/schemas/Photo' },
+          },
+      }
+    PublicPropertyDetail:
+      {
+        'type': 'object',
+        'additionalProperties': false,
+        'required':
+          [
+            'id',
+            'isDemo',
+            'title',
+            'purpose',
+            'type',
+            'priceFils',
+            'city',
+            'community',
+            'bedrooms',
+            'bathrooms',
+            'areaSqft',
+            'coverPhoto',
+            'description',
+            'photos',
+          ],
+        'properties':
+          {
+            'id': { 'type': 'string', 'format': 'uuid' },
+            'isDemo':
+              {
+                'type': 'boolean',
+                'description': 'True for explicitly seeded illustrative demo inventory.',
+              },
+            'title': { 'type': 'string', 'minLength': 1, 'maxLength': 160 },
+            'purpose': { 'type': 'string', 'enum': ['sale', 'rent'] },
+            'type':
+              {
+                'type': 'string',
+                'enum': ['apartment', 'villa', 'townhouse', 'penthouse'],
+              },
+            'priceFils':
+              { 'type': 'integer', 'minimum': 1, 'maximum': 1000000000000 },
+            'city': { 'type': 'string', 'minLength': 1, 'maxLength': 120 },
+            'community': { 'type': 'string', 'minLength': 1, 'maxLength': 120 },
+            'bedrooms': { 'type': 'integer', 'minimum': 0, 'maximum': 20 },
+            'bathrooms': { 'type': 'integer', 'minimum': 0, 'maximum': 20 },
+            'areaSqft':
+              {
+                'type': 'string',
+                'pattern': "^(?:0|[1-9]\\d*)(?:\\.\\d{1,2})?$",
+                'description': 'Positive sqft decimal, at most 1000000, at most two decimal places. Responses always use two decimal places.',
+              },
+            'coverPhoto': { '$ref': '#/components/schemas/Photo' },
+            'description':
+              { 'type': 'string', 'minLength': 1, 'maxLength': 10000 },
+            'photos':
+              {
+                'type': 'array',
+                'maxItems': 12,
+                'items': { '$ref': '#/components/schemas/Photo' },
+                'description': 'Ordered; first image is the cover. Public URLs remain accessible for draft and archived properties.',
+                'minItems': 1,
+              },
+          },
+      }
+    StaffProperty:
+      {
+        'type': 'object',
+        'additionalProperties': false,
+        'required':
+          [
+            'id',
+            'isDemo',
+            'title',
+            'purpose',
+            'type',
+            'description',
+            'priceFils',
+            'city',
+            'community',
+            'bedrooms',
+            'bathrooms',
+            'areaSqft',
+            'featured',
+            'publishingState',
+            'availability',
+            'photos',
+            'createdAt',
+            'updatedAt',
+          ],
+        'properties':
+          {
+            'id': { 'type': 'string', 'format': 'uuid' },
+            'isDemo': { 'type': 'boolean' },
+            'title': { 'type': 'string', 'minLength': 1, 'maxLength': 160 },
+            'purpose': { 'type': 'string', 'enum': ['sale', 'rent'] },
+            'type':
+              {
+                'anyOf':
+                  [
+                    {
+                      'type': 'string',
+                      'enum': ['apartment', 'villa', 'townhouse', 'penthouse'],
+                    },
+                    { 'type': 'null' },
+                  ],
+              },
+            'description':
+              {
+                'anyOf':
+                  [
+                    { 'type': 'string', 'minLength': 1, 'maxLength': 10000 },
+                    { 'type': 'null' },
+                  ],
+              },
+            'priceFils':
+              {
+                'anyOf':
+                  [
+                    {
+                      'type': 'integer',
+                      'minimum': 1,
+                      'maximum': 1000000000000,
+                      'description': 'Integer AED fils. Sale total; rent annual price.',
+                    },
+                    { 'type': 'null' },
+                  ],
+              },
+            'city':
+              {
+                'anyOf':
+                  [
+                    { 'type': 'string', 'minLength': 1, 'maxLength': 120 },
+                    { 'type': 'null' },
+                  ],
+              },
+            'community':
+              {
+                'anyOf':
+                  [
+                    { 'type': 'string', 'minLength': 1, 'maxLength': 120 },
+                    { 'type': 'null' },
+                  ],
+              },
+            'bedrooms':
+              {
+                'anyOf':
+                  [
+                    { 'type': 'integer', 'minimum': 0, 'maximum': 20 },
+                    { 'type': 'null' },
+                  ],
+              },
+            'bathrooms':
+              {
+                'anyOf':
+                  [
+                    { 'type': 'integer', 'minimum': 0, 'maximum': 20 },
+                    { 'type': 'null' },
+                  ],
+              },
+            'areaSqft':
+              {
+                'anyOf':
+                  [
+                    {
+                      'type': 'string',
+                      'pattern': "^(?:0|[1-9]\\d*)(?:\\.\\d{1,2})?$",
+                      'description': 'Positive sqft decimal, at most 1000000, at most two decimal places. Responses always use two decimal places.',
+                    },
+                    { 'type': 'null' },
+                  ],
+              },
+            'ownerName':
+              {
+                'anyOf':
+                  [
+                    { 'type': 'string', 'minLength': 1, 'maxLength': 120 },
+                    { 'type': 'null' },
+                  ],
+              },
+            'ownerPhone':
+              {
+                'anyOf':
+                  [
+                    {
+                      'type': 'string',
+                      'minLength': 3,
+                      'maxLength': 40,
+                      'pattern': '^[+0-9 ()-]+$',
+                      'description': 'Must include at least one digit.',
+                    },
+                    { 'type': 'null' },
+                  ],
+              },
+            'featured': { 'type': 'boolean' },
+            'publishingState':
+              { 'type': 'string', 'enum': ['draft', 'published', 'archived'] },
+            'availability':
+              { 'type': 'string', 'enum': ['available', 'sold', 'rented'] },
+            'photos':
+              {
+                'type': 'array',
+                'maxItems': 12,
+                'items': { '$ref': '#/components/schemas/Photo' },
+                'description': 'Ordered; first image is the cover. Public URLs remain accessible for draft and archived properties.',
+              },
+            'createdAt': { 'type': 'string', 'format': 'date-time' },
+            'updatedAt': { 'type': 'string', 'format': 'date-time' },
+          },
+        'description': 'Agent responses omit ownerName and ownerPhone entirely. Manager/Admin receive nullable owner fields.',
+      }
+    CreateProperty:
+      {
+        'type': 'object',
+        'additionalProperties': false,
+        'required': ['title', 'purpose'],
+        'properties':
+          {
+            'title': { 'type': 'string', 'minLength': 1, 'maxLength': 160 },
+            'purpose': { 'type': 'string', 'enum': ['sale', 'rent'] },
+            'type':
+              {
+                'anyOf':
+                  [
+                    {
+                      'type': 'string',
+                      'enum': ['apartment', 'villa', 'townhouse', 'penthouse'],
+                    },
+                    { 'type': 'null' },
+                  ],
+              },
+            'description':
+              {
+                'anyOf':
+                  [
+                    { 'type': 'string', 'minLength': 1, 'maxLength': 10000 },
+                    { 'type': 'null' },
+                  ],
+              },
+            'priceFils':
+              {
+                'anyOf':
+                  [
+                    {
+                      'type': 'integer',
+                      'minimum': 1,
+                      'maximum': 1000000000000,
+                      'description': 'Integer AED fils. Sale total; rent annual price.',
+                    },
+                    { 'type': 'null' },
+                  ],
+              },
+            'city':
+              {
+                'anyOf':
+                  [
+                    { 'type': 'string', 'minLength': 1, 'maxLength': 120 },
+                    { 'type': 'null' },
+                  ],
+              },
+            'community':
+              {
+                'anyOf':
+                  [
+                    { 'type': 'string', 'minLength': 1, 'maxLength': 120 },
+                    { 'type': 'null' },
+                  ],
+              },
+            'bedrooms':
+              {
+                'anyOf':
+                  [
+                    { 'type': 'integer', 'minimum': 0, 'maximum': 20 },
+                    { 'type': 'null' },
+                  ],
+              },
+            'bathrooms':
+              {
+                'anyOf':
+                  [
+                    { 'type': 'integer', 'minimum': 0, 'maximum': 20 },
+                    { 'type': 'null' },
+                  ],
+              },
+            'areaSqft':
+              {
+                'anyOf':
+                  [
+                    {
+                      'type': 'string',
+                      'pattern': "^(?:0|[1-9]\\d*)(?:\\.\\d{1,2})?$",
+                      'description': 'Positive sqft decimal, at most 1000000, at most two decimal places. Responses always use two decimal places.',
+                    },
+                    { 'type': 'null' },
+                  ],
+              },
+            'ownerName':
+              {
+                'anyOf':
+                  [
+                    { 'type': 'string', 'minLength': 1, 'maxLength': 120 },
+                    { 'type': 'null' },
+                  ],
+              },
+            'ownerPhone':
+              {
+                'anyOf':
+                  [
+                    {
+                      'type': 'string',
+                      'minLength': 3,
+                      'maxLength': 40,
+                      'pattern': '^[+0-9 ()-]+$',
+                      'description': 'Must include at least one digit.',
+                    },
+                    { 'type': 'null' },
+                  ],
+              },
+            'featured': { 'type': 'boolean' },
+          },
+        'description': 'Creates a draft, available property. Omitted nullable fields become null; featured defaults false. Immutable IDs, demo flags, URLs, state and availability are rejected.',
+      }
+    PatchProperty:
+      {
+        'type': 'object',
+        'additionalProperties': false,
+        'required': [],
+        'properties':
+          {
+            'title': { 'type': 'string', 'minLength': 1, 'maxLength': 160 },
+            'purpose': { 'type': 'string', 'enum': ['sale', 'rent'] },
+            'type':
+              {
+                'anyOf':
+                  [
+                    {
+                      'type': 'string',
+                      'enum': ['apartment', 'villa', 'townhouse', 'penthouse'],
+                    },
+                    { 'type': 'null' },
+                  ],
+              },
+            'description':
+              {
+                'anyOf':
+                  [
+                    { 'type': 'string', 'minLength': 1, 'maxLength': 10000 },
+                    { 'type': 'null' },
+                  ],
+              },
+            'priceFils':
+              {
+                'anyOf':
+                  [
+                    {
+                      'type': 'integer',
+                      'minimum': 1,
+                      'maximum': 1000000000000,
+                      'description': 'Integer AED fils. Sale total; rent annual price.',
+                    },
+                    { 'type': 'null' },
+                  ],
+              },
+            'city':
+              {
+                'anyOf':
+                  [
+                    { 'type': 'string', 'minLength': 1, 'maxLength': 120 },
+                    { 'type': 'null' },
+                  ],
+              },
+            'community':
+              {
+                'anyOf':
+                  [
+                    { 'type': 'string', 'minLength': 1, 'maxLength': 120 },
+                    { 'type': 'null' },
+                  ],
+              },
+            'bedrooms':
+              {
+                'anyOf':
+                  [
+                    { 'type': 'integer', 'minimum': 0, 'maximum': 20 },
+                    { 'type': 'null' },
+                  ],
+              },
+            'bathrooms':
+              {
+                'anyOf':
+                  [
+                    { 'type': 'integer', 'minimum': 0, 'maximum': 20 },
+                    { 'type': 'null' },
+                  ],
+              },
+            'areaSqft':
+              {
+                'anyOf':
+                  [
+                    {
+                      'type': 'string',
+                      'pattern': "^(?:0|[1-9]\\d*)(?:\\.\\d{1,2})?$",
+                      'description': 'Positive sqft decimal, at most 1000000, at most two decimal places. Responses always use two decimal places.',
+                    },
+                    { 'type': 'null' },
+                  ],
+              },
+            'ownerName':
+              {
+                'anyOf':
+                  [
+                    { 'type': 'string', 'minLength': 1, 'maxLength': 120 },
+                    { 'type': 'null' },
+                  ],
+              },
+            'ownerPhone':
+              {
+                'anyOf':
+                  [
+                    {
+                      'type': 'string',
+                      'minLength': 3,
+                      'maxLength': 40,
+                      'pattern': '^[+0-9 ()-]+$',
+                      'description': 'Must include at least one digit.',
+                    },
+                    { 'type': 'null' },
+                  ],
+              },
+            'featured': { 'type': 'boolean' },
+            'publishingState':
+              { 'type': 'string', 'enum': ['draft', 'published', 'archived'] },
+            'availability':
+              { 'type': 'string', 'enum': ['available', 'sold', 'rented'] },
+          },
+        'minProperties': 1,
+        'description': 'Atomic merge. Publish requires complete fields, available status and at least one saved photo. Published edits preserve completeness. Archived records accept only publishingState draft. Sold is sale-only, rented rent-only.',
+      }
+    PropertyPhotoOrder:
+      {
+        'type': 'object',
+        'additionalProperties': false,
+        'required': ['photoIds'],
+        'properties':
+          {
+            'photoIds':
+              {
+                'type': 'array',
+                'maxItems': 12,
+                'uniqueItems': true,
+                'items': { 'type': 'string', 'format': 'uuid' },
+                'description': 'Exact current photo-ID permutation. Stale/foreign/incomplete sets return 409.',
+              },
+          },
+      }
+    PublicPropertyList:
+      {
+        'type': 'object',
+        'additionalProperties': false,
+        'required': ['items', 'total', 'page', 'pageSize'],
+        'properties':
+          {
+            'items':
+              {
+                'type': 'array',
+                'items':
+                  { '$ref': '#/components/schemas/PublicPropertySummary' },
+              },
+            'total':
+              { 'type': 'integer', 'minimum': 0, 'maximum': 9007199254740991 },
+            'page': { 'type': 'integer', 'minimum': 1, 'maximum': 10000 },
+            'pageSize': { 'type': 'integer', 'minimum': 1, 'maximum': 48 },
+          },
+      }
+    StaffPropertyList:
+      {
+        'type': 'object',
+        'additionalProperties': false,
+        'required': ['items', 'total', 'page', 'pageSize'],
+        'properties':
+          {
+            'items':
+              {
+                'type': 'array',
+                'items': { '$ref': '#/components/schemas/StaffProperty' },
+              },
+            'total':
+              { 'type': 'integer', 'minimum': 0, 'maximum': 9007199254740991 },
+            'page': { 'type': 'integer', 'minimum': 1, 'maximum': 10000 },
+            'pageSize': { 'type': 'integer', 'minimum': 1, 'maximum': 48 },
+          },
+      }
+    AuthError:
+      type: object
+      description: Native Better Auth-compatible error; optional native fields are permitted.
+      required: [message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+    StaffUser:
+      type: object
+      description: Native user object; credential hashes and disabled field are never returned. Additional library fields may be present.
+      required: [id, name, email, role]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [admin, manager, agent]
+        emailVerified:
+          type: boolean
+        image:
+          type: [string, 'null']
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    StaffSession:
+      type: object
+      description: Native session metadata. Application code narrows this before rendering; tokens must not be persisted or used as bearer credentials.
+      required: [id, userId, token, expiresAt, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        token:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ApiError:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required: [code, message, requestId]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            requestId:
+              type: string
+              format: uuid

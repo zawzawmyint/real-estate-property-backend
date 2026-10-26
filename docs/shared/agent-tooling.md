@@ -1,0 +1,9 @@
+# Agent runtime tooling
+
+The frontend uses project-scoped Codex configuration for `next-devtools-mcp@0.4.0`, launched through `npx -y` with connector telemetry disabled. It is developer tooling resolved through npm's cache, not a dependency of either application. The frontend's `.codex/config.toml` is the versioned configuration source; the parent workspace has matching local settings for chats opened above the two repositories. No global agent configuration is changed.
+
+Start Express on 4311 and the frontend development server on 3100. Discover the Next.js server, confirm the project path, inspect routes/logs and use a real browser for the affected flow. Inspect runtime errors and page metadata while the browser remains open. An absent server or browser session is not a successful runtime check. Backend authorization and API-contract ownership remain unchanged.
+
+Keep the existing Webpack commands. MCP `get_compilation_issues` and `compile_route`, and the official `next-dev-loop` skill, require Turbopack. That skill and `agent-browser` are not installed by this setup. Compatible MCP runtime tools plus existing browser tooling/Playwright supplement the required lint, formatting, typecheck, tests and build checks.
+
+Codex must trust the project and reload its MCP configuration before the tools appear; the first connector launch requires npm network access. The workspace configuration was recognized during verification, while a standalone frontend client still needs that trust/reload step before availability can be confirmed. Remove the connector table and reload to roll back. No business-roadmap item is completed by this maintenance. Frontend-local setup instructions and verification evidence live in its `docs/agent-tooling.md` and `specs/agent-tooling/spec.md`; there is no backend runtime or API change.

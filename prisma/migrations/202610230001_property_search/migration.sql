@@ -1,0 +1,3 @@
+ALTER TABLE "Property" ADD COLUMN "searchTitle" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "Property" ADD COLUMN "searchCity" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "Property" ADD COLUMN "searchCommunity" TEXT NOT NULL DEFAULT '';
