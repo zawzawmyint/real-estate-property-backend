@@ -1,9 +1,10 @@
-import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
+import { Prisma } from '../../generated/prisma/client.js';
+import type {
+  Database,
+  Transaction,
+} from '../../infrastructure/database/transaction.js';
 import type { PropertyQuery } from './properties.schema.js';
-import { foldSearch } from './property-search.js';
-
-export type Database = PrismaClient;
-export type Transaction = Prisma.TransactionClient;
+import { normalizeSearchText } from '../../shared/search/normalize-search-text.js';
 
 const photoSelect = {
   id: true,
@@ -126,13 +127,13 @@ async function searchPage(
   if (query.minBedrooms !== undefined)
     clauses.push(Prisma.sql`bedrooms >= ${query.minBedrooms}`);
   if (query.location) {
-    const location = foldSearch(query.location);
+    const location = normalizeSearchText(query.location);
     clauses.push(
       Prisma.sql`(instr(searchCity, ${location}) > 0 OR instr(searchCommunity, ${location}) > 0)`,
     );
   }
   if (staff && query.q) {
-    const text = foldSearch(query.q);
+    const text = normalizeSearchText(query.q);
     clauses.push(
       Prisma.sql`(instr(searchTitle, ${text}) > 0 OR instr(searchCity, ${text}) > 0 OR instr(searchCommunity, ${text}) > 0)`,
     );
@@ -263,28 +264,4 @@ export function createPropertyRepository(database: Database) {
       return tx.propertyPhoto.update({ where: { id }, data: { position } });
     },
   };
-}
-
-// A single Prisma SQLite adapter cannot run overlapping interactive writes.
-// Serialize them per client; the transaction's first write also locks across processes.
-const queues = new WeakMap<Database, Promise<unknown>>();
-
-export async function propertyTransaction<T>(
-  database: Database,
-  run: (tx: Transaction) => Promise<T>,
-): Promise<T> {
-  const prior = queues.get(database) ?? Promise.resolve();
-  const pending = prior
-    .catch(() => undefined)
-    .then(() =>
-      database.$transaction(run, { maxWait: 10_000, timeout: 15_000 }),
-    );
-
-  queues.set(database, pending);
-
-  try {
-    return await pending;
-  } finally {
-    if (queues.get(database) === pending) queues.delete(database);
-  }
 }

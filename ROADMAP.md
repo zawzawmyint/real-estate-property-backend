@@ -8,7 +8,7 @@
 
 Track every Phase 1, 2 and 3 feature from the original **Real Estate CRM Checklist**, without treating project setup as completed business functionality.
 
-**Current baseline:** Foundation is complete; 18 verified Phase 1 checklist items are complete and 24 Phase 1–3 checklist items remain pending. The original five portfolio delivery items are retained separately. This roadmap is the workspace-wide source of truth for feature progress; repository-local specifications define implementation and acceptance.
+**Current baseline:** Foundation is complete; 20 verified Phase 1 checklist items are complete and 22 Phase 1–3 checklist items remain pending. The original five portfolio delivery items are retained separately. This roadmap is the workspace-wide source of truth for feature progress; repository-local specifications define implementation and acceptance.
 
 ---
 
@@ -36,7 +36,7 @@ Track every Phase 1, 2 and 3 feature from the original **Real Estate CRM Checkli
 - Installed tools, planned tools and adoption rules are recorded in the [tech stack document](TECH_STACK.md). Deferred packages remain uninstalled until their features need them.
 - Separate `frontend/` and `backend/` Git repositories inside this workspace. Express owns business rules, permissions, persistence and file storage; Next.js consumes its API.
 - SQLite and backend local-disk image storage initially. PostgreSQL and S3 remain future migration options requiring explicit data transfer.
-- Public discovery, CRM property inventory/lifecycle and listing-photo workflows are implemented with backend-enforced resource authorization. CRM authentication and Admin/Manager/Agent roles, public inquiries, lead ownership and follow-up are implemented; pipeline and dashboards remain future work.
+- Public discovery, CRM property inventory/lifecycle and listing-photo workflows are implemented with backend-enforced resource authorization. CRM authentication and Admin/Manager/Agent roles, public inquiries, lead ownership, follow-up and the P1-10 pipeline are implemented; dashboards remain future work.
 - Demo property images are generated illustrative fixtures. The source checklist's free-photo wording is preserved below; this records the agreed change in image sourcing.
 
 **Product / Business**
@@ -88,7 +88,7 @@ Foundation evidence: [workspace specification](docs/shared/foundation-spec.md), 
 
 **Verified maintenance (2026-10-23):** the frontend specifications at `frontend/specs/header-sidebar-polish/spec.md` and `frontend/specs/typography/spec.md` improve the delivered public/CRM experience without completing an additional roadmap item. P1-18 remains unchecked because its wider public mobile-layout scope is still incomplete.
 
-**Verified (2026-10-26):** [inquiry capture and lead management](specs/lead-management/spec.md) delivers P1-03–P1-09, P1-16 and P1-20–P1-22: manager-distributed inbox, manual and website leads, ownership, stage changes, notes/calls and timeline. P1-10 Kanban, viewings/tasks, notifications and wider P1-18 mobile acceptance remain separate.
+**Verified (2026-10-26):** [inquiry capture and lead management](specs/lead-management/spec.md) delivers P1-03–P1-09, P1-16 and P1-20–P1-22: manager-distributed inbox, manual and website leads, ownership, stage changes, notes/calls and timeline. P1-10 Kanban was subsequently verified on 2026-10-27; viewings/tasks, notifications and wider P1-18 mobile acceptance remain separate.
 
 ---
 
@@ -128,10 +128,10 @@ Foundation evidence: [workspace specification](docs/shared/foundation-spec.md), 
 
 #### Sales pipeline
 
-**Proposed spec slug:** `sales-pipeline`.
+**Verified (2026-10-27):** [sales pipeline Kanban](specs/sales-pipeline/spec.md) completes P1-10 using existing lead reads, versioned stage changes and permissions. The responsive board includes accessible pointer/keyboard movement, confirmation, pagination and recovery.
 
 - [x] **P1-09** Stages: New, Contacted, Viewing Scheduled, Offer, Won, Lost
-- [ ] **P1-10** Kanban board with drag-and-drop between stages
+- [x] **P1-10** Kanban board with drag-and-drop between stages
 
 #### Property management
 
@@ -143,14 +143,16 @@ Foundation evidence: [workspace specification](docs/shared/foundation-spec.md), 
 
 #### Public website
 
-**Current specs:** [property management and public discovery](specs/property-management/spec.md), [demo property presentation](specs/demo-property-data/spec.md); `public-contact-and-agents` remains proposed.
+**Current specs:** [property management and public discovery](specs/property-management/spec.md), [demo property presentation](specs/demo-property-data/spec.md), and [public contact and agent pages](specs/public-contact-and-agents/spec.md).
+
+**Verified demo delivery (2026-10-27):** P1-17 provides Contact, Our agents and individual profiles, plus a property-independent enquiry form that creates an unassigned Website/New CRM lead. The public content catalog and APIs use fictional demo content with no published direct contact details. P1-18 remains unchecked; real-business publication still requires approved contact/profile/portrait content and inquiry usage wording.
 
 The verified property and lead deliveries cover filtered listings P1-15, search/featured portions of P1-14, the complete P1-16 detail/gallery/inquiry flow, and responsive property screens within P1-18. P1-14 and P1-18 remain unchecked because their wider scope is incomplete. P1-19 is complete with generated illustrative fixture images, not the source checklist's free photos.
 
 - [ ] **P1-14** Home page with search bar and featured listings
 - [x] **P1-15** Listings page with filters
 - [x] **P1-16** Property detail page with gallery and inquiry form
-- [ ] **P1-17** Contact and agent pages
+- [x] **P1-17** Contact and agent pages
 - [ ] **P1-18** Mobile-friendly layout
 - [x] **P1-19** Sample data: 15 to 30 demo properties with free photos
 
@@ -294,7 +296,11 @@ Foundation smoke-test screenshots do not complete D-04: capture the delivered bu
 - **2026-10-22 — Staff authentication verified:** P1-01 and P1-02 completed through the [staff authentication and roles specification](specs/staff-authentication-and-roles/spec.md). Evidence: frontend `bun run check` (38 tests), backend `bun run check` (34 tests across 11 files), real SQLite migration and database check, 26 real desktop/mobile browser tests, and six live browser lifecycle checks for deleted, expired and disabled sessions, password reset, current role changes, and outage recovery. P1-03 remains pending.
 - **2026-10-22 — Login form refactor verified:** The delivered P1-01 form now uses React Hook Form, Zod and local Base Nova field/input primitives without changing the native authentication protocol. Evidence: frontend `bun run check` (39 tests), backend `bun run check` (34 tests across 11 files), and 28 real desktop/mobile browser tests, including same-tick duplicate submission and held request/navigation transitions. P1-03 remains pending.
 - **2026-10-26 — Lead management verified:** P1-03–P1-09, P1-16 and P1-20–P1-22 completed through the [lead-management specification](specs/lead-management/spec.md). Evidence: frontend 122 unit tests in 21 files and production build passed; backend 78 tests in 20 files, SQLite migration and database check passed; browser regression passed 96 tests with 4 existing conditional viewport skips, plus focused lead coverage 18/18 and supplemental desktop/mobile search normalization checks 2/2. Production deployment is not claimed; real-customer collection requires operator-approved privacy/retention wording and trusted ingress configuration.
+- **2026-10-26 — CRM route guard/loading maintenance verified:** Frontend CRM route guard and scoped loading add a cookie-presence navigation gate and scoped account/list loading without completing a roadmap item or changing Express contracts. Evidence: frontend API contract generation, lint, typecheck, 138 unit tests and the final production build passed; the final combined desktop/mobile browser suite passed 97 tests with one conditional skip. Production HTTPS cookie topology remains unverified.
 - **2026-10-23 — Frontend data/forms maintenance verified:** The data/forms refactor specification (`../frontend/specs/frontend-data-and-form-refactor/spec.md`) records separated property API/read/mutation modules, authenticated Server Actions for existing property writes, shared form controls, hydration readiness and streamed CRM results. This is maintenance of delivered property workflows, not a new roadmap feature; checklist IDs and completion states are unchanged. Evidence: `bun run api:check`, lint, format check, typecheck and production Webpack build passed; 75 unit tests in 11 files and 44/44 desktop/mobile fixture browser tests passed. Production HTTPS/secure-cookie browser topology remains unverified.
+- **2026-10-27 — Sales pipeline verified:** P1-10 completed through the [sales-pipeline specification](specs/sales-pipeline/spec.md). Frontend API drift, lint, formatting and type checks passed with 142 unit tests in 26 files and an isolated production Webpack build. Backend `bun run check` passed with 78 tests in 20 files, including its build. The full isolated desktop/mobile browser regression passed 140 tests with 6 conditional viewport skips (146 total); focused pipeline coverage passed 20 tests with 2 mobile skips for desktop-only dragging. Coverage includes pointer and keyboard drag/cancel, terminal confirmation, conflicts, role ownership/reassignment, pagination/retry, held reads, lost save responses and session loss. Layouts were checked at 320, 390, 768 and 1440px; desktop/mobile screenshots were visually reviewed. Next.js DevTools confirmed an active pipeline browser session with no configuration or session errors. Existing Express lead contracts and authorization remain authoritative; no API/schema change or production deployment is claimed.
+- **2026-10-27 — Public contact and agent pages verified:** P1-17 completed through the [public contact and agent pages specification](specs/public-contact-and-agents/spec.md). Backend `bun run check` passed with 90 tests in 22 files and a production build; frontend API drift, lint, formatting, typecheck, 166 unit tests and an isolated production Webpack build passed. The final isolated sequential browser suite passed 161 tests with 7 intentional project-specific skips (168 total), and focused desktop/mobile receipt and validation-summary focus coverage passed 4/4. Coverage includes public-to-CRM assignment/Agent visibility, idempotent retries, held writes, edit-as-new, shared rate limits, 404/503 distinctions, portrait fallback, accessible names/focus, keyboard navigation, four viewport widths, 200% text and reduced motion. Final desktop/mobile screenshots were reviewed with all fictional portraits loaded; runtime inspection reported no configuration or session errors. This verifies the fictional demo delivery only: real contact facts, profile/portrait approvals and live inquiry wording remain required before real-business publication.
+- **2026-10-27 — Review remediation evidence:** No roadmap feature or checklist state changed. Frontend API drift, lint, formatting, typecheck, 199 unit tests in 34 files and an isolated production build passed; backend `bun run check` passed with 94 tests in 23 files. Focused browser regressions confirm canonical whitespace phones, full pasted phone preservation, unknown-mode Contact copy, saved-receipt recovery and outcome-accurate pipeline announcements. Runtime inspection confirmed the expected checkout and a 390px Contact probe with no configuration or session errors, without submitting against the user dev server. The full browser run reported 163 passed, 8 intentional skips and one pointer-cancel test synchronization failure. After correcting the test to wait for settled drop-animation geometry and verify an active drag before Escape, that case passed three consecutive isolated reruns. All 164 applicable browser cases are covered across these runs; a single clean full-suite rerun is not claimed. The real-business publication gate remains unchecked.
 - For later deliveries, append the date, checklist IDs, actual feature-spec links, verification evidence and any remaining gaps.
 
 ---
@@ -315,3 +321,7 @@ Foundation smoke-test screenshots do not complete D-04: capture the delivered bu
 - **Pipeline and reports:** What event means Won, how is conversion calculated, and what timestamps define agent response time?
 - **Phase 2 selection:** Which two or three enhancements come first? Does WhatsApp mean a user-opened link or an automated messaging integration?
 - **Later release scope:** Confirm production versus portfolio delivery, hosting, language needs, and the requirements for each selected Phase 3 feature when it is prioritized.
+
+- **2026-10-27 — Shared-code naming maintenance verified:** [Shared-code naming and ownership](specs/shared-code-naming/spec.md) moves common transaction, HTTP and search helpers out of property-owned modules, separates LoadingState from skyline artwork and explicitly names PropertyInquiryCard. All imports and current documentation are reconciled. Frontend API drift, lint, formatting, TypeScript, 199 tests in 34 files and isolated production build passed; backend complete quality checks passed with 94 tests in 23 files, production build and disposable database verification. Isolated desktop/mobile smoke coverage passed 11 tests with one intentional mobile skip. Fresh scoped review found no actionable findings. No roadmap checklist state or real-business publication gate changed.
+
+- **2026-10-27 — Pipeline drag-stability correction verified:** The [sales-pipeline specification](specs/sales-pipeline/spec.md#drag-stability-correction--2026-10-27) records atomic stage refresh, removal of the conflicting drop animation, stable board/card status space and post-commit focus without scrolling. The 1480×807 forward/return regression stays within 2px for board height, viewport position and both scroll measurements; three consecutive final geometry/focus runs passed. Frontend API drift, lint, formatting, TypeScript, 199 unit tests and isolated production build passed. The complete pipeline suite passed 21 tests with three intentional mobile skips. Scoped review and active pipeline runtime diagnostics were clean. No API/schema/authorization, milestone checklist or real-business publication gate changed.

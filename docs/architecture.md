@@ -8,7 +8,7 @@ Agency business modules belong in `src/modules/<feature>/` and follow routes -> 
 
 Use small explicit functions/interfaces and ordinary composition. The `properties` module follows these layers for staff lifecycle/photo operations and public discovery. Its write mapper selects each allowed field before persistence, so runtime objects cannot introduce database fields despite their TypeScript type. Avoid empty scaffolds, generic base repositories and dependency injection containers. The leads module follows the same layers for inquiries, ownership, receipts and activity. See the [layering specification](../specs/business-module-layering/spec.md), [property route readability specification](../specs/property-route-readability/spec.md) and [lead-management specification](../specs/lead-management/spec.md).
 
-Better Auth deliberately retains its native endpoints, Prisma adapter, hooks and trusted operator integration. Do not wrap or reimplement credential/session operations to fit business-module layers. Health and public-image delivery are infrastructure rather than agency business modules. Shared infrastructure currently consists of configuration, logging, error handling, the database factory and public image storage.
+Better Auth deliberately retains its native endpoints, Prisma adapter, hooks and trusted operator integration. Do not wrap or reimplement credential/session operations to fit business-module layers. Health and public-image delivery are infrastructure rather than agency business modules. Shared infrastructure includes configuration, logging, errors, database creation and serialized transactions, HTTP guards, search normalization and public image storage.
 
 ## HTTP
 
@@ -31,3 +31,7 @@ All stored files are public images; private documents must use a separate author
 ## API contracts across repositories
 
 `docs/api/openapi.yaml` owns the implemented HTTP contract, including the supported native Better Auth subset, property endpoints and lead endpoints. Property details are in `specs/property-management/contract.md`, mirrored as `frontend/docs/contracts/properties.md`. The frontend uses pinned `openapi-typescript` to generate its committed types from that snapshot; `api:check` detects drift without writing. Lead details are in `specs/lead-management/contract.md`, mirrored as `frontend/docs/contracts/leads.md`. Add request/response schemas alongside future business endpoints and verify runtime validation against them.
+
+## Shared-code ownership
+
+`src/infrastructure/database/transaction.ts` owns `Database`, `Transaction` and `serializedTransaction` for property, lead and staff operations. It preserves a single per-client write queue and the existing transaction limits. `src/shared/http/middleware.ts` owns `noStore`, `requireTrustedOrigin` and `requireJsonContentType`; property photo preflight remains feature-owned. `src/shared/search/normalize-search-text.ts` owns `normalizeSearchText` (null-to-empty, NFC, lowercase); feature search fields and backfills remain local. Consumers import these modules directly, without property-owned forwarding exports. See the verified [naming maintenance specification](../specs/shared-code-naming/spec.md).

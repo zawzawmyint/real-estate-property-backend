@@ -55,9 +55,9 @@ All writes use explicitly mapped fields. Service owns authorization/resource eli
 
 ### Architecture
 
-Delivered module: `src/modules/leads/leads.routes.ts`, `leads.middleware.ts`, `leads.schema.ts`, `leads.controller.ts`, `leads.service.ts`, `leads.repository.ts`, `leads.dto.ts`, and feature-local `inquiry-limiter.ts`. Mount through the existing app composition. Business module layering and native-auth exception remain as documented.
+Delivered module: `src/modules/leads/leads.routes.ts`, `leads.schema.ts`, `leads.controller.ts`, `leads.service.ts`, `leads.repository.ts`, `leads.dto.ts`, and feature-local `inquiry-limiter.ts`. Mount through the existing app composition. Business module layering and native-auth exception remain as documented.
 
-Public inquiry abuse protection: bounded JSON, trusted Origin, feature-local per-client limiter and idempotency. Use configured proxy trust only; never trust arbitrary forwarded IP headers. If the public Server Action relays a client identifier, strip caller-supplied copies at the trusted ingress and specify this trust boundary in deployment docs. Do not derive every visitor's quota from the single frontend server address. Until that boundary is configured and tested, keep real-customer inquiry rollout blocked. No CAPTCHA, external provider or new infrastructure by default.
+Public inquiry abuse protection: bounded JSON, trusted Origin, feature-local per-client limiter and idempotency. The delivered [public contact and agent contract](../public-contact-and-agents/contract.md) adds property-independent `POST /public/inquiries`; it shares the same limiter instance and five-attempt rolling 15-minute budget with property inquiries. Use configured proxy trust only; never trust arbitrary forwarded IP headers. If the public Server Action relays a client identifier, strip caller-supplied copies at the trusted ingress and specify this trust boundary in deployment docs. Do not derive every visitor's quota from the single frontend server address. Until that boundary is configured and tested, keep real-customer inquiry rollout blocked. No CAPTCHA, external provider or new infrastructure by default.
 
 ## Acceptance criteria
 
@@ -83,3 +83,16 @@ Run `bun run check`, `bun run db:check`; frontend full quality checks and deskto
 Additive schema/routes are delivered. Back up populated SQLite before migration; test upgrade and foreign-key behavior in a disposable copy. Roll back application exposure before DB changes, retain new lead tables/data for recovery, never run a destructive rollback against collected inquiries. Operational owners must approve real-data retention/privacy wording and trusted proxy configuration before production collection.
 
 Delivered choices: manager-distributed inbox; only active Agent users are assignable; either contact method is accepted; AED rent budget is annual; follow-up is append-only; all stages transition; lead deletion is excluded. Verification on 2026-10-26: backend `bun run check` passed with 78 tests in 20 files, and disposable SQLite migration plus `bun run db:check` passed. Cross-repository browser coverage passed (96 tests and 4 existing viewport skips; focused lead flow 18/18). Production collection remains gated by deployment-owner privacy/retention review and trusted ingress configuration.
+
+## Review remediation — backend verification, 2026-10-27
+
+- [x] Canonicalize every JavaScript whitespace character in supplied phones to ASCII space, then trim before 3–40-character, allowed-character and digit validation; preserve repeated internal spaces.
+- [x] Public/staff lead input and catalog contacts share this policy; stored/search input and receipt hashes use normalized values, with equivalent whitespace submissions replaying without duplicate leads/events.
+- [x] Public inquiry persistence reuses one small helper while property and submission locks, operation scopes, guards and transaction boundaries remain unchanged.
+- [x] Backend OpenAPI and domain contracts document raw-input normalization and canonical public phone responses accurately.
+
+Backend evidence: the new phone/catalog/contract regression suite first failed all three tests; both whitespace-equivalent public inquiry regressions first returned 400 instead of 201. After implementation, the affected Leads, inquiry, catalog, ownership and concurrency suites passed 33/33 tests in seven files. The final backend quality gate then passed with 94 tests in 23 files, including lint, formatting, TypeScript and production build checks. Backend domain and merged OpenAPI phone schemas agree; frontend snapshot/generation also passed. This remediation adds no schema, migration, backend dependency or command change. The full browser run reported 163 passed, 8 intentional skips and one pointer-cancel test synchronization failure. After correcting the test to wait for settled drop-animation geometry and verify an active drag before Escape, that case passed three consecutive isolated reruns. All 164 applicable browser cases are covered across these runs; a single clean full-suite rerun is not claimed.
+
+## Current shared-helper ownership
+
+The [shared-code naming maintenance](../shared-code-naming/spec.md) removed the forwarding-only `leads.middleware.ts`. Routes import generic guards directly from `src/shared/http/middleware.ts` and enquiry protection from feature-owned `inquiry-limiter.ts`. Services use `serializedTransaction` from database infrastructure; repositories and search backfills use shared `normalizeSearchText`. Permissions, middleware order, transaction behavior and API contracts remain unchanged.

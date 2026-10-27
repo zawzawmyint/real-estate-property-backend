@@ -183,3 +183,27 @@ it('bounds limiter identities, expires the window and requires production relay 
     }),
   ).toThrow(/INQUIRY_RELAY_SECRET/);
 });
+
+it('replays property enquiries across equivalent whitespace and stores the canonical phone once', async () => {
+  const home = await property();
+  const payload = body({ phone: '\t+971\u00a0\u202f50-123\n' });
+  expect((await submit(home.id, payload)).status).toBe(201);
+  expect(
+    (await submit(home.id, { ...payload, phone: '+971  50-123' })).status,
+  ).toBe(200);
+  const receipt =
+    await fixture.database.leadSubmissionReceipt.findUniqueOrThrow({
+      where: { id: payload.submissionId },
+    });
+  const lead = await fixture.database.lead.findUniqueOrThrow({
+    where: { id: receipt.leadId },
+  });
+  expect(lead.phone).toBe('+971  50-123');
+  expect(lead.searchPhone).toBe('97150123');
+  expect(
+    await fixture.database.lead.count({ where: { propertyId: home.id } }),
+  ).toBe(1);
+  expect(
+    await fixture.database.leadActivity.count({ where: { leadId: lead.id } }),
+  ).toBe(1);
+});

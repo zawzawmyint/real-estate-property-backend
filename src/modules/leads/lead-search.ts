@@ -1,5 +1,5 @@
 import type { PrismaClient, Prisma } from '../../generated/prisma/client.js';
-import { foldSearch } from '../properties/property-search.js';
+import { normalizeSearchText } from '../../shared/search/normalize-search-text.js';
 import { leadSearch } from './leads.repository.js';
 async function* users(tx: Pick<Prisma.TransactionClient, 'user'>) {
   let cursor: string | undefined;
@@ -41,7 +41,7 @@ async function* leads(tx: Pick<Prisma.TransactionClient, 'lead'>) {
 }
 export async function verifyLeadSearch(database: PrismaClient) {
   for await (const user of users(database))
-    if (user.searchName !== foldSearch(user.name))
+    if (user.searchName !== normalizeSearchText(user.name))
       throw new Error(
         'Staff search data is inconsistent; stop writes and run bun run db:migrate',
       );
@@ -61,8 +61,8 @@ export async function backfillLeadSearch(database: PrismaClient) {
   await database.$transaction(
     async (tx) => {
       for await (const user of users(tx))
-        if (user.searchName !== foldSearch(user.name))
-          await tx.$executeRaw`UPDATE User SET searchName=${foldSearch(user.name)} WHERE id=${user.id}`;
+        if (user.searchName !== normalizeSearchText(user.name))
+          await tx.$executeRaw`UPDATE User SET searchName=${normalizeSearchText(user.name)} WHERE id=${user.id}`;
       for await (const lead of leads(tx)) {
         const fields = leadSearch(lead);
         if (

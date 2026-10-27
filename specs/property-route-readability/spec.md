@@ -39,3 +39,7 @@ Keep property route declarations small and explicit, name their middleware bound
 ## Risks and rollout
 
 Moving guards can accidentally change error precedence or body consumption. Preserve route ordering and verify through real HTTP tests rather than source-text assertions. Explicit write mapping can omit a legitimate field; cover the complete accepted mapping. Roll back the affected modules if needed; no migration or configuration rollback is required.
+
+## Current module locations
+
+The scope above records the original guard extraction. The later verified [shared-code naming maintenance](../shared-code-naming/spec.md) moved `noStore`, `requireTrustedOrigin` and `requireJsonContentType` into `src/shared/http/middleware.ts` for their existing property, lead and agency consumers. Only property photo-upload preflight remains in `src/modules/properties/properties.middleware.ts`. Middleware behavior and route order are unchanged.

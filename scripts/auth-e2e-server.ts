@@ -72,6 +72,26 @@ for (const project of ['desktop', 'mobile'])
       role: identity === 'other-agent' ? 'agent' : identity,
     });
 
+// Pipeline tests have their own sign-in budget alongside the lead regression suite.
+for (const project of ['desktop', 'mobile'])
+  for (const role of ['manager', 'agent'] as const)
+    await fixture.operator.create({
+      name: `Pipeline E2E ${project} ${role}`,
+      email: `e2e-pipeline-${project}-${role}@example.com`,
+      password,
+      role,
+    });
+
+// Contact journeys use a separate budget from existing lead/pipeline checks.
+for (const project of ['desktop', 'mobile'])
+  for (const role of ['manager', 'agent'] as const)
+    await fixture.operator.create({
+      name: `Contact E2E ${project} ${role}`,
+      email: `e2e-contact-${project}-${role}@example.com`,
+      password,
+      role,
+    });
+
 for (const project of ['desktop', 'mobile']) {
   const email = `e2e-lead-${project}-inactive@example.com`;
   const inactive = await fixture.operator.create({

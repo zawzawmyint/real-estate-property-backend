@@ -2,14 +2,14 @@ import express, { type Express } from 'express';
 import type { Env } from '../../config/env.js';
 import type { StaffAuth } from '../auth/auth.js';
 import { requireStaff } from '../auth/auth.middleware.js';
-import type { Database } from '../properties/properties.repository.js';
+import type { Database } from '../../infrastructure/database/transaction.js';
 import { createLeadController } from './leads.controller.js';
 import {
-  inquiryProtection,
   noStore,
   requireJsonContentType,
   requireTrustedOrigin,
-} from './leads.middleware.js';
+} from '../../shared/http/middleware.js';
+import { inquiryProtection } from './inquiry-limiter.js';
 import { createLeadService } from './leads.service.js';
 
 export function mountLeads(
@@ -20,13 +20,15 @@ export function mountLeads(
 ) {
   const controller = createLeadController(createLeadService(database)),
     staff = express.Router(),
-    inquiries = express.Router();
+    inquiries = express.Router(),
+    agencyInquiries = express.Router();
 
   const origin = requireTrustedOrigin(env.APP_ORIGIN),
     parseJson = express.json({ limit: '16kb' }),
     live = requireStaff(auth),
     managers = requireStaff(auth, ['admin', 'manager']);
   const write = [live, origin, requireJsonContentType, parseJson];
+  const protectInquiry = inquiryProtection(env);
 
   staff.use(noStore);
   staff.get('/', live, controller.list);
@@ -51,12 +53,23 @@ export function mountLeads(
   inquiries.post(
     '/:propertyId/inquiries',
     origin,
-    inquiryProtection(env),
+    protectInquiry,
     requireJsonContentType,
     parseJson,
     controller.inquiry,
   );
 
+  agencyInquiries.use(noStore);
+  agencyInquiries.post(
+    '/',
+    origin,
+    protectInquiry,
+    requireJsonContentType,
+    parseJson,
+    controller.agencyInquiry,
+  );
+
   app.use('/api/v1/staff/leads', staff);
   app.use('/api/v1/public/properties', inquiries);
+  app.use('/api/v1/public/inquiries', agencyInquiries);
 }

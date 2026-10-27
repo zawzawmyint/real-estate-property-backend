@@ -2,10 +2,10 @@ import { createHash } from 'node:crypto';
 import { AppError } from '../../shared/errors/app-error.js';
 import { isStaffRole } from '../auth/auth.js';
 import {
-  propertyTransaction,
+  serializedTransaction,
   type Database,
   type Transaction,
-} from '../properties/properties.repository.js';
+} from '../../infrastructure/database/transaction.js';
 import { activityDto, eligibleAgent, leadDto } from './leads.dto.js';
 import {
   createLeadRepository,
@@ -14,6 +14,7 @@ import {
   type LeadRecord,
 } from './leads.repository.js';
 import type {
+  AgencyInquiryInput,
   CandidateQuery,
   CreateInput,
   InquiryInput,
@@ -143,6 +144,32 @@ export function createLeadService(database: Database) {
     );
   }
 
+  async function persistPublicInquiry(
+    data: Omit<
+      Parameters<typeof repository.create>[0],
+      keyof ReturnType<typeof leadSearch>
+    > &
+      Parameters<typeof leadSearch>[0],
+    submissionId: string,
+    operation: 'inquiry' | 'agency_inquiry',
+    payloadHash: string,
+    tx: Transaction,
+  ) {
+    const lead = await repository.create({ ...data, ...leadSearch(data) }, tx);
+    await event(lead.id, 'created', null, {}, tx);
+    await repository.saveReceipt(
+      {
+        id: submissionId,
+        operation,
+        actorScope: 'public',
+        payloadHash,
+        leadId: lead.id,
+      },
+      tx,
+    );
+    return { replay: false };
+  }
+
   async function update(
     lead: LeadRecord,
     actor: Actor,
@@ -158,7 +185,7 @@ export function createLeadService(database: Database) {
   }
   return {
     async list(query: ListQuery, identity: Actor) {
-      return propertyTransaction(database, async (tx) => {
+      return serializedTransaction(database, async (tx) => {
         const actor = await current(identity, tx),
           view = query.view ?? (actor.role === 'agent' ? 'mine' : 'unassigned');
         if (
@@ -175,13 +202,13 @@ export function createLeadService(database: Database) {
     },
 
     async detail(id: string, identity: Actor) {
-      return propertyTransaction(database, async (tx) =>
+      return serializedTransaction(database, async (tx) =>
         leadDto(await owned(id, await current(identity, tx), tx), true),
       );
     },
 
     async activity(id: string, page: number, identity: Actor) {
-      return propertyTransaction(database, async (tx) => {
+      return serializedTransaction(database, async (tx) => {
         await owned(id, await current(identity, tx), tx);
         const result = await repository.activity(id, page, tx);
         return { ...result, items: result.items.map(activityDto) };
@@ -189,7 +216,7 @@ export function createLeadService(database: Database) {
     },
 
     async candidates(query: CandidateQuery, identity: Actor) {
-      return propertyTransaction(database, async (tx) => {
+      return serializedTransaction(database, async (tx) => {
         if ((await current(identity, tx)).role === 'agent') throw forbidden();
         return repository.candidates(query, tx);
       });
@@ -204,7 +231,7 @@ export function createLeadService(database: Database) {
           message: input.message ?? null,
         },
         payloadHash = hash(canonical);
-      return propertyTransaction(database, async (tx) => {
+      return serializedTransaction(database, async (tx) => {
         await repository.lockProperty(propertyId, tx);
         const replay = await receipt(
           input.submissionId,
@@ -215,14 +242,17 @@ export function createLeadService(database: Database) {
         );
         if (replay) return { replay: true };
         const property = await repository.property(propertyId, tx);
+
         if (!property)
           throw new AppError(404, 'NOT_FOUND', 'Property not found');
+
         const context = await propertyFields(
           propertyId,
           property.purpose,
           tx,
           true,
         );
+
         const data = {
           name: input.name,
           phone: input.phone ?? null,
@@ -237,22 +267,61 @@ export function createLeadService(database: Database) {
           originalMessage: input.message ?? null,
           ...context,
         };
-        const lead = await repository.create(
-          { ...data, ...leadSearch(data) },
+
+        return persistPublicInquiry(
+          data,
+          input.submissionId,
+          'inquiry',
+          payloadHash,
           tx,
         );
-        await event(lead.id, 'created', null, {}, tx);
-        await repository.saveReceipt(
-          {
-            id: input.submissionId,
-            operation: 'inquiry',
-            actorScope: 'public',
-            payloadHash,
-            leadId: lead.id,
-          },
+      });
+    },
+
+    async agencyInquiry(input: AgencyInquiryInput) {
+      const canonical = {
+          purpose: input.purpose,
+          name: input.name,
+          phone: input.phone ?? null,
+          email: input.email ?? null,
+          message: input.message,
+        },
+        payloadHash = hash(canonical);
+
+      return serializedTransaction(database, async (tx) => {
+        await repository.lockSubmission(input.submissionId, tx);
+        const replay = await receipt(
+          input.submissionId,
+          'agency_inquiry',
+          'public',
+          payloadHash,
           tx,
         );
-        return { replay: false };
+        if (replay) return { replay: true };
+
+        const data = {
+          name: input.name,
+          phone: input.phone ?? null,
+          email: input.email ?? null,
+          purpose: input.purpose,
+          originalMessage: input.message,
+          source: 'website',
+          stage: 'new',
+          budgetFils: null,
+          assignedAgentId: null,
+          assignedAgentNameSnapshot: null,
+          createdById: null,
+          propertyId: null,
+          propertyTitleSnapshot: null,
+          propertyLocationSnapshot: null,
+        };
+        return persistPublicInquiry(
+          data,
+          input.submissionId,
+          'agency_inquiry',
+          payloadHash,
+          tx,
+        );
       });
     },
 
@@ -268,7 +337,7 @@ export function createLeadService(database: Database) {
           assignedAgentId: input.assignedAgentId ?? null,
         },
         payloadHash = hash(canonical);
-      return propertyTransaction(database, async (tx) => {
+      return serializedTransaction(database, async (tx) => {
         await repository.lockUser(identity.id, tx);
         const actor = await current(identity, tx);
         const replay = await receipt(
@@ -341,7 +410,7 @@ export function createLeadService(database: Database) {
     },
 
     async patch(id: string, input: PatchInput, identity: Actor) {
-      return propertyTransaction(database, async (tx) => {
+      return serializedTransaction(database, async (tx) => {
         await repository.lock(id, tx);
         const actor = await current(identity, tx),
           before = await owned(id, actor, tx);
@@ -426,7 +495,7 @@ export function createLeadService(database: Database) {
       input: { expectedVersion: number; assignedAgentId: string | null },
       identity: Actor,
     ) {
-      return propertyTransaction(database, async (tx) => {
+      return serializedTransaction(database, async (tx) => {
         await repository.lock(id, tx);
         const actor = await current(identity, tx);
         if (actor.role === 'agent') throw forbidden();
@@ -473,7 +542,7 @@ export function createLeadService(database: Database) {
       input: { expectedVersion: number; stage: string },
       identity: Actor,
     ) {
-      return propertyTransaction(database, async (tx) => {
+      return serializedTransaction(database, async (tx) => {
         await repository.lock(id, tx);
         const actor = await current(identity, tx),
           before = await owned(id, actor, tx);
@@ -492,7 +561,7 @@ export function createLeadService(database: Database) {
     },
 
     async note(id: string, input: NoteInput, identity: Actor) {
-      return propertyTransaction(database, async (tx) => {
+      return serializedTransaction(database, async (tx) => {
         await repository.lock(id, tx);
         const actor = await current(identity, tx),
           before = await owned(id, actor, tx),

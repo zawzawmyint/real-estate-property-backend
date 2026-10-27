@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { leadFixture } from './lead-fixture.js';
-import { foldSearch } from '../src/modules/properties/property-search.js';
+import { normalizeSearchText } from '../src/shared/search/normalize-search-text.js';
 let f: Awaited<ReturnType<typeof leadFixture>>;
 beforeAll(async () => {
   f = await leadFixture();
@@ -15,7 +15,7 @@ it('paginates/counts literal normalized searches in SQLite with realistic owned 
       name,
       email: `contact${index}@example.test`,
       phone: '+971 (50) 123-4567',
-      searchName: foldSearch(name),
+      searchName: normalizeSearchText(name),
       searchEmail: `contact${index}@example.test`,
       searchPhone: '971501234567',
       searchPropertyTitle: '',
