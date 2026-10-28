@@ -10,6 +10,8 @@ This file defines project-wide scope and boundaries and indexes existing specifi
 
 ## Verified baseline
 
+- The [pull request branch naming workflow](specs/branch-naming/spec.md) is locally verified for PRs into main. GitHub-hosted execution and required-check activation remain pending.
+
 - Dedicated disposable desktop/mobile pipeline Manager and Agent identities isolate browser sign-in budgets. The frontend Kanban reuses existing lead APIs and permissions; this delivery adds no production API or schema change. See the verified [sales-pipeline integration fixture](specs/sales-pipeline/spec.md).
 
 - Express application factory, health endpoint, structured errors, request IDs, validated configuration and logging.

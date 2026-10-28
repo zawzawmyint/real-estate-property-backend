@@ -1,0 +1,28 @@
+name: Branch naming
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, edited]
+permissions: {}
+jobs:
+  branch-name:
+    name: Branch name
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Validate source branch
+        shell: bash
+        env:
+          PR_BRANCH: ${{ github.head_ref }}
+        run: |
+          node <<'NODE'
+          const branch = process.env.PR_BRANCH ?? '';
+          const pattern = /^(feat|fix|refactor|docs|test|chore|ci)\/[a-z0-9]+(-[a-z0-9]+)*$/;
+
+          if (!branch || branch.match(pattern)?.[0] !== branch) {
+            console.error('::error::Use feat/, fix/, refactor/, docs/, test/, chore/ or ci/ followed by lowercase words separated by single hyphens. Example: feat/property-favorites');
+            process.exit(1);
+          }
+
+          console.log('Branch name matches the required format.');
+          NODE
