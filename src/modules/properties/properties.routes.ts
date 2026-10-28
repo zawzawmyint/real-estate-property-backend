@@ -5,13 +5,13 @@ import type { Storage } from '../../infrastructure/storage/storage.js';
 import type { StaffAuth } from '../auth/auth.js';
 import { requireStaff } from '../auth/auth.middleware.js';
 import { createPropertyController } from './properties.controller.js';
+import { requirePropertyPhotoUpload } from './properties.middleware.js';
 import {
   noStore,
   requireJsonContentType,
-  requirePropertyPhotoUpload,
   requireTrustedOrigin,
-} from './properties.middleware.js';
-import type { Database } from './properties.repository.js';
+} from '../../shared/http/middleware.js';
+import type { Database } from '../../infrastructure/database/transaction.js';
 import { createPropertyService } from './properties.service.js';
 
 export function mountProperties(

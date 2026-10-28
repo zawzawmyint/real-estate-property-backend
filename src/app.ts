@@ -15,14 +15,16 @@ import { healthRouter } from './modules/health/health.routes.js';
 import { AppError } from './shared/errors/app-error.js';
 import { createLogger } from './shared/logger.js';
 import { mountProperties } from './modules/properties/properties.routes.js';
-import type { Database } from './modules/properties/properties.repository.js';
+import type { Database } from './infrastructure/database/transaction.js';
 import type { Storage } from './infrastructure/storage/storage.js';
+import { mountAgency } from './modules/agency/agency.routes.js';
 
 export function createApp(
   env: Env,
   auth: StaffAuth,
   database: Database,
   propertyStorage?: Storage,
+  readAgencyCatalog?: () => unknown,
 ) {
   const app = express();
   const logger = createLogger(env.LOG_LEVEL);
@@ -50,6 +52,7 @@ export function createApp(
 
   mountAuth(app, auth, env);
   mountLeads(app, auth, env, database);
+  mountAgency(app, readAgencyCatalog);
   mountProperties(app, auth, env, database, propertyStorage ?? storage, logger);
 
   app.use(express.json({ limit: '100kb' }));

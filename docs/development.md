@@ -45,6 +45,12 @@ For manual checks, start the migrated backend on 4311 and sibling frontend on 31
 
 After applying migrations to a local or demo database, run `bun run demo:seed -- --confirm-demo`. The command refuses `NODE_ENV=production`, refuses missing or unknown arguments before connecting, adds only missing deterministic demo records, and never resets or overwrites existing records. It creates 15 fictional published listings from the versioned fixture library in `fixtures/demo-properties/photos`; all stored runtime copies receive generated keys. The fixture [README](../fixtures/demo-properties/README.md) records image provenance and reuse. Demo records and images are illustrative and must remain visibly labelled in the frontend.
 
+## Public agency catalog and portraits
+
+The public Contact/Agents catalog is authored in [`src/modules/agency/agency.catalog.ts`](../src/modules/agency/agency.catalog.ts), not in a live CMS or Better Auth. Edit only approved public fields and each profile's `published` flag; the catalog has no automatic synchronization with staff accounts. Direct phone, email, address and map values stay `null`, and office hours stay an empty array, until approved for public use. The shipped catalog is fictional demo content (`isDemo: true`), so the public pages remain noindex.
+
+Deploy catalog changes together with matching frontend portraits at `frontend/public/images/agents/`. Every referenced portrait must be a local 800×1000 WebP file, and its provenance must be recorded in the frontend directory's `README.md`. Coordinate the two repository deployments so a published catalog path never points to a missing asset. Before real-business publication, obtain approved agency contact details, profile/portrait approval and inquiry usage wording, set the relevant demo flags correctly, and verify the catalog/asset pair. See the [public contact and agent feature specification](../specs/public-contact-and-agents/spec.md) and [contract](../specs/public-contact-and-agents/contract.md).
+
 ## Media reconciliation
 
 Use this procedure only in a maintenance window after a property cleanup log reports a `storageKey` and `requestId`. It handles a successful database commit followed by a failed physical deletion. Do not delete a file while the database outcome is uncertain.

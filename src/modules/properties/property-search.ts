@@ -1,7 +1,6 @@
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
 
-export const foldSearch = (value: string | null) =>
-  (value ?? '').normalize('NFC').toLowerCase();
+import { normalizeSearchText } from '../../shared/search/normalize-search-text.js';
 
 export function propertySearchFields(input: {
   title?: string | undefined;
@@ -10,11 +9,13 @@ export function propertySearchFields(input: {
 }) {
   return {
     ...(input.title !== undefined
-      ? { searchTitle: foldSearch(input.title) }
+      ? { searchTitle: normalizeSearchText(input.title) }
       : {}),
-    ...(input.city !== undefined ? { searchCity: foldSearch(input.city) } : {}),
+    ...(input.city !== undefined
+      ? { searchCity: normalizeSearchText(input.city) }
+      : {}),
     ...(input.community !== undefined
-      ? { searchCommunity: foldSearch(input.community) }
+      ? { searchCommunity: normalizeSearchText(input.community) }
       : {}),
   };
 }

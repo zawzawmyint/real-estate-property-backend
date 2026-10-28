@@ -10,6 +10,8 @@ This file defines project-wide scope and boundaries and indexes existing specifi
 
 ## Verified baseline
 
+- Dedicated disposable desktop/mobile pipeline Manager and Agent identities isolate browser sign-in budgets. The frontend Kanban reuses existing lead APIs and permissions; this delivery adds no production API or schema change. See the verified [sales-pipeline integration fixture](specs/sales-pipeline/spec.md).
+
 - Express application factory, health endpoint, structured errors, request IDs, validated configuration and logging.
 - Prisma/SQLite connection verification and Better Auth User, Session, Account and Verification schema migrations.
 - Local storage adapter, public image delivery and validated public-property uploads; no private-document storage.
@@ -27,7 +29,11 @@ The [project review remediation](specs/project-review-remediation/spec.md) verif
 
 ## Planned product scope
 
-Remaining backend work includes pipeline Kanban, viewing, task and reporting workflows. Later enhancements and the optional client portal remain subject to the roadmap.
+Remaining backend work includes viewing, task and reporting workflows. The frontend pipeline is verified against the existing lead API. Later enhancements and the optional client portal remain subject to the roadmap.
+
+The verified [public contact and agent pages specification](specs/public-contact-and-agents/spec.md) additionally records the public editorial content boundary and property-independent enquiries into existing lead persistence. Its [contract](specs/public-contact-and-agents/contract.md) is implemented. The fictional demo delivery is complete; real-business publication remains an operational content/approval gate.
+
+The 2026-10-27 review remediation retains the existing API, permissions, schema and delivery scope while canonicalizing phone whitespace before validation/search/receipt hashing and preserving separate property/context and submission locks around shared public-inquiry persistence. The affected feature specs record completed focused evidence. The full browser run reported 163 passed, 8 intentional skips and one pointer-cancel test synchronization failure. After correcting the test to wait for settled drop-animation geometry and verify an active drag before Escape, that case passed three consecutive isolated reruns. All 164 applicable browser cases are covered across these runs; a single clean full-suite rerun is not claimed.
 
 Staff authentication and Admin/Manager/Agent identities, property management, public discovery APIs and lead ownership are delivered within the verified baseline above.
 
@@ -54,6 +60,8 @@ The auth implementation uses Better Auth 1.7.12's native server handler in Expre
 - [AGENTS.md](AGENTS.md): contribution instructions; [architecture](docs/architecture.md): implemented technical boundaries.
 
 Keep this overview current as features are verified. Do not duplicate full feature requirements here. If documents disagree, reconcile them before implementation; do not silently override a feature contract. Shared documents use the frontend-first synchronization policy; this project-specific spec is maintained independently of the frontend root spec. The [homepage mockup](docs/design/homepage-maroon-ivory-charcoal.png) records frontend design direction, not backend functionality.
+
+The verified [shared-code naming maintenance](specs/shared-code-naming/spec.md) aligns reusable infrastructure and UI names with their actual ownership. All callers use the new module paths directly; business behavior, API contracts, permissions and roadmap completion states are unchanged.
 
 ## Validation
 

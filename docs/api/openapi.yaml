@@ -960,7 +960,7 @@ paths:
         {
           'operationId': 'submitPropertyInquiry',
           'summary': 'Capture an unassigned website lead',
-          'description': 'Exact APP_ORIGIN and JSON <=16KiB. Forces New/unassigned website lead with property purpose/snapshots. No lead identifiers returned. Same canonical submission replays even after property unavailability. Five attempts per signed client/socket in rolling 15 minutes; invalid attempts and replays count. Single-process bounded limiter; saturated map fails closed. Server relay sends HMAC-SHA256(INQUIRY_RELAY_SECRET, real ingress identity) as x-inquiry-client-key and HMAC-SHA256(secret, clientKey) as x-inquiry-relay-signature. Untrusted relay headers rejected; raw forwarded headers ignored; direct calls use socket identity.',
+          'description': 'Exact APP_ORIGIN and JSON <=16KiB. Forces New/unassigned website lead with property purpose/snapshots. No lead identifiers returned. Same canonical submission replays even after property unavailability. Five attempts shared with POST /api/v1/public/inquiries per signed client/socket in rolling 15 minutes; invalid attempts and replays count. Single-process bounded limiter; saturated map fails closed. Server relay sends HMAC-SHA256(INQUIRY_RELAY_SECRET, real ingress identity) as x-inquiry-client-key and HMAC-SHA256(secret, clientKey) as x-inquiry-relay-signature. Untrusted relay headers rejected; raw forwarded headers ignored; direct calls use socket identity.',
           'parameters':
             [
               {
@@ -2486,6 +2486,270 @@ paths:
             ],
         },
     }
+  /api/v1/public/agency:
+    get:
+      operationId: getPublicAgency
+      summary: getPublicAgency
+      description: Anonymous, read-only curated editorial content, independent of staff accounts. No query parameters accepted; unknown or duplicate query keys return 400. Catalog validation fails closed for all content routes. Plain-text content; no internal editorial or auth fields.
+      responses:
+        '200':
+          description: Public content
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+            X-Request-Id:
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicAgency'
+        '400':
+          description: Query parameters are not supported
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+            X-Request-Id:
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicAgencyApiError'
+        '503':
+          description: Public agency content is unavailable
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+            X-Request-Id:
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicAgencyApiError'
+  /api/v1/public/agents:
+    get:
+      operationId: listPublicAgents
+      summary: listPublicAgents
+      description: Anonymous, read-only curated editorial content, independent of staff accounts. No query parameters accepted; unknown or duplicate query keys return 400. Catalog validation fails closed for all content routes. Plain-text content; no internal editorial or auth fields.
+      responses:
+        '200':
+          description: Public content
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+            X-Request-Id:
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicAgentDirectory'
+        '400':
+          description: Query parameters are not supported
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+            X-Request-Id:
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicAgencyApiError'
+        '503':
+          description: Public agency content is unavailable
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+            X-Request-Id:
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicAgencyApiError'
+  /api/v1/public/agents/{slug}:
+    get:
+      operationId: getPublicAgent
+      summary: getPublicAgent
+      description: Anonymous, read-only curated editorial content, independent of staff accounts. No query parameters accepted; unknown or duplicate query keys return 400. Catalog validation fails closed for all content routes. Plain-text content; no internal editorial or auth fields.
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 80
+            pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+      responses:
+        '200':
+          description: Public content
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+            X-Request-Id:
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicAgentDetail'
+        '400':
+          description: Query parameters are not supported
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+            X-Request-Id:
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicAgencyApiError'
+        '404':
+          description: Malformed, unknown or unpublished agent slug
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+            X-Request-Id:
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicAgencyApiError'
+        '503':
+          description: Public agency content is unavailable
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+            X-Request-Id:
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicAgencyApiError'
+  /api/v1/public/inquiries:
+    post:
+      operationId: submitAgencyInquiry
+      summary: Capture a property-independent unassigned website lead
+      description: Exact APP_ORIGIN; trusted inquiry relay; JSON <=16KiB. Required purpose (sale/rent), message and at least one phone/email. Server controls Website/New/unassigned/null property and budget. Atomic lead, created activity and agency_inquiry receipt. Identical canonical replay returns acknowledgement; changed payload or cross-operation ID reuse returns 409. Responses never expose lead IDs or submitted values. Shares one five-attempt / 15-minute budget with property inquiries, including invalid/replayed attempts. Existing signed-client/socket and bounded single-process limiter semantics apply.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgencyInquiryInput'
+      responses:
+        '200':
+          description: Matching submission replay
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InquiryReceipt'
+        '201':
+          description: Committed inquiry
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InquiryReceipt'
+        '400':
+          description: Safe error envelope; no submitted contact or internal exception details.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadApiError'
+        '403':
+          description: Safe error envelope; no submitted contact or internal exception details.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadApiError'
+        '409':
+          description: Safe error envelope; no submitted contact or internal exception details.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadApiError'
+        '413':
+          description: Safe error envelope; no submitted contact or internal exception details.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadApiError'
+        '415':
+          description: Safe error envelope; no submitted contact or internal exception details.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadApiError'
+        '429':
+          description: Safe error envelope; no submitted contact or internal exception details.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadApiError'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+        '500':
+          description: Safe error envelope; no submitted contact or internal exception details.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadApiError'
+        '503':
+          description: Safe error envelope; no submitted contact or internal exception details.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadApiError'
 components:
   securitySchemes:
     staffCookie:
@@ -2539,6 +2803,293 @@ components:
           },
       }
   schemas:
+    AgentPortrait:
+      type: object
+      additionalProperties: false
+      required:
+        - src
+        - width
+        - height
+      properties:
+        src:
+          type: string
+          pattern: ^/images/agents/[a-z0-9-]+\.webp$
+        width:
+          type: integer
+          minimum: 1
+        height:
+          type: integer
+          minimum: 1
+    PublicAgency:
+      type: object
+      additionalProperties: false
+      required:
+        - name
+        - isDemo
+        - phone
+        - email
+        - address
+        - officeHours
+        - timeZone
+        - mapUrl
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        isDemo:
+          type: boolean
+        phone:
+          {
+            'type': ['string', 'null'],
+            'minLength': 3,
+            'maxLength': 40,
+            'pattern': "^[+\\d ()-]*\\d[+\\d ()-]*$",
+            'description': 'Canonical phone: ASCII spaces only, trimmed, 3-40 characters and at least one digit. Repeated internal spaces are preserved.',
+          }
+        email:
+          type:
+            - string
+            - 'null'
+          format: email
+          maxLength: 254
+        address:
+          type:
+            - string
+            - 'null'
+          minLength: 1
+          maxLength: 500
+        officeHours:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+              - days
+              - hours
+            properties:
+              days:
+                type: string
+                minLength: 1
+                maxLength: 120
+              hours:
+                type: string
+                minLength: 1
+                maxLength: 120
+          minItems: 0
+          maxItems: 7
+        timeZone:
+          type: string
+          const: Asia/Dubai
+        mapUrl:
+          type:
+            - string
+            - 'null'
+          format: uri
+          pattern: ^https://
+          description: Approved absolute HTTPS URL without credentials.
+    PublicAgentSummary:
+      type: object
+      additionalProperties: false
+      required:
+        - slug
+        - name
+        - title
+        - specialties
+        - portrait
+        - isDemo
+      properties:
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 80
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        specialties:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 80
+          minItems: 0
+          maxItems: 8
+        portrait:
+          anyOf:
+            - $ref: '#/components/schemas/AgentPortrait'
+            - type: 'null'
+        isDemo:
+          type: boolean
+    PublicAgentDetail:
+      type: object
+      additionalProperties: false
+      required:
+        - slug
+        - name
+        - title
+        - specialties
+        - portrait
+        - isDemo
+        - introduction
+        - biography
+        - languages
+        - publicPhone
+        - publicEmail
+      properties:
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 80
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        specialties:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 80
+          minItems: 0
+          maxItems: 8
+        portrait:
+          anyOf:
+            - $ref: '#/components/schemas/AgentPortrait'
+            - type: 'null'
+        isDemo:
+          type: boolean
+        introduction:
+          type: string
+          minLength: 1
+          maxLength: 320
+        biography:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 1500
+          minItems: 1
+          maxItems: 3
+        languages:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 80
+          minItems: 0
+          maxItems: 8
+        publicPhone:
+          {
+            'type': ['string', 'null'],
+            'minLength': 3,
+            'maxLength': 40,
+            'pattern': "^[+\\d ()-]*\\d[+\\d ()-]*$",
+            'description': 'Canonical phone: ASCII spaces only, trimmed, 3-40 characters and at least one digit. Repeated internal spaces are preserved.',
+          }
+        publicEmail:
+          type:
+            - string
+            - 'null'
+          format: email
+          maxLength: 254
+    PublicAgentDirectory:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+        - total
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicAgentSummary'
+          minItems: 0
+          maxItems: 24
+        total:
+          type: integer
+          minimum: 0
+          maximum: 24
+          description: Equals items.length. Published profiles only, sorted by name then slug using UTF-16 code-unit comparison.
+    PublicAgencyApiError:
+      type: object
+      additionalProperties: false
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required:
+            - code
+            - message
+            - requestId
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            requestId:
+              type: string
+    AgencyInquiryInput:
+      type: object
+      additionalProperties: false
+      required:
+        - submissionId
+        - name
+        - purpose
+        - message
+      properties:
+        submissionId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        phone:
+          {
+            'type': ['string', 'null'],
+            'minLength': 3,
+            'pattern': "^[+\\d\\s()-]*\\d[+\\d\\s()-]*$",
+            'description': 'Every JavaScript whitespace character is replaced with ASCII space, then trimmed before validation. The canonical phone must be 3-40 characters, contain a digit, and use only plus, digits, ASCII spaces, parentheses or hyphens. Repeated internal spaces are preserved. At least one phone or email is required.',
+          }
+        email:
+          type:
+            - string
+            - 'null'
+          format: email
+          maxLength: 254
+        message:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        purpose:
+          type: string
+          enum:
+            - sale
+            - rent
+      anyOf:
+        - required:
+            - phone
+          properties:
+            phone:
+              type: string
+        - required:
+            - email
+          properties:
+            email:
+              type: string
     Photo:
       {
         'type': 'object',
@@ -3204,8 +3755,8 @@ components:
                 'type': ['string', 'null'],
                 'minLength': 3,
                 'maxLength': 40,
-                'pattern': "^[+\\d ()-]+$",
-                'description': 'Must contain a digit; at least one phone or email required.',
+                'pattern': "^[+\\d ()-]*\\d[+\\d ()-]*$",
+                'description': 'Canonical phone: ASCII spaces only, trimmed, 3-40 characters and at least one digit. Repeated internal spaces are preserved.',
               },
             'email':
               {
@@ -3281,9 +3832,8 @@ components:
               {
                 'type': ['string', 'null'],
                 'minLength': 3,
-                'maxLength': 40,
-                'pattern': "^[+\\d ()-]+$",
-                'description': 'Must contain a digit; at least one phone or email required.',
+                'pattern': "^[+\\d\\s()-]*\\d[+\\d\\s()-]*$",
+                'description': 'Every JavaScript whitespace character is replaced with ASCII space, then trimmed before validation. The canonical phone must be 3-40 characters, contain a digit, and use only plus, digits, ASCII spaces, parentheses or hyphens. Repeated internal spaces are preserved. At least one phone or email is required.',
               },
             'email':
               {
@@ -3308,9 +3858,8 @@ components:
               {
                 'type': ['string', 'null'],
                 'minLength': 3,
-                'maxLength': 40,
-                'pattern': "^[+\\d ()-]+$",
-                'description': 'Must contain a digit; at least one phone or email required.',
+                'pattern': "^[+\\d\\s()-]*\\d[+\\d\\s()-]*$",
+                'description': 'Every JavaScript whitespace character is replaced with ASCII space, then trimmed before validation. The canonical phone must be 3-40 characters, contain a digit, and use only plus, digits, ASCII spaces, parentheses or hyphens. Repeated internal spaces are preserved. At least one phone or email is required.',
               },
             'email':
               {
@@ -3346,9 +3895,8 @@ components:
               {
                 'type': ['string', 'null'],
                 'minLength': 3,
-                'maxLength': 40,
-                'pattern': "^[+\\d ()-]+$",
-                'description': 'Must contain a digit; at least one phone or email required.',
+                'pattern': "^[+\\d\\s()-]*\\d[+\\d\\s()-]*$",
+                'description': 'Every JavaScript whitespace character is replaced with ASCII space, then trimmed before validation. The canonical phone must be 3-40 characters, contain a digit, and use only plus, digits, ASCII spaces, parentheses or hyphens. Repeated internal spaces are preserved. At least one phone or email is required.',
               },
             'email':
               {
@@ -3478,8 +4026,8 @@ components:
                 'type': ['string', 'null'],
                 'minLength': 3,
                 'maxLength': 40,
-                'pattern': "^[+\\d ()-]+$",
-                'description': 'Must contain a digit; at least one phone or email required.',
+                'pattern': "^[+\\d ()-]*\\d[+\\d ()-]*$",
+                'description': 'Canonical phone: ASCII spaces only, trimmed, 3-40 characters and at least one digit. Repeated internal spaces are preserved.',
               },
             'email':
               {

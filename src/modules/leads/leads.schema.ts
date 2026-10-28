@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { phoneSchema } from '../../shared/validation/phone.js';
 import { AppError } from '../../shared/errors/app-error.js';
 
 export const stages = [
@@ -12,12 +13,7 @@ export const stages = [
 const text = (max: number) => z.string().trim().min(1).max(max);
 const contact = {
   name: text(120),
-  phone: text(40)
-    .min(3)
-    .regex(/^[+\d ()-]+$/)
-    .regex(/\d/)
-    .nullable()
-    .optional(),
+  phone: phoneSchema.nullable().optional(),
   email: z
     .string()
     .trim()
@@ -48,6 +44,15 @@ export const inquirySchema = z
     ...contact,
     submissionId: z.uuid(),
     message: text(2000).nullable().optional(),
+  })
+  .refine(hasContact);
+
+export const agencyInquirySchema = z
+  .strictObject({
+    ...contact,
+    submissionId: z.uuid(),
+    purpose: z.enum(['sale', 'rent']),
+    message: text(2000),
   })
   .refine(hasContact);
 
@@ -126,6 +131,8 @@ export function parseQuery<T>(schema: z.ZodType<T>, url: string): T {
 export type CreateInput = z.infer<typeof createSchema>;
 
 export type InquiryInput = z.infer<typeof inquirySchema>;
+
+export type AgencyInquiryInput = z.infer<typeof agencyInquirySchema>;
 
 export type PatchInput = z.infer<typeof patchSchema>;
 

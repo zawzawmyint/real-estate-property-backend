@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import type { Actor } from './leads.repository.js';
 import type { LeadService } from './leads.service.js';
 import {
+  agencyInquirySchema,
   assignmentSchema,
   candidatesSchema,
   createSchema,
@@ -52,6 +53,13 @@ export function createLeadController(service: LeadService) {
       const result = await service.inquiry(
         parseId(req.params.propertyId),
         parse(inquirySchema, req.body),
+      );
+      res.status(result.replay ? 200 : 201).json({ received: true });
+    },
+
+    async agencyInquiry(req: Request, res: Response) {
+      const result = await service.agencyInquiry(
+        parse(agencyInquirySchema, req.body),
       );
       res.status(result.replay ? 200 : 201).json({ received: true });
     },

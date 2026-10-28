@@ -2,8 +2,8 @@ import { Prisma } from '../../generated/prisma/client.js';
 import type {
   Database,
   Transaction,
-} from '../properties/properties.repository.js';
-import { foldSearch } from '../properties/property-search.js';
+} from '../../infrastructure/database/transaction.js';
+import { normalizeSearchText } from '../../shared/search/normalize-search-text.js';
 import type { CandidateQuery, ListQuery } from './leads.schema.js';
 
 export type Actor = {
@@ -83,14 +83,19 @@ export const leadSearch = (value: {
   email: string | null;
   propertyTitleSnapshot: string | null;
 }) => ({
-  searchName: foldSearch(value.name),
+  searchName: normalizeSearchText(value.name),
   searchPhone: phoneSearch(value.phone),
-  searchEmail: foldSearch(value.email),
-  searchPropertyTitle: foldSearch(value.propertyTitleSnapshot),
+  searchEmail: normalizeSearchText(value.email),
+  searchPropertyTitle: normalizeSearchText(value.propertyTitleSnapshot),
 });
 
 export function createLeadRepository(database: Database) {
   return {
+    lockSubmission(id: string, tx: Transaction) {
+      // Acquire SQLite's write reservation before reading a possibly absent receipt.
+      return tx.$executeRaw`UPDATE LeadSubmissionReceipt SET id=id WHERE id=${id}`;
+    },
+
     lock(id: string, tx: Transaction) {
       return tx.$executeRaw`UPDATE Lead SET version=version WHERE id=${id}`;
     },
@@ -219,7 +224,7 @@ export function createLeadRepository(database: Database) {
       if (query.stage) clauses.push(Prisma.sql`stage=${query.stage}`);
       if (query.source) clauses.push(Prisma.sql`source=${query.source}`);
       if (query.q) {
-        const text = foldSearch(query.q),
+        const text = normalizeSearchText(query.q),
           phone = phoneSearch(query.q);
         clauses.push(
           Prisma.sql`(instr(searchName,${text})>0 OR instr(searchEmail,${text})>0 OR instr(searchPropertyTitle,${text})>0 ${phone ? Prisma.sql`OR instr(searchPhone,${phone})>0` : Prisma.empty})`,
@@ -260,7 +265,7 @@ export function createLeadRepository(database: Database) {
     },
 
     async candidates(query: CandidateQuery, tx: Transaction) {
-      const term = foldSearch(query.q ?? '');
+      const term = normalizeSearchText(query.q ?? '');
       const predicate = Prisma.sql`role='agent' AND disabled=false AND (banned=false OR banned IS NULL) AND instr(searchName,${term})>0`;
       const counts = await tx.$queryRaw<
         Array<{ total: bigint }>

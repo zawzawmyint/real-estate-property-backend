@@ -1,0 +1,586 @@
+{
+  'openapi': '3.1.0',
+  'info':
+    {
+      'title': 'Public agency and agents API',
+      'version': '1.0.0',
+      'description': 'Backend-owned public editorial content contract. Fictional demo profiles until real content is approved.',
+    },
+  'servers': [{ 'url': 'http://localhost:4311' }],
+  'paths':
+    {
+      '/api/v1/public/agency':
+        {
+          'get':
+            {
+              'operationId': 'getPublicAgency',
+              'summary': 'getPublicAgency',
+              'description': 'Anonymous, read-only curated editorial content, independent of staff accounts. No query parameters accepted; unknown or duplicate query keys return 400. Catalog validation fails closed for all content routes. Plain-text content; no internal editorial or auth fields.',
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': 'Public content',
+                      'headers':
+                        {
+                          'Cache-Control':
+                            {
+                              'schema':
+                                { 'type': 'string', 'const': 'no-store' },
+                            },
+                          'X-Request-Id':
+                            {
+                              'schema': { 'type': 'string', 'format': 'uuid' },
+                            },
+                        },
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/PublicAgency' },
+                            },
+                        },
+                    },
+                  '400':
+                    {
+                      'description': 'Query parameters are not supported',
+                      'headers':
+                        {
+                          'Cache-Control':
+                            {
+                              'schema':
+                                { 'type': 'string', 'const': 'no-store' },
+                            },
+                          'X-Request-Id':
+                            {
+                              'schema': { 'type': 'string', 'format': 'uuid' },
+                            },
+                        },
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  '$ref': '#/components/schemas/PublicAgencyApiError',
+                                },
+                            },
+                        },
+                    },
+                  '503':
+                    {
+                      'description': 'Public agency content is unavailable',
+                      'headers':
+                        {
+                          'Cache-Control':
+                            {
+                              'schema':
+                                { 'type': 'string', 'const': 'no-store' },
+                            },
+                          'X-Request-Id':
+                            {
+                              'schema': { 'type': 'string', 'format': 'uuid' },
+                            },
+                        },
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  '$ref': '#/components/schemas/PublicAgencyApiError',
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/v1/public/agents':
+        {
+          'get':
+            {
+              'operationId': 'listPublicAgents',
+              'summary': 'listPublicAgents',
+              'description': 'Anonymous, read-only curated editorial content, independent of staff accounts. No query parameters accepted; unknown or duplicate query keys return 400. Catalog validation fails closed for all content routes. Plain-text content; no internal editorial or auth fields.',
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': 'Public content',
+                      'headers':
+                        {
+                          'Cache-Control':
+                            {
+                              'schema':
+                                { 'type': 'string', 'const': 'no-store' },
+                            },
+                          'X-Request-Id':
+                            {
+                              'schema': { 'type': 'string', 'format': 'uuid' },
+                            },
+                        },
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  '$ref': '#/components/schemas/PublicAgentDirectory',
+                                },
+                            },
+                        },
+                    },
+                  '400':
+                    {
+                      'description': 'Query parameters are not supported',
+                      'headers':
+                        {
+                          'Cache-Control':
+                            {
+                              'schema':
+                                { 'type': 'string', 'const': 'no-store' },
+                            },
+                          'X-Request-Id':
+                            {
+                              'schema': { 'type': 'string', 'format': 'uuid' },
+                            },
+                        },
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  '$ref': '#/components/schemas/PublicAgencyApiError',
+                                },
+                            },
+                        },
+                    },
+                  '503':
+                    {
+                      'description': 'Public agency content is unavailable',
+                      'headers':
+                        {
+                          'Cache-Control':
+                            {
+                              'schema':
+                                { 'type': 'string', 'const': 'no-store' },
+                            },
+                          'X-Request-Id':
+                            {
+                              'schema': { 'type': 'string', 'format': 'uuid' },
+                            },
+                        },
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  '$ref': '#/components/schemas/PublicAgencyApiError',
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/v1/public/agents/{slug}':
+        {
+          'get':
+            {
+              'operationId': 'getPublicAgent',
+              'summary': 'getPublicAgent',
+              'description': 'Anonymous, read-only curated editorial content, independent of staff accounts. No query parameters accepted; unknown or duplicate query keys return 400. Catalog validation fails closed for all content routes. Plain-text content; no internal editorial or auth fields.',
+              'parameters':
+                [
+                  {
+                    'in': 'path',
+                    'name': 'slug',
+                    'required': true,
+                    'schema':
+                      {
+                        'type': 'string',
+                        'minLength': 1,
+                        'maxLength': 80,
+                        'pattern': '^[a-z0-9]+(?:-[a-z0-9]+)*$',
+                      },
+                  },
+                ],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': 'Public content',
+                      'headers':
+                        {
+                          'Cache-Control':
+                            {
+                              'schema':
+                                { 'type': 'string', 'const': 'no-store' },
+                            },
+                          'X-Request-Id':
+                            {
+                              'schema': { 'type': 'string', 'format': 'uuid' },
+                            },
+                        },
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  '$ref': '#/components/schemas/PublicAgentDetail',
+                                },
+                            },
+                        },
+                    },
+                  '400':
+                    {
+                      'description': 'Query parameters are not supported',
+                      'headers':
+                        {
+                          'Cache-Control':
+                            {
+                              'schema':
+                                { 'type': 'string', 'const': 'no-store' },
+                            },
+                          'X-Request-Id':
+                            {
+                              'schema': { 'type': 'string', 'format': 'uuid' },
+                            },
+                        },
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  '$ref': '#/components/schemas/PublicAgencyApiError',
+                                },
+                            },
+                        },
+                    },
+                  '404':
+                    {
+                      'description': 'Malformed, unknown or unpublished agent slug',
+                      'headers':
+                        {
+                          'Cache-Control':
+                            {
+                              'schema':
+                                { 'type': 'string', 'const': 'no-store' },
+                            },
+                          'X-Request-Id':
+                            {
+                              'schema': { 'type': 'string', 'format': 'uuid' },
+                            },
+                        },
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  '$ref': '#/components/schemas/PublicAgencyApiError',
+                                },
+                            },
+                        },
+                    },
+                  '503':
+                    {
+                      'description': 'Public agency content is unavailable',
+                      'headers':
+                        {
+                          'Cache-Control':
+                            {
+                              'schema':
+                                { 'type': 'string', 'const': 'no-store' },
+                            },
+                          'X-Request-Id':
+                            {
+                              'schema': { 'type': 'string', 'format': 'uuid' },
+                            },
+                        },
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  '$ref': '#/components/schemas/PublicAgencyApiError',
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    },
+  'components':
+    {
+      'schemas':
+        {
+          'AgentPortrait':
+            {
+              'type': 'object',
+              'additionalProperties': false,
+              'required': ['src', 'width', 'height'],
+              'properties':
+                {
+                  'src':
+                    {
+                      'type': 'string',
+                      'pattern': "^/images/agents/[a-z0-9-]+\\.webp$",
+                    },
+                  'width': { 'type': 'integer', 'minimum': 1 },
+                  'height': { 'type': 'integer', 'minimum': 1 },
+                },
+            },
+          'PublicAgency':
+            {
+              'type': 'object',
+              'additionalProperties': false,
+              'required':
+                [
+                  'name',
+                  'isDemo',
+                  'phone',
+                  'email',
+                  'address',
+                  'officeHours',
+                  'timeZone',
+                  'mapUrl',
+                ],
+              'properties':
+                {
+                  'name':
+                    { 'type': 'string', 'minLength': 1, 'maxLength': 120 },
+                  'isDemo': { 'type': 'boolean' },
+                  'phone':
+                    {
+                      'type': ['string', 'null'],
+                      'minLength': 3,
+                      'maxLength': 40,
+                      'pattern': "^[+\\d ()-]*\\d[+\\d ()-]*$",
+                      'description': 'Canonical phone: ASCII spaces only, trimmed, 3-40 characters and at least one digit. Repeated internal spaces are preserved.',
+                    },
+                  'email':
+                    {
+                      'type': ['string', 'null'],
+                      'format': 'email',
+                      'maxLength': 254,
+                    },
+                  'address':
+                    {
+                      'type': ['string', 'null'],
+                      'minLength': 1,
+                      'maxLength': 500,
+                    },
+                  'officeHours':
+                    {
+                      'type': 'array',
+                      'items':
+                        {
+                          'type': 'object',
+                          'additionalProperties': false,
+                          'required': ['days', 'hours'],
+                          'properties':
+                            {
+                              'days':
+                                {
+                                  'type': 'string',
+                                  'minLength': 1,
+                                  'maxLength': 120,
+                                },
+                              'hours':
+                                {
+                                  'type': 'string',
+                                  'minLength': 1,
+                                  'maxLength': 120,
+                                },
+                            },
+                        },
+                      'minItems': 0,
+                      'maxItems': 7,
+                    },
+                  'timeZone': { 'type': 'string', 'const': 'Asia/Dubai' },
+                  'mapUrl':
+                    {
+                      'type': ['string', 'null'],
+                      'format': 'uri',
+                      'pattern': '^https://',
+                      'description': 'Approved absolute HTTPS URL without credentials.',
+                    },
+                },
+            },
+          'PublicAgentSummary':
+            {
+              'type': 'object',
+              'additionalProperties': false,
+              'required':
+                ['slug', 'name', 'title', 'specialties', 'portrait', 'isDemo'],
+              'properties':
+                {
+                  'slug':
+                    {
+                      'type': 'string',
+                      'minLength': 1,
+                      'maxLength': 80,
+                      'pattern': '^[a-z0-9]+(?:-[a-z0-9]+)*$',
+                    },
+                  'name':
+                    { 'type': 'string', 'minLength': 1, 'maxLength': 120 },
+                  'title':
+                    { 'type': 'string', 'minLength': 1, 'maxLength': 120 },
+                  'specialties':
+                    {
+                      'type': 'array',
+                      'items':
+                        { 'type': 'string', 'minLength': 1, 'maxLength': 80 },
+                      'minItems': 0,
+                      'maxItems': 8,
+                    },
+                  'portrait':
+                    {
+                      'anyOf':
+                        [
+                          { '$ref': '#/components/schemas/AgentPortrait' },
+                          { 'type': 'null' },
+                        ],
+                    },
+                  'isDemo': { 'type': 'boolean' },
+                },
+            },
+          'PublicAgentDetail':
+            {
+              'type': 'object',
+              'additionalProperties': false,
+              'required':
+                [
+                  'slug',
+                  'name',
+                  'title',
+                  'specialties',
+                  'portrait',
+                  'isDemo',
+                  'introduction',
+                  'biography',
+                  'languages',
+                  'publicPhone',
+                  'publicEmail',
+                ],
+              'properties':
+                {
+                  'slug':
+                    {
+                      'type': 'string',
+                      'minLength': 1,
+                      'maxLength': 80,
+                      'pattern': '^[a-z0-9]+(?:-[a-z0-9]+)*$',
+                    },
+                  'name':
+                    { 'type': 'string', 'minLength': 1, 'maxLength': 120 },
+                  'title':
+                    { 'type': 'string', 'minLength': 1, 'maxLength': 120 },
+                  'specialties':
+                    {
+                      'type': 'array',
+                      'items':
+                        { 'type': 'string', 'minLength': 1, 'maxLength': 80 },
+                      'minItems': 0,
+                      'maxItems': 8,
+                    },
+                  'portrait':
+                    {
+                      'anyOf':
+                        [
+                          { '$ref': '#/components/schemas/AgentPortrait' },
+                          { 'type': 'null' },
+                        ],
+                    },
+                  'isDemo': { 'type': 'boolean' },
+                  'introduction':
+                    { 'type': 'string', 'minLength': 1, 'maxLength': 320 },
+                  'biography':
+                    {
+                      'type': 'array',
+                      'items':
+                        { 'type': 'string', 'minLength': 1, 'maxLength': 1500 },
+                      'minItems': 1,
+                      'maxItems': 3,
+                    },
+                  'languages':
+                    {
+                      'type': 'array',
+                      'items':
+                        { 'type': 'string', 'minLength': 1, 'maxLength': 80 },
+                      'minItems': 0,
+                      'maxItems': 8,
+                    },
+                  'publicPhone':
+                    {
+                      'type': ['string', 'null'],
+                      'minLength': 3,
+                      'maxLength': 40,
+                      'pattern': "^[+\\d ()-]*\\d[+\\d ()-]*$",
+                      'description': 'Canonical phone: ASCII spaces only, trimmed, 3-40 characters and at least one digit. Repeated internal spaces are preserved.',
+                    },
+                  'publicEmail':
+                    {
+                      'type': ['string', 'null'],
+                      'format': 'email',
+                      'maxLength': 254,
+                    },
+                },
+            },
+          'PublicAgentDirectory':
+            {
+              'type': 'object',
+              'additionalProperties': false,
+              'required': ['items', 'total'],
+              'properties':
+                {
+                  'items':
+                    {
+                      'type': 'array',
+                      'items':
+                        { '$ref': '#/components/schemas/PublicAgentSummary' },
+                      'minItems': 0,
+                      'maxItems': 24,
+                    },
+                  'total':
+                    {
+                      'type': 'integer',
+                      'minimum': 0,
+                      'maximum': 24,
+                      'description': 'Equals items.length. Published profiles only, sorted by name then slug using UTF-16 code-unit comparison.',
+                    },
+                },
+            },
+          'PublicAgencyApiError':
+            {
+              'type': 'object',
+              'additionalProperties': false,
+              'required': ['error'],
+              'properties':
+                {
+                  'error':
+                    {
+                      'type': 'object',
+                      'additionalProperties': false,
+                      'required': ['code', 'message', 'requestId'],
+                      'properties':
+                        {
+                          'code': { 'type': 'string' },
+                          'message': { 'type': 'string' },
+                          'requestId': { 'type': 'string' },
+                        },
+                    },
+                },
+            },
+        },
+    },
+}

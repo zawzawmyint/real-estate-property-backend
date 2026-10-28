@@ -1,3 +1,8 @@
+import {
+  serializedTransaction,
+  type Database,
+  type Transaction,
+} from '../../infrastructure/database/transaction.js';
 import type { Logger } from 'pino';
 import type { Storage } from '../../infrastructure/storage/storage.js';
 import { AppError } from '../../shared/errors/app-error.js';
@@ -5,10 +10,7 @@ import type { StaffRole } from '../auth/auth.js';
 import { propertyDto } from './properties.dto.js';
 import {
   createPropertyRepository,
-  propertyTransaction,
-  type Database,
   type PropertyRecord,
-  type Transaction,
 } from './properties.repository.js';
 import {
   toData,
@@ -124,7 +126,7 @@ export function createPropertyService(
     async create(input: CreatePropertyInput, role: StaffRole) {
       canWrite(role);
 
-      const property = await propertyTransaction(database, (tx) =>
+      const property = await serializedTransaction(database, (tx) =>
         repository.create(
           { ...toData(input), title: input.title, purpose: input.purpose },
           tx,
@@ -137,7 +139,7 @@ export function createPropertyService(
     async patch(id: string, input: PropertyInput, role: StaffRole) {
       canWrite(role);
 
-      const property = await propertyTransaction(database, async (tx) => {
+      const property = await serializedTransaction(database, async (tx) => {
         const before = await locked(id, tx);
 
         if (
@@ -165,7 +167,7 @@ export function createPropertyService(
       if (role !== 'admin')
         throw new AppError(403, 'FORBIDDEN', 'Access denied');
 
-      const keys = await propertyTransaction(database, async (tx) => {
+      const keys = await serializedTransaction(database, async (tx) => {
         const property = await locked(id, tx);
 
         if (property.publishingState !== 'archived')
@@ -202,7 +204,7 @@ export function createPropertyService(
       let property: PropertyRecord;
 
       try {
-        property = await propertyTransaction(database, async (tx) => {
+        property = await serializedTransaction(database, async (tx) => {
           const before = await locked(id, tx);
 
           editable(before);
@@ -244,7 +246,7 @@ export function createPropertyService(
     async orderPhotos(id: string, ids: string[], role: StaffRole) {
       canWrite(role);
 
-      const property = await propertyTransaction(database, async (tx) => {
+      const property = await serializedTransaction(database, async (tx) => {
         const before = await locked(id, tx);
 
         editable(before);
@@ -276,7 +278,7 @@ export function createPropertyService(
     ) {
       canWrite(role);
 
-      const { property, key } = await propertyTransaction(
+      const { property, key } = await serializedTransaction(
         database,
         async (tx) => {
           const before = await locked(id, tx);

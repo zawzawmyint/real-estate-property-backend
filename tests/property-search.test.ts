@@ -1,9 +1,7 @@
+import type { Database } from '../src/infrastructure/database/transaction.js';
 import { expect, it } from 'vitest';
 import { authFixture } from './auth-fixture.js';
-import {
-  createPropertyRepository,
-  type Database,
-} from '../src/modules/properties/properties.repository.js';
+import { createPropertyRepository } from '../src/modules/properties/properties.repository.js';
 import {
   parseQuery,
   toData,

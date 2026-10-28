@@ -2,20 +2,20 @@
 
 This document records the installed foundation and the tools discussed for later features. **Planned does not mean installed or implemented.** No deferred dependency should be installed until its feature needs it.
 
-Last reconciled: **2026-10-23**. Feature scope and progress live in the [master roadmap](ROADMAP.md); this document tracks technical choices and their adoption status.
+Last reconciled: **2026-10-27**. Feature scope and progress live in the [master roadmap](ROADMAP.md); this document tracks technical choices and their adoption status.
 
 ## Architecture and runtime
 
 | Area                | Current choice                                                                                           | Status                                                             |
 | ------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | Frontend repository | `frontend/`: one Next.js application for the public website and CRM; client portal later                 | Foundation implemented                                             |
-| Backend repository  | `backend/`: separate Express application owning business rules, permissions, database access and storage | Property-management API implemented; leads pending                 |
+| Backend repository  | `backend/`: separate Express application owning business rules, permissions, database access and storage | Property and lead-management APIs implemented                      |
 | Runtime             | Node.js 24 LTS; `.node-version` pins 24.14.1 in both repositories                                        | Configured and verified                                            |
 | Package manager     | Bun 1.3.14, independent `bun.lock` files                                                                 | Configured and verified; Bun is not the chosen application runtime |
-| Database            | SQLite through Prisma and its SQLite adapter                                                             | Auth and property/photo schema migrations verified; leads pending  |
+| Database            | SQLite through Prisma and its SQLite adapter                                                             | Auth, property/photo and lead schema migrations verified           |
 | Image storage       | Backend local disk, behind the `Storage` interface                                                       | Public media plus validated property uploads implemented           |
 | Local ports         | Frontend 3100; backend 4311                                                                              | Configured to avoid existing local applications                    |
-| API boundary        | Backend-owned OpenAPI 3.1 document; browser `/api/v1` proxy and server-only API transport                | Native auth and property contracts; generated frontend types       |
+| API boundary        | Backend-owned OpenAPI 3.1 document; browser `/api/v1` proxy and server-only API transport                | Native auth, property and lead contracts; generated frontend types |
 | Typography          | Self-hosted Poppins (400/500/600) and Lora variable (400–700) via `next/font/local`                      | Two authored families; assets and SIL OFL provenance are included  |
 
 ## Installed frontend tools
@@ -24,20 +24,22 @@ The following lists every direct frontend package declared in [package.json](pac
 
 ### Application and UI dependencies
 
-| Package                    | Pinned version | Purpose and current use                                                         |
-| -------------------------- | -------------- | ------------------------------------------------------------------------------- |
-| `next`                     | 16.4.2         | App Router, server rendering, route layouts, loading/error states and API proxy |
-| `react`                    | 19.3.1         | Component rendering and React Server Components                                 |
-| `react-dom`                | 19.3.1         | React DOM rendering                                                             |
-| `@base-ui/react`           | 1.9.0          | Accessible primitive backing the shared button                                  |
-| `class-variance-authority` | 0.7.1          | Shared component variants                                                       |
-| `clsx`                     | 2.1.1          | Conditional class composition                                                   |
-| `tailwind-merge`           | 3.7.0          | Resolve conflicting Tailwind classes in shared UI                               |
-| `server-only`              | 0.0.1          | Protect the server API entry point from client imports                          |
-| `better-auth`              | 1.7.12         | React auth client for implemented staff sign-in, session and sign-out           |
-| `react-hook-form`          | 7.90.0         | Client field state and validation for implemented login and property forms      |
-| `@hookform/resolvers`      | 6.0.0          | Connects login and property forms to their Zod schemas                          |
-| `zod`                      | 4.6.7          | Login/property and Server Action input validation; Express validates separately |
+| Package                    | Pinned version | Purpose and current use                                                                                 |
+| -------------------------- | -------------- | ------------------------------------------------------------------------------------------------------- |
+| `next`                     | 16.4.2         | App Router, server rendering, route layouts, loading/error states and API proxy                         |
+| `react`                    | 19.3.1         | Component rendering and React Server Components                                                         |
+| `react-dom`                | 19.3.1         | React DOM rendering                                                                                     |
+| `@dnd-kit/react`           | 0.5.1          | Frontend-only grouped pipeline dragging and keyboard movement; explicit stage controls remain available |
+| `@dnd-kit/dom`             | 0.5.1          | Frontend-only drag accessibility configuration and persisted-column sorting behavior                    |
+| `@base-ui/react`           | 1.9.0          | Accessible primitive backing the shared button                                                          |
+| `class-variance-authority` | 0.7.1          | Shared component variants                                                                               |
+| `clsx`                     | 2.1.1          | Conditional class composition                                                                           |
+| `tailwind-merge`           | 3.7.0          | Resolve conflicting Tailwind classes in shared UI                                                       |
+| `server-only`              | 0.0.1          | Protect the server API entry point from client imports                                                  |
+| `better-auth`              | 1.7.12         | React auth client for implemented staff sign-in, session and sign-out                                   |
+| `react-hook-form`          | 7.90.0         | Client field state and validation for implemented login and property forms                              |
+| `@hookform/resolvers`      | 6.0.0          | Connects login and property forms to their Zod schemas                                                  |
+| `zod`                      | 4.6.7          | Login/property and Server Action input validation; Express validates separately                         |
 
 **shadcn/ui approach:** Shared UI is locally owned source using Base UI, semantic tokens and the `base-nova` configuration in `frontend/components.json`. The current catalog includes `Button`, `Input`, `Field`, `Alert`, `Card`/`CardContent`, `Empty`, `Textarea`, `NativeSelect`, `Badge`, `Table`, `Pagination`, `Sheet`, `Dialog`, `AlertDialog` and `Skeleton`. Property forms use `Textarea`/`NativeSelect`, inventory uses `Badge`/`Table`/`Pagination`, mobile filters use `Sheet`, gallery uses `Dialog`, destructive deletion uses `AlertDialog`, and loading views use `Skeleton`. A shadcn CLI package is not installed, and the full component catalog has not been added. Reuse the local catalog first; when a standard primitive is missing, add only the appropriate official Base Nova registry component and adapt it to the semantic palette. This source-owned reuse policy adds no dependency by itself.
 
@@ -108,7 +110,6 @@ The following lists every direct backend package declared in package.json (compa
 | Tool or capability         | Intended responsibility                                              | Adoption point and decision status                                                                                                                            |
 | -------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Zustand                    | Shared browser-side state when multiple components need it           | Discussed, conditional on a real feature need. Keep shareable search/filter state in URLs rather than defaulting to a global store.                           |
-| Drag-and-drop library      | Accessible pipeline board interactions                               | Required capability for P1-10; specific library not selected. Preserve a usable way to change stages without relying only on dragging.                        |
 | Localization library       | Translation management and locale-aware UI                           | Required capability for P3-05; specific library not selected. Arabic requires right-to-left behavior as well as translated strings.                           |
 | Nodemailer                 | Server-side email transport                                          | Planned when email is needed, such as authentication mail or P2-01. SMTP/email delivery provider is not selected or configured.                               |
 | Redis                      | Infrastructure for queue-backed work or other justified shared state | Discussed, deferred until a feature needs it. No Redis service is provisioned.                                                                                |

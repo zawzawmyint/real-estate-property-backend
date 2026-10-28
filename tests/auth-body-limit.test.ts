@@ -1,6 +1,5 @@
 import { request as httpRequest } from 'node:http';
 import { once } from 'node:events';
-import request from 'supertest';
 import { expect, it } from 'vitest';
 import { authFixture } from './auth-fixture.js';
 
@@ -13,11 +12,54 @@ it('rejects oversized native auth bodies before parsing for declared and chunked
 
   try {
     for (const path of ['/sign-in/email', '/sign-out']) {
-      const declared = await request(f.app)
-        .post(`/api/v1/auth${path}`)
-        .set('Origin', f.env.APP_ORIGIN)
-        .send(JSON.parse(body));
+      // Reject declared oversizes from headers before any body is consumed.
+      // Eagerly sending 1 MiB races the early response with socket shutdown.
+      const declared = await new Promise<{
+        status: number;
+        body: unknown;
+        headers: import('node:http').IncomingHttpHeaders;
+      }>((resolve, reject) => {
+        const address = server.address();
 
+        if (!address || typeof address === 'string')
+          throw new Error('Server missing address');
+
+        const req = httpRequest(
+          {
+            host: '127.0.0.1',
+            port: address.port,
+            path: `/api/v1/auth${path}`,
+            method: 'POST',
+            agent: false,
+            headers: {
+              Origin: f.env.APP_ORIGIN,
+              'Content-Type': 'application/json',
+              'Content-Length': Buffer.byteLength(body),
+              Connection: 'close',
+            },
+          },
+          (res) => {
+            let output = '';
+
+            res.setEncoding('utf8');
+            res.on('error', reject);
+            res.on('data', (value) => {
+              output += value;
+            });
+            res.on('end', () => {
+              req.end();
+              resolve({
+                status: res.statusCode!,
+                body: JSON.parse(output),
+                headers: res.headers,
+              });
+            });
+          },
+        );
+
+        req.on('error', reject);
+        req.flushHeaders();
+      });
       expect(declared.status).toBe(413);
       expect(declared.body).toEqual({
         code: 'PAYLOAD_TOO_LARGE',
