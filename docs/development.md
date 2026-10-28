@@ -67,3 +67,11 @@ Use this procedure only in a maintenance window after a property cleanup log rep
 The server logs safe startup failure codes, returns generic unexpected error responses and stops accepting requests on SIGINT/SIGTERM with a 10-second connection shutdown window. Windows process termination may not deliver Unix signals; exercise deployment shutdown on its actual process manager.
 
 Use persistent storage and database backups before deployment. There is no deployment automation yet. Remove disposable development data only when intentionally resetting local work; database files and public assets are not source code or reproducible migrations.
+
+## Pull request branch naming
+
+For pull requests into main, use one of these prefixes followed by lowercase alphanumeric words separated by single hyphens: feat/, fix/, refactor/, docs/, test/, chore/ or ci/. Examples: feat/property-favorites, fix/contact-validation and ci/frontend-checks. Names such as feature/example, feat/Uppercase, fix/under_score or feat/a/b fail.
+
+The [Branch naming workflow](../.github/workflows/branch-name.yml) reports a **Branch name** check when a PR is opened, synchronized, reopened or edited. It validates the source branch without checking out PR code or installing dependencies. This is a merge gate when required; it does not prevent creating or pushing a branch. Existing feature/... branches and automation branches have no exemption and must follow the same policy before merging.
+
+After publishing the workflow, open a PR into main and let the check run. In Settings → Rules → Rulesets → Protect main, enable required status checks and add **Branch name** from GitHub Actions alongside the existing **verify** CI check. Save the ruleset with Active enforcement. Repository settings are a manual step and have not been activated by this local delivery. If rolling back, remove Branch name from required checks before removing the workflow. See the [branch naming specification](../specs/branch-naming/spec.md).

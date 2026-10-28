@@ -37,3 +37,5 @@ The root [project specification](../spec.md) summarizes project-wide scope and t
 ## Verified naming maintenance
 
 - [Shared-code naming and ownership](shared-code-naming/spec.md): verified shared-helper locations, updated direct imports and property-specific enquiry naming; no new feature or API contract.
+
+- [Pull request branch naming](branch-naming/spec.md): locally verified source-branch validation for PRs into main; hosted execution and required-check activation remain pending.
