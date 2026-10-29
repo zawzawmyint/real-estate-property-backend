@@ -8,7 +8,7 @@
 
 Track every Phase 1, 2 and 3 feature from the original **Real Estate CRM Checklist**, without treating project setup as completed business functionality.
 
-**Current baseline:** Foundation is complete; 25 verified Phase 1 checklist items are complete and 17 Phase 1–3 checklist items remain pending. The original five portfolio delivery items are retained separately. This roadmap is the workspace-wide source of truth for feature progress; repository-local specifications define implementation and acceptance.
+**Current baseline:** Foundation is complete; 28 verified Phase 1 checklist items are complete and 14 Phase 1–3 checklist items remain pending. The original five portfolio delivery items are retained separately. This roadmap is the workspace-wide source of truth for feature progress; repository-local specifications define implementation and acceptance.
 
 ---
 
@@ -36,7 +36,7 @@ Track every Phase 1, 2 and 3 feature from the original **Real Estate CRM Checkli
 - Installed tools, planned tools and adoption rules are recorded in the [tech stack document](TECH_STACK.md). Deferred packages remain uninstalled until their features need them.
 - Separate `frontend/` and `backend/` Git repositories inside this workspace. Express owns business rules, permissions, persistence and file storage; Next.js consumes its API.
 - SQLite and backend local-disk image storage initially. PostgreSQL and S3 remain future migration options requiring explicit data transfer.
-- Public discovery, CRM property inventory/lifecycle and listing-photo workflows are implemented with backend-enforced resource authorization. CRM authentication and Admin/Manager/Agent roles, public inquiries, lead ownership, lead follow-up, viewing management, verified follow-up tasks and the P1-10 pipeline are implemented; dashboards remain future work.
+- Public discovery, CRM property inventory/lifecycle and listing-photo workflows are implemented with backend-enforced resource authorization. CRM authentication and Admin/Manager/Agent roles, public inquiries, lead ownership, lead follow-up, viewing management, verified follow-up tasks, the P1-10 pipeline and the agency dashboard are implemented; broader reporting remains future work.
 - Demo property images are generated illustrative fixtures. The source checklist's free-photo wording is preserved below; this records the agreed change in image sourcing.
 
 **Product / Business**
@@ -187,11 +187,11 @@ The source requires dated tasks and overdue highlighting here; scheduled email o
 
 #### Dashboard
 
-**Proposed spec slug:** `agency-dashboard`.
+**Verified (2026-10-29)** — [agency dashboard](specs/agency-dashboard/spec.md) and its [backend-owned aggregate contract](specs/agency-dashboard/contract.md) complete P1-28–P1-30. Backend/frontend full checks passed; the final dedicated dashboard suite passed 16/16 with refreshed desktop/mobile captures and visual QA. The revised pipeline session test passed six focused repeats. Legacy evidence is the union of two non-clean parallel runs but includes a pass for every active case; the feature spec records that limitation. Phase 1 is now 28/30 complete; P1-14 and P1-18 remain unchecked.
 
-- [ ] **P1-28** New leads this week, deals won, conversion rate
-- [ ] **P1-29** Chart: leads by source
-- [ ] **P1-30** Chart: pipeline by stage
+- [x] **P1-28** New leads this week, deals won, conversion rate
+- [x] **P1-29** Chart: leads by source
+- [x] **P1-30** Chart: pipeline by stage
 
 ### Phase 2 — Features that make it stand out
 
@@ -303,6 +303,7 @@ Foundation smoke-test screenshots do not complete D-04: capture the delivered bu
 - **2026-10-27 — Review remediation evidence:** No roadmap feature or checklist state changed. Frontend API drift, lint, formatting, typecheck, 199 unit tests in 34 files and an isolated production build passed; backend `bun run check` passed with 94 tests in 23 files. Focused browser regressions confirm canonical whitespace phones, full pasted phone preservation, unknown-mode Contact copy, saved-receipt recovery and outcome-accurate pipeline announcements. Runtime inspection confirmed the expected checkout and a 390px Contact probe with no configuration or session errors, without submitting against the user dev server. The full browser run reported 163 passed, 8 intentional skips and one pointer-cancel test synchronization failure. After correcting the test to wait for settled drop-animation geometry and verify an active drag before Escape, that case passed three consecutive isolated reruns. All 164 applicable browser cases are covered across these runs; a single clean full-suite rerun is not claimed. The real-business publication gate remains unchecked.
 - **2026-10-29 — Viewing management verified:** P1-23–P1-25 completed through the [viewing management specification](specs/viewing-management/spec.md). Backend `bun run check` passed with 105 tests in 28 files; additive migration and database checks passed, including a populated disposable upgrade and a backed-up local development upgrade. Frontend API drift, lint, formatting, typecheck, 218 unit tests in 39 files and an isolated production build passed. Two final-source browser runs passed with no failures: the viewing suites passed 34/34 desktop/mobile cases in 3.7 minutes, covering booking, rescheduling, cancellation, feedback, receipt recovery, reassignment, pagination, Dubai display in an America/New_York browser, dirty/pristine refresh guards and 320/390/768/1440px layouts; the remaining existing suites passed 165 cases with 9 conditional project/viewport skips in 12.9 minutes. Together, the runs cover 199 passing cases, 9 skips and 208 registered cases, and are not represented as one combined suite. Live runtime inspection confirmed `/crm/viewings` in the expected checkout with no configuration or session errors.
 - **2026-10-29 — Follow-up tasks verified:** P1-26/P1-27 completed through the [follow-up-tasks specification](specs/follow-up-tasks/spec.md). Backend `bun run check` passed with 119 tests in 33 files; fresh/populated migration checks and an additive local-database backup/upgrade passed without inferred tasks. Frontend API validation, lint, formatting, typecheck, 241 tests in 45 files and an isolated task build passed. All 36 task cases have passing evidence across a 35/36 worker run plus unchanged exact-timestamp and repeated responsive serial reruns (2/2); this is not represented as one clean 36/36 run. The unchanged serial legacy browser regression passed 199 cases with 9 conditional viewport/project skips and no failures in 16.8 minutes; earlier high-concurrency worker load/router initialization failures were not reproduced and every affected case passed serially. Runtime inspection confirmed `/crm/tasks` in the expected checkout with no configuration/session errors. Final desktop/mobile form, list and detail review passed at 320/390/768/1440px with no overflow. No commit, push or deployment is claimed.
+- **2026-10-29 — Agency dashboard verified:** P1-28–P1-30 completed through the [agency dashboard specification](specs/agency-dashboard/spec.md). Backend `bun run check` passed with 126 tests in 35 files, including aggregate authorization, Dubai-boundary, consistency and WAL-snapshot coverage; frontend `bun run check` passed with 271 tests in 46 files. The final dedicated dashboard suite passed 16/16 desktop/mobile cases with no skips or failures, refreshed screenshots and clean runtime diagnostics; frontend visual QA found no P0/P1/P2 findings. The revised pipeline session case passed six focused repeats. Legacy browser evidence covers every active case across two non-clean parallel runs; the dashboard specification records the timing/sign-in-cache limitation and does not claim a single clean full legacy run.
 - For later deliveries, append the date, checklist IDs, actual feature-spec links, verification evidence and any remaining gaps.
 
 ---

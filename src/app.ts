@@ -1,3 +1,4 @@
+import { mountDashboard } from './modules/dashboard/dashboard.routes.js';
 import { mountTasks } from './modules/tasks/tasks.routes.js';
 import { mountViewings } from './modules/viewings/viewings.routes.js';
 import { mountLeads } from './modules/leads/leads.routes.js';
@@ -56,6 +57,7 @@ export function createApp(
   mountLeads(app, auth, env, database);
   mountViewings(app, auth, env, database);
   mountTasks(app, auth, env, database);
+  mountDashboard(app, auth, database);
   mountAgency(app, readAgencyCatalog);
   mountProperties(app, auth, env, database, propertyStorage ?? storage, logger);
 

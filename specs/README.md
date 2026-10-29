@@ -6,6 +6,10 @@ Verified scopes are `project-foundation/spec.md`, `staff-authentication-and-role
 
 The root [project specification](../spec.md) summarizes project-wide scope and the verified baseline. Keep detailed requirements and acceptance evidence in the feature specs; keep checklist progress in [the roadmap](../ROADMAP.md).
 
+## Verified dashboard
+
+- [Agency dashboard](agency-dashboard/spec.md): verified P1-28–P1-30 authorized aggregates with this [backend-owned contract](agency-dashboard/contract.md), full checks, final 16/16 desktop/mobile browser coverage and visual QA. All active legacy cases passed across two non-clean parallel runs; that limitation is recorded in the feature specification.
+
 ## Verified follow-up tasks
 
 - [Follow-up tasks](follow-up-tasks/spec.md): verified P1-26–P1-27 persistence and authorization with the [backend-owned API contract](follow-up-tasks/contract.md). [Implementation plan](../docs/superpowers/plans/2026-10-29-follow-up-tasks.md); backend/frontend quality gates, task reruns and the final legacy regression passed.

@@ -2,7 +2,7 @@
 
 This document records the installed foundation and the tools discussed for later features. **Planned does not mean installed or implemented.** No deferred dependency should be installed until its feature needs it.
 
-Last reconciled: **2026-10-27**. Feature scope and progress live in the [master roadmap](ROADMAP.md); this document tracks technical choices and their adoption status.
+Last reconciled: **2026-10-29**. Feature scope and progress live in the [master roadmap](ROADMAP.md); this document tracks technical choices and their adoption status.
 
 ## Architecture and runtime
 
@@ -29,6 +29,7 @@ The following lists every direct frontend package declared in [package.json](pac
 | `next`                     | 16.4.2         | App Router, server rendering, route layouts, loading/error states and API proxy                         |
 | `react`                    | 19.3.1         | Component rendering and React Server Components                                                         |
 | `react-dom`                | 19.3.1         | React DOM rendering                                                                                     |
+| `recharts`                 | 3.8.0          | Dashboard source/stage bar charts through the locally owned Base Nova Chart primitive                   |
 | `@dnd-kit/react`           | 0.5.1          | Frontend-only grouped pipeline dragging and keyboard movement; explicit stage controls remain available |
 | `@dnd-kit/dom`             | 0.5.1          | Frontend-only drag accessibility configuration and persisted-column sorting behavior                    |
 | `@base-ui/react`           | 1.9.0          | Accessible primitive backing the shared button                                                          |
@@ -41,7 +42,7 @@ The following lists every direct frontend package declared in [package.json](pac
 | `@hookform/resolvers`      | 6.0.0          | Connects login and property forms to their Zod schemas                                                  |
 | `zod`                      | 4.6.7          | Login/property and Server Action input validation; Express validates separately                         |
 
-**shadcn/ui approach:** Shared UI is locally owned source using Base UI, semantic tokens and the `base-nova` configuration in `frontend/components.json`. The current catalog includes `Button`, `Input`, `Field`, `Alert`, `Card`/`CardContent`, `Empty`, `Textarea`, `NativeSelect`, `Badge`, `Table`, `Pagination`, `Sheet`, `Dialog`, `AlertDialog` and `Skeleton`. Property forms use `Textarea`/`NativeSelect`, inventory uses `Badge`/`Table`/`Pagination`, mobile filters use `Sheet`, gallery uses `Dialog`, destructive deletion uses `AlertDialog`, and loading views use `Skeleton`. A shadcn CLI package is not installed, and the full component catalog has not been added. Reuse the local catalog first; when a standard primitive is missing, add only the appropriate official Base Nova registry component and adapt it to the semantic palette. This source-owned reuse policy adds no dependency by itself.
+**shadcn/ui approach:** Shared UI is locally owned source using Base UI, semantic tokens and the `base-nova` configuration in `frontend/components.json`. The current catalog includes `Button`, `Input`, `Field`, `Alert`, `Card`/`CardContent`, `Empty`, `Textarea`, `NativeSelect`, `Badge`, `Table`, `Pagination`, `Sheet`, `Dialog`, `AlertDialog`, `Skeleton` and `Chart`. Dashboard charts use the local `Chart` primitive with Recharts; the primitive itself is source, not a package. Property forms use `Textarea`/`NativeSelect`, inventory uses `Badge`/`Table`/`Pagination`, mobile filters use `Sheet`, gallery uses `Dialog`, destructive deletion uses `AlertDialog`, and loading views use `Skeleton`. A shadcn CLI package is not installed, and the full component catalog has not been added. Reuse the local catalog first; when a standard primitive is missing, add only the appropriate official Base Nova registry component and adapt it to the semantic palette. This source-owned reuse policy adds no dependency by itself.
 
 ### Frontend development dependencies
 
@@ -105,16 +106,16 @@ The following lists every direct backend package declared in package.json (compa
 
 ## Planned and deferred tools
 
-**None of the named deferred packages below are direct dependencies in either repository.** React Hook Form and Zod are installed for the staff login and property create/edit forms; their use does not imply delivery of later business forms such as inquiries or leads. No deferred tool below has a pinned version.
+**None of the named deferred packages below are direct dependencies in either repository.** React Hook Form and Zod are installed for the staff login and property create/edit forms; their use does not imply delivery of later business forms such as inquiries or leads. Recharts is installed separately in the frontend for the verified dashboard delivery. No deferred tool below has a pinned version.
 
-| Tool or capability         | Intended responsibility                                              | Adoption point and decision status                                                                                                                            |
-| -------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Zustand                    | Shared browser-side state when multiple components need it           | Discussed, conditional on a real feature need. Keep shareable search/filter state in URLs rather than defaulting to a global store.                           |
-| Localization library       | Translation management and locale-aware UI                           | Required capability for P3-05; specific library not selected. Arabic requires right-to-left behavior as well as translated strings.                           |
-| Nodemailer                 | Server-side email transport                                          | Planned when email is needed, such as authentication mail or P2-01. SMTP/email delivery provider is not selected or configured.                               |
-| Redis                      | Infrastructure for queue-backed work or other justified shared state | Discussed, deferred until a feature needs it. No Redis service is provisioned.                                                                                |
-| BullMQ                     | Background processing, retries and scheduled work                    | Planned option when reliable asynchronous delivery is required. Queue backend and worker deployment must be specified with the feature; no worker exists now. |
-| Calendar and chart tooling | Viewing calendar, dashboard and performance-report visuals           | Feature requirements exist in P1-24, P1-29–P1-30 and P2-07. No additional library is selected; evaluate existing UI building blocks first.                    |
+| Tool or capability         | Intended responsibility                                              | Adoption point and decision status                                                                                                                                                                                                                    |
+| -------------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Zustand                    | Shared browser-side state when multiple components need it           | Discussed, conditional on a real feature need. Keep shareable search/filter state in URLs rather than defaulting to a global store.                                                                                                                   |
+| Localization library       | Translation management and locale-aware UI                           | Required capability for P3-05; specific library not selected. Arabic requires right-to-left behavior as well as translated strings.                                                                                                                   |
+| Nodemailer                 | Server-side email transport                                          | Planned when email is needed, such as authentication mail or P2-01. SMTP/email delivery provider is not selected or configured.                                                                                                                       |
+| Redis                      | Infrastructure for queue-backed work or other justified shared state | Discussed, deferred until a feature needs it. No Redis service is provisioned.                                                                                                                                                                        |
+| BullMQ                     | Background processing, retries and scheduled work                    | Planned option when reliable asynchronous delivery is required. Queue backend and worker deployment must be specified with the feature; no worker exists now.                                                                                         |
+| Calendar and chart tooling | Viewing calendar, dashboard and performance-report visuals           | The P1-24 calendar is delivered. The verified P1-29–P1-30 dashboard uses the frontend local shadcn/ui Base Nova Chart primitive and direct dependency `recharts` 3.8.0; it replaces no installed tool. Performance-report visuals remain future work. |
 
 Creating dated tasks and highlighting overdue tasks in P1-26–P1-27 does not by itself require Redis, BullMQ or automatic message delivery. Likewise, a WhatsApp link and automated WhatsApp messaging are different integrations; the roadmap leaves that decision open for P2-01.
 
