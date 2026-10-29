@@ -6,6 +6,10 @@ Verified scopes are `project-foundation/spec.md`, `staff-authentication-and-role
 
 The root [project specification](../spec.md) summarizes project-wide scope and the verified baseline. Keep detailed requirements and acceptance evidence in the feature specs; keep checklist progress in [the roadmap](../ROADMAP.md).
 
+## Verified follow-up tasks
+
+- [Follow-up tasks](follow-up-tasks/spec.md): verified P1-26–P1-27 persistence and authorization with the [backend-owned API contract](follow-up-tasks/contract.md). [Implementation plan](../docs/superpowers/plans/2026-10-29-follow-up-tasks.md); backend/frontend quality gates, task reruns and the final legacy regression passed.
+
 ## Verified features
 
 - [Inquiry capture and lead management](lead-management/spec.md): verified persistence, ownership, inquiry capture, assignment and follow-up. [Backend-owned contract](lead-management/contract.md) and delivered [OpenAPI](../docs/api/leads.openapi.yaml).

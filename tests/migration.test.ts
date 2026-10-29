@@ -67,6 +67,7 @@ it('deploys auth migrations into a missing nested SQLite file and can be rerun',
           'LeadActivity',
           'LeadSubmissionReceipt',
           'Viewing',
+          'Task',
         ]),
       );
     } finally {
@@ -186,6 +187,7 @@ it('upgrades an existing auth database without losing credentials and persists p
     try {
       expect(await reopened.user.count()).toBe(1);
       expect(await reopened.viewing.count()).toBe(0);
+      expect(await reopened.task.count()).toBe(0);
 
       const saved = await reopened.property.findUniqueOrThrow({
         where: { id: property.body.id },
@@ -204,6 +206,99 @@ it('upgrades an existing auth database without losing credentials and persists p
     } finally {
       await reopened.$disconnect();
     }
+  } finally {
+    await database.$disconnect();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+it('adds tasks to populated lead/viewing data without changing history and enforces task relations', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'agency-task-upgrade-'));
+  const database = await createDatabase(`file:${join(directory, 'agency.db')}`);
+  const root = new URL('../prisma/migrations/', import.meta.url);
+  const names = (await readdir(root, { withFileTypes: true }))
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort();
+  async function apply(name: string) {
+    for (const statement of (
+      await readFile(new URL(`${name}/migration.sql`, root), 'utf8')
+    )
+      .split(';')
+      .map((part) => part.trim())
+      .filter(Boolean))
+      await database.$executeRawUnsafe(statement);
+  }
+  try {
+    const index = names.findIndex((name) => name.endsWith('_follow_up_tasks'));
+    expect(index).toBeGreaterThan(0);
+    for (const name of names.slice(0, index)) await apply(name);
+    const user = await database.user.create({
+      data: {
+        id: 'task-creator',
+        name: 'Creator',
+        email: 'creator@task-upgrade.test',
+      },
+    });
+    const property = await database.property.create({
+      data: { title: 'Existing property', purpose: 'sale' },
+    });
+    const lead = await database.lead.create({
+      data: {
+        name: 'Existing lead',
+        purpose: 'sale',
+        source: 'walk_in',
+        searchName: 'existing lead',
+        searchPhone: '',
+        searchEmail: '',
+        searchPropertyTitle: '',
+        assignedAgentId: user.id,
+      },
+    });
+    const viewing = await database.viewing.create({
+      data: {
+        submissionId: 'legacy-viewing',
+        actorScope: user.id,
+        payloadHash: 'legacy',
+        leadId: lead.id,
+        propertyId: property.id,
+        propertyTitleSnapshot: property.title,
+        startsAt: new Date('2027-01-01T00:00:00Z'),
+        endsAt: new Date('2027-01-01T01:00:00Z'),
+      },
+    });
+    for (const name of names.slice(index)) await apply(name);
+    expect(await database.task.count()).toBe(0);
+    expect(
+      await database.lead.findUniqueOrThrow({ where: { id: lead.id } }),
+    ).toEqual(lead);
+    expect(
+      await database.viewing.findUniqueOrThrow({ where: { id: viewing.id } }),
+    ).toEqual(viewing);
+    const task = await database.task.create({
+      data: {
+        submissionId: 'migration-task',
+        actorScope: user.id,
+        payloadHash: 'hash',
+        leadId: lead.id,
+        title: 'Follow up',
+        dueAt: new Date('2030-01-01T00:00:00Z'),
+        createdById: user.id,
+      },
+    });
+    await expect(
+      database.lead.delete({ where: { id: lead.id } }),
+    ).rejects.toThrow();
+    await database.user.delete({ where: { id: user.id } });
+    expect(
+      await database.task.findUniqueOrThrow({ where: { id: task.id } }),
+    ).toMatchObject({
+      createdById: null,
+      actorScope: user.id,
+      leadId: lead.id,
+    });
+    expect(await database.$queryRawUnsafe('PRAGMA foreign_key_check')).toEqual(
+      [],
+    );
   } finally {
     await database.$disconnect();
     await rm(directory, { recursive: true, force: true });

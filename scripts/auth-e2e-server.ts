@@ -172,6 +172,57 @@ for (const project of ['desktop', 'mobile']) {
   await fixture.operator.deactivate(email);
 }
 
+// Task browser cases use isolated identities and deliberately overdue records.
+// These fixtures exist only in the disposable test process, never production.
+for (const project of ['desktop', 'mobile']) {
+  for (const suite of ['task', 'task-recovery'])
+    for (const identity of ['manager', 'agent', 'other-agent'] as const)
+      await fixture.operator.create({
+        name: `${suite} E2E ${project} ${identity}`,
+        email: `e2e-${suite}-${project}-${identity}@example.com`,
+        password,
+        role: identity === 'manager' ? 'manager' : 'agent',
+      });
+
+  const agent = await fixture.database.user.findUniqueOrThrow({
+    where: { email: `e2e-task-${project}-agent@example.com` },
+  });
+
+  for (const scenario of ['overdue', 'exact timestamp']) {
+    const data = {
+      name: `Task ${scenario} ${project}`,
+      phone: '+971 50 123 4567',
+      email: null,
+      propertyTitleSnapshot: null,
+    };
+    const lead = await fixture.database.lead.create({
+      data: {
+        ...data,
+        ...leadSearch(data),
+        purpose: 'sale',
+        source: 'call',
+        assignedAgentId: agent.id,
+        assignedAgentNameSnapshot: agent.name,
+      },
+    });
+    const count = scenario === 'overdue' ? 23 : 1;
+
+    for (let index = 0; index < count; index++)
+      await fixture.database.task.create({
+        data: {
+          submissionId: randomUUID(),
+          actorScope: agent.id,
+          payloadHash: 'disposable-task-fixture',
+          leadId: lead.id,
+          title: `Follow-up ${scenario} ${project} ${String(index + 1).padStart(2, '0')}`,
+          notes: 'Fictional follow-up for browser acceptance checks.',
+          dueAt: new Date(Date.now() - 86_400_000 + index * 1000),
+          createdById: agent.id,
+        },
+      });
+  }
+}
+
 const port = Number(process.env.PORT ?? 4311);
 const server = fixture.app.listen(port, '127.0.0.1', () =>
   console.info('AUTH_E2E_READY'),

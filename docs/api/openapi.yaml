@@ -6,6 +6,12 @@ info:
 servers:
   - url: http://localhost:4311
 paths:
+  /api/v1/staff/tasks:
+    $ref: './tasks.openapi.yaml#/paths/~1api~1v1~1staff~1tasks'
+  /api/v1/staff/tasks/{id}:
+    $ref: './tasks.openapi.yaml#/paths/~1api~1v1~1staff~1tasks~1{id}'
+  /api/v1/staff/tasks/{id}/status:
+    $ref: './tasks.openapi.yaml#/paths/~1api~1v1~1staff~1tasks~1{id}~1status'
   /api/v1/staff/viewings:
     $ref: './viewings.openapi.yaml#/paths/~1api~1v1~1staff~1viewings'
   /api/v1/staff/viewings/{id}:
