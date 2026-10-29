@@ -1,6 +1,7 @@
 // Standalone fixture process: temporary SQLite, no production accounts or HTTP backdoors.
 import { authFixture } from '../tests/auth-fixture.js';
 import { writeFile } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
 import { LocalStorage } from '../src/infrastructure/storage/local-storage.js';
 import { seedDemoProperties } from '../src/modules/properties/demo-seed.js';
 import { leadSearch } from '../src/modules/leads/leads.repository.js';
@@ -91,6 +92,57 @@ for (const project of ['desktop', 'mobile'])
       password,
       role,
     });
+
+// Viewing journeys do not consume existing lead/pipeline sign-in budgets.
+for (const project of ['desktop', 'mobile'])
+  for (const identity of ['manager', 'agent', 'other-agent'] as const)
+    await fixture.operator.create({
+      name: `Viewing E2E ${project} ${identity}`,
+      email: `e2e-viewing-${project}-${identity}@example.com`,
+      password,
+      role: identity === 'manager' ? 'manager' : 'agent',
+    });
+
+// A started appointment exercises feedback without weakening booking-time rules.
+const viewingProperty = await fixture.database.property.findFirst({
+  where: { publishingState: 'published', availability: 'available' },
+});
+if (viewingProperty)
+  for (const project of ['desktop', 'mobile']) {
+    const agent = await fixture.database.user.findUniqueOrThrow({
+      where: { email: `e2e-viewing-${project}-agent@example.com` },
+    });
+    const data = {
+      name: `Started viewing ${project}`,
+      phone: '+971 50 123 4567',
+      email: null,
+      propertyTitleSnapshot: null,
+    };
+    const lead = await fixture.database.lead.create({
+      data: {
+        ...data,
+        ...leadSearch(data),
+        purpose: 'sale',
+        source: 'call',
+        assignedAgentId: agent.id,
+        assignedAgentNameSnapshot: agent.name,
+      },
+    });
+    await fixture.database.viewing.create({
+      data: {
+        submissionId: randomUUID(),
+        actorScope: agent.id,
+        payloadHash: 'disposable-started-viewing-fixture',
+        leadId: lead.id,
+        propertyId: viewingProperty.id,
+        propertyTitleSnapshot: viewingProperty.title,
+        propertyLocationSnapshot: viewingProperty.city,
+        startsAt: new Date(Date.now() - 3_600_000),
+        endsAt: new Date(Date.now() - 1_800_000),
+        createdById: agent.id,
+      },
+    });
+  }
 
 for (const project of ['desktop', 'mobile']) {
   const email = `e2e-lead-${project}-inactive@example.com`;

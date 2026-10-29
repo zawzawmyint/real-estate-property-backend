@@ -29,6 +29,7 @@ model User {
   createdLeads      Lead[]         @relation("LeadCreator")
   leadNotes         LeadNote[]
   leadActivities    LeadActivity[]
+  createdViewings   Viewing[]
 }
 
 model Session {
@@ -104,6 +105,7 @@ model Property {
   updatedAt       DateTime        @updatedAt
   photos          PropertyPhoto[]
   leads           Lead[]
+  viewings        Viewing[]
 
   @@index([publishingState, availability, createdAt])
   @@index([purpose, type, city])
@@ -151,6 +153,7 @@ model Lead {
   notes                     LeadNote[]
   activities                LeadActivity[]
   receipts                  LeadSubmissionReceipt[]
+  viewings                  Viewing[]
 
   @@index([assignedAgentId, createdAt, id])
   @@index([assignedAgentId, stage, createdAt])
@@ -207,4 +210,29 @@ model LeadSubmissionReceipt {
   noteId      String?
   note        LeadNote? @relation(fields: [noteId], references: [id], onDelete: Restrict)
   createdAt   DateTime  @default(now())
+}
+
+model Viewing {
+  id String @id @default(uuid())
+  submissionId String @unique
+  actorScope String
+  payloadHash String
+  leadId String
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Restrict)
+  propertyId String
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  propertyTitleSnapshot String
+  propertyLocationSnapshot String?
+  startsAt DateTime
+  endsAt DateTime
+  status String @default("scheduled")
+  feedback String?
+  version Int @default(1)
+  createdById String?
+  createdBy User? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([startsAt, id])
+  @@index([leadId, startsAt, id])
+  @@index([propertyId])
 }

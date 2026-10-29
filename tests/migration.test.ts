@@ -66,6 +66,7 @@ it('deploys auth migrations into a missing nested SQLite file and can be rerun',
           'LeadNote',
           'LeadActivity',
           'LeadSubmissionReceipt',
+          'Viewing',
         ]),
       );
     } finally {
@@ -184,6 +185,7 @@ it('upgrades an existing auth database without losing credentials and persists p
 
     try {
       expect(await reopened.user.count()).toBe(1);
+      expect(await reopened.viewing.count()).toBe(0);
 
       const saved = await reopened.property.findUniqueOrThrow({
         where: { id: property.body.id },

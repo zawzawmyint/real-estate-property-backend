@@ -232,6 +232,10 @@ export function createPropertyRepository(database: Database) {
       });
     },
 
+    viewingCount(propertyId: string, tx: Transaction) {
+      return tx.viewing.count({ where: { propertyId } });
+    },
+
     remove(id: string, tx: Transaction) {
       return tx.property.delete({ where: { id }, select: { id: true } });
     },

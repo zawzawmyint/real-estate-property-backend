@@ -173,6 +173,11 @@ export function createPropertyService(
         if (property.publishingState !== 'archived')
           throw conflict('Archive the property before permanent deletion');
 
+        if (await repository.viewingCount(id, tx))
+          throw conflict(
+            'Properties with viewing history cannot be permanently deleted',
+          );
+
         await repository.remove(id, tx);
 
         return property.photos.map((photo) => photo.storageKey);
