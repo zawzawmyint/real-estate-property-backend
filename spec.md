@@ -31,7 +31,7 @@ The [project review remediation](specs/project-review-remediation/spec.md) verif
 
 ## Planned product scope
 
-Remaining backend work includes viewing, task and reporting workflows. The frontend pipeline is verified against the existing lead API. Later enhancements and the optional client portal remain subject to the roadmap.
+Viewing and task workflows are verified. Reporting remains future work. The frontend pipeline is verified against the existing lead API. Later enhancements and the optional client portal remain subject to the roadmap.
 
 The verified [public contact and agent pages specification](specs/public-contact-and-agents/spec.md) additionally records the public editorial content boundary and property-independent enquiries into existing lead persistence. Its [contract](specs/public-contact-and-agents/contract.md) is implemented. The fictional demo delivery is complete; real-business publication remains an operational content/approval gate.
 
@@ -53,6 +53,7 @@ The auth implementation uses Better Auth 1.7.12's native server handler in Expre
 - SQLite and local public-image storage are current choices. PostgreSQL and S3 are deferred migrations; private documents need separate authorized storage and delivery.
 - Define session lifecycle, browser/proxy behavior and authenticated server requests in the authentication specs before implementation.
 - Viewing management is verified. It adds the backend-owned `/api/v1/staff/viewings` contract, additive SQLite persistence and current-lead-assignment authorization; see [the feature specification](specs/viewing-management/spec.md) and [OpenAPI contract](docs/api/viewings.openapi.yaml). Booking never changes lead stage or inquiry property.
+- Follow-up tasks are verified at `/api/v1/staff/tasks` with additive SQLite persistence, current-lead-assignment authorization, versioned writes, durable creation receipts and server-derived overdue state; see [the feature specification](specs/follow-up-tasks/spec.md) and [OpenAPI contract](docs/api/tasks.openapi.yaml). Backend checks, task-focused browser evidence and the final unchanged serial legacy browser regression passed; P1-26/P1-27 are checked off. Reporting remains future work.
 
 ## Specification and documentation ownership
 

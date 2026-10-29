@@ -1,0 +1,750 @@
+{
+  'openapi': '3.1.0',
+  'info':
+    {
+      'title': 'Follow-up task management',
+      'version': '1.0.0',
+      'description': 'Current lead ownership. UTC instants; Dubai today. Overdue is open and dueAt < asOf. New/changed dates must be future. Authorized identical receipts return current task; changed same-actor receipt exposes existingTaskId only after authorization. Writes require trusted Origin and JSON; strict fields and duplicate query keys rejected.',
+    },
+  'paths':
+    {
+      '/api/v1/staff/tasks':
+        {
+          'get':
+            {
+              'operationId': 'listTasks',
+              'security': [{ 'staffSession': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': 'Task response',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/TaskPage' },
+                            },
+                        },
+                    },
+                  '400':
+                    {
+                      'description': 'Task response',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/TaskError' },
+                            },
+                        },
+                    },
+                  '401':
+                    {
+                      'description': 'Task response',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/TaskError' },
+                            },
+                        },
+                    },
+                  '404':
+                    {
+                      'description': 'Task response',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/TaskError' },
+                            },
+                        },
+                    },
+                },
+              'parameters':
+                [
+                  {
+                    'in': 'query',
+                    'name': 'leadId',
+                    'schema': { 'type': 'string', 'format': 'uuid' },
+                  },
+                  {
+                    'in': 'query',
+                    'name': 'status',
+                    'schema':
+                      {
+                        'type': 'string',
+                        'enum': ['open', 'completed', 'cancelled', 'all'],
+                        'default': 'open',
+                      },
+                  },
+                  {
+                    'in': 'query',
+                    'name': 'due',
+                    'schema':
+                      {
+                        'type': 'string',
+                        'enum': ['all', 'overdue', 'today', 'upcoming'],
+                        'default': 'all',
+                      },
+                  },
+                  {
+                    'in': 'query',
+                    'name': 'page',
+                    'schema':
+                      {
+                        'type': 'integer',
+                        'minimum': 1,
+                        'maximum': 1000000,
+                        'default': 1,
+                      },
+                  },
+                  {
+                    'in': 'query',
+                    'name': 'pageSize',
+                    'schema':
+                      {
+                        'type': 'integer',
+                        'minimum': 1,
+                        'maximum': 100,
+                        'default': 20,
+                      },
+                  },
+                ],
+            },
+          'post':
+            {
+              'operationId': 'createTask',
+              'security': [{ 'staffSession': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': 'Task response',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/TaskResult' },
+                            },
+                        },
+                    },
+                  '201':
+                    {
+                      'description': 'Task response',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/TaskResult' },
+                            },
+                        },
+                    },
+                  '400':
+                    {
+                      'description': 'Task response',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/TaskError' },
+                            },
+                        },
+                    },
+                  '401':
+                    {
+                      'description': 'Task response',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/TaskError' },
+                            },
+                        },
+                    },
+                  '403':
+                    {
+                      'description': 'Task response',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/TaskError' },
+                            },
+                        },
+                    },
+                  '404':
+                    {
+                      'description': 'Task response',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/TaskError' },
+                            },
+                        },
+                    },
+                  '409':
+                    {
+                      'description': 'Task response',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/TaskError' },
+                            },
+                        },
+                    },
+                  '413':
+                    {
+                      'description': 'Task response',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/TaskError' },
+                            },
+                        },
+                    },
+                  '415':
+                    {
+                      'description': 'Task response',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/TaskError' },
+                            },
+                        },
+                    },
+                },
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/CreateTask' },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/v1/staff/tasks/{id}':
+        {
+          'parameters':
+            [
+              {
+                'in': 'path',
+                'name': 'id',
+                'required': true,
+                'schema': { 'type': 'string', 'format': 'uuid' },
+              },
+            ],
+          'get':
+            {
+              'operationId': 'getTask',
+              'security': [{ 'staffSession': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': 'Task response',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/TaskResult' },
+                            },
+                        },
+                    },
+                  '400':
+                    {
+                      'description': 'Task response',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/TaskError' },
+                            },
+                        },
+                    },
+                  '401':
+                    {
+                      'description': 'Task response',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/TaskError' },
+                            },
+                        },
+                    },
+                  '404':
+                    {
+                      'description': 'Task response',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/TaskError' },
+                            },
+                        },
+                    },
+                },
+            },
+          'patch':
+            {
+              'operationId': 'updateTask',
+              'security': [{ 'staffSession': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': 'Task response',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/TaskResult' },
+                            },
+                        },
+                    },
+                  '400':
+                    {
+                      'description': 'Task response',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/TaskError' },
+                            },
+                        },
+                    },
+                  '401':
+                    {
+                      'description': 'Task response',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/TaskError' },
+                            },
+                        },
+                    },
+                  '403':
+                    {
+                      'description': 'Task response',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/TaskError' },
+                            },
+                        },
+                    },
+                  '404':
+                    {
+                      'description': 'Task response',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/TaskError' },
+                            },
+                        },
+                    },
+                  '409':
+                    {
+                      'description': 'Task response',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/TaskError' },
+                            },
+                        },
+                    },
+                  '413':
+                    {
+                      'description': 'Task response',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/TaskError' },
+                            },
+                        },
+                    },
+                  '415':
+                    {
+                      'description': 'Task response',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/TaskError' },
+                            },
+                        },
+                    },
+                },
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/UpdateTask' },
+                        },
+                    },
+                },
+            },
+        },
+      '/api/v1/staff/tasks/{id}/status':
+        {
+          'parameters':
+            [
+              {
+                'in': 'path',
+                'name': 'id',
+                'required': true,
+                'schema': { 'type': 'string', 'format': 'uuid' },
+              },
+            ],
+          'patch':
+            {
+              'operationId': 'updateTaskStatus',
+              'security': [{ 'staffSession': [] }],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': 'Task response',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/TaskResult' },
+                            },
+                        },
+                    },
+                  '400':
+                    {
+                      'description': 'Task response',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/TaskError' },
+                            },
+                        },
+                    },
+                  '401':
+                    {
+                      'description': 'Task response',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/TaskError' },
+                            },
+                        },
+                    },
+                  '403':
+                    {
+                      'description': 'Task response',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/TaskError' },
+                            },
+                        },
+                    },
+                  '404':
+                    {
+                      'description': 'Task response',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/TaskError' },
+                            },
+                        },
+                    },
+                  '409':
+                    {
+                      'description': 'Task response',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/TaskError' },
+                            },
+                        },
+                    },
+                  '413':
+                    {
+                      'description': 'Task response',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/TaskError' },
+                            },
+                        },
+                    },
+                  '415':
+                    {
+                      'description': 'Task response',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/TaskError' },
+                            },
+                        },
+                    },
+                },
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            { '$ref': '#/components/schemas/UpdateTaskStatus' },
+                        },
+                    },
+                },
+            },
+        },
+    },
+  'components':
+    {
+      'securitySchemes':
+        {
+          'staffSession':
+            { 'type': 'apiKey', 'in': 'cookie', 'name': 'agency.session' },
+        },
+      'schemas':
+        {
+          'Task':
+            {
+              'type': 'object',
+              'additionalProperties': false,
+              'required':
+                [
+                  'id',
+                  'lead',
+                  'assignedAgent',
+                  'title',
+                  'notes',
+                  'dueAt',
+                  'status',
+                  'isOverdue',
+                  'completedAt',
+                  'cancelledAt',
+                  'version',
+                  'createdAt',
+                  'updatedAt',
+                ],
+              'properties':
+                {
+                  'id': { 'type': 'string', 'format': 'uuid' },
+                  'lead':
+                    {
+                      'type': 'object',
+                      'additionalProperties': false,
+                      'required': ['id', 'name'],
+                      'properties':
+                        {
+                          'id': { 'type': 'string' },
+                          'name': { 'type': 'string' },
+                        },
+                    },
+                  'assignedAgent':
+                    {
+                      'anyOf':
+                        [
+                          {
+                            'type': 'object',
+                            'additionalProperties': false,
+                            'required': ['id', 'name'],
+                            'properties':
+                              {
+                                'id': { 'type': 'string' },
+                                'name': { 'type': 'string' },
+                              },
+                          },
+                          { 'type': 'null' },
+                        ],
+                    },
+                  'title': { 'type': 'string' },
+                  'notes': { 'type': ['string', 'null'] },
+                  'dueAt': { 'type': 'string', 'format': 'date-time' },
+                  'status':
+                    {
+                      'type': 'string',
+                      'enum': ['open', 'completed', 'cancelled'],
+                    },
+                  'isOverdue': { 'type': 'boolean' },
+                  'completedAt':
+                    { 'type': ['string', 'null'], 'format': 'date-time' },
+                  'cancelledAt':
+                    { 'type': ['string', 'null'], 'format': 'date-time' },
+                  'version': { 'type': 'integer', 'minimum': 1 },
+                  'createdAt': { 'type': 'string', 'format': 'date-time' },
+                  'updatedAt': { 'type': 'string', 'format': 'date-time' },
+                },
+            },
+          'TaskResult':
+            {
+              'type': 'object',
+              'additionalProperties': false,
+              'required': ['task', 'asOf'],
+              'properties':
+                {
+                  'task': { '$ref': '#/components/schemas/Task' },
+                  'asOf': { 'type': 'string', 'format': 'date-time' },
+                },
+            },
+          'TaskPage':
+            {
+              'type': 'object',
+              'additionalProperties': false,
+              'required': ['items', 'page', 'pageSize', 'total', 'asOf'],
+              'properties':
+                {
+                  'items':
+                    {
+                      'type': 'array',
+                      'items': { '$ref': '#/components/schemas/Task' },
+                    },
+                  'page': { 'type': 'integer', 'minimum': 1 },
+                  'pageSize': { 'type': 'integer', 'minimum': 1 },
+                  'total': { 'type': 'integer' },
+                  'asOf': { 'type': 'string', 'format': 'date-time' },
+                },
+            },
+          'CreateTask':
+            {
+              'type': 'object',
+              'additionalProperties': false,
+              'required':
+                [
+                  'submissionId',
+                  'leadId',
+                  'expectedLeadVersion',
+                  'title',
+                  'dueAt',
+                ],
+              'properties':
+                {
+                  'submissionId': { 'type': 'string', 'format': 'uuid' },
+                  'leadId': { 'type': 'string', 'format': 'uuid' },
+                  'expectedLeadVersion': { 'type': 'integer', 'minimum': 1 },
+                  'title':
+                    { 'type': 'string', 'minLength': 1, 'maxLength': 160 },
+                  'notes': { 'type': ['string', 'null'], 'maxLength': 2000 },
+                  'dueAt': { 'type': 'string', 'format': 'date-time' },
+                },
+            },
+          'UpdateTask':
+            {
+              'type': 'object',
+              'additionalProperties': false,
+              'required':
+                [
+                  'expectedVersion',
+                  'expectedLeadVersion',
+                  'title',
+                  'notes',
+                  'dueAt',
+                ],
+              'properties':
+                {
+                  'expectedVersion': { 'type': 'integer', 'minimum': 1 },
+                  'expectedLeadVersion': { 'type': 'integer', 'minimum': 1 },
+                  'title':
+                    { 'type': 'string', 'minLength': 1, 'maxLength': 160 },
+                  'notes': { 'type': ['string', 'null'], 'maxLength': 2000 },
+                  'dueAt': { 'type': 'string', 'format': 'date-time' },
+                },
+            },
+          'UpdateTaskStatus':
+            {
+              'type': 'object',
+              'additionalProperties': false,
+              'required': ['expectedVersion', 'status'],
+              'properties':
+                {
+                  'expectedVersion': { 'type': 'integer', 'minimum': 1 },
+                  'status':
+                    { 'type': 'string', 'enum': ['completed', 'cancelled'] },
+                },
+            },
+          'TaskError':
+            {
+              'type': 'object',
+              'additionalProperties': false,
+              'required': ['error'],
+              'properties':
+                {
+                  'error':
+                    {
+                      'type': 'object',
+                      'additionalProperties': false,
+                      'required': ['code', 'message', 'requestId'],
+                      'properties':
+                        {
+                          'code': { 'type': 'string' },
+                          'message': { 'type': 'string' },
+                          'requestId': { 'type': 'string' },
+                          'existingTaskId':
+                            { 'type': 'string', 'format': 'uuid' },
+                        },
+                    },
+                },
+            },
+        },
+    },
+}
