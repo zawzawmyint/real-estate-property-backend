@@ -6,6 +6,8 @@ info:
 servers:
   - url: http://localhost:4311
 paths:
+  /api/v1/staff/dashboard:
+    $ref: './dashboard.openapi.yaml#/paths/~1api~1v1~1staff~1dashboard'
   /api/v1/staff/tasks:
     $ref: './tasks.openapi.yaml#/paths/~1api~1v1~1staff~1tasks'
   /api/v1/staff/tasks/{id}:

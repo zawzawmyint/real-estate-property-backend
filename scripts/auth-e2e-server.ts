@@ -103,132 +103,206 @@ for (const project of ['desktop', 'mobile'])
       role: identity === 'manager' ? 'manager' : 'agent',
     });
 
-// A started appointment exercises feedback without weakening booking-time rules.
-const viewingProperty = await fixture.database.property.findFirst({
-  where: { publishingState: 'published', availability: 'available' },
-});
-if (viewingProperty)
-  for (const project of ['desktop', 'mobile']) {
-    const agent = await fixture.database.user.findUniqueOrThrow({
-      where: { email: `e2e-viewing-${project}-agent@example.com` },
+// Dashboard acceptance runs in a separate disposable process, so exact agency
+// totals cannot be changed by legacy lead/viewing/task fixtures or other suites.
+if (process.env.STAFF_E2E_DASHBOARD_ONLY === '1') {
+  for (const identity of [
+    'admin',
+    'manager',
+    'agent',
+    'other-agent',
+    'empty-agent',
+  ] as const)
+    await fixture.operator.create({
+      name: `Dashboard E2E ${identity}`,
+      email: `e2e-dashboard-${identity}@example.com`,
+      password,
+      role: identity === 'admin' || identity === 'manager' ? identity : 'agent',
     });
+
+  const agent = await fixture.database.user.findUniqueOrThrow({
+    where: { email: 'e2e-dashboard-agent@example.com' },
+  });
+  const other = await fixture.database.user.findUniqueOrThrow({
+    where: { email: 'e2e-dashboard-other-agent@example.com' },
+  });
+  const now = new Date();
+  const dubai = new Date(now.getTime() + 4 * 3_600_000);
+  const daysSinceMonday = (dubai.getUTCDay() + 6) % 7;
+  const weekStart = new Date(
+    Date.UTC(
+      dubai.getUTCFullYear(),
+      dubai.getUTCMonth(),
+      dubai.getUTCDate() - daysSinceMonday,
+    ) -
+      4 * 3_600_000,
+  );
+  const sources = ['website', 'call', 'walk_in'] as const;
+  const stages = [
+    'won',
+    'new',
+    'contacted',
+    'viewing_scheduled',
+    'offer',
+    'lost',
+    'won',
+    'new',
+    'contacted',
+    'new',
+  ] as const;
+
+  for (let index = 0; index < 10; index++) {
+    const assigned = index < 6 ? agent : index < 9 ? other : null;
     const data = {
-      name: `Started viewing ${project}`,
+      name: `Dashboard fixture ${String(index + 1).padStart(2, '0')}`,
       phone: '+971 50 123 4567',
       email: null,
       propertyTitleSnapshot: null,
     };
-    const lead = await fixture.database.lead.create({
+
+    await fixture.database.lead.create({
       data: {
         ...data,
         ...leadSearch(data),
         purpose: 'sale',
-        source: 'call',
-        assignedAgentId: agent.id,
-        assignedAgentNameSnapshot: agent.name,
-      },
-    });
-    await fixture.database.viewing.create({
-      data: {
-        submissionId: randomUUID(),
-        actorScope: agent.id,
-        payloadHash: 'disposable-started-viewing-fixture',
-        leadId: lead.id,
-        propertyId: viewingProperty.id,
-        propertyTitleSnapshot: viewingProperty.title,
-        propertyLocationSnapshot: viewingProperty.city,
-        startsAt: new Date(Date.now() - 3_600_000),
-        endsAt: new Date(Date.now() - 1_800_000),
-        createdById: agent.id,
+        source: sources[index % 3]!,
+        stage: stages[index]!,
+        assignedAgentId: assigned?.id ?? null,
+        assignedAgentNameSnapshot: assigned?.name ?? null,
+        createdAt: [0, 1, 6].includes(index)
+          ? weekStart
+          : new Date(weekStart.getTime() - 86_400_000),
       },
     });
   }
-
-for (const project of ['desktop', 'mobile']) {
-  const email = `e2e-lead-${project}-inactive@example.com`;
-  const inactive = await fixture.operator.create({
-    name: `Lead E2E ${project} inactive agent`,
-    email,
-    password,
-    role: 'agent',
+} else {
+  // A started appointment exercises feedback without weakening booking-time rules.
+  const viewingProperty = await fixture.database.property.findFirst({
+    where: { publishingState: 'published', availability: 'available' },
   });
-  const data = {
-    name: `Inactive assignment ${project}`,
-    phone: '+971 50 123 4567',
-    email: null,
-    propertyTitleSnapshot: null,
-  };
-
-  await fixture.database.lead.create({
-    data: {
-      ...data,
-      ...leadSearch(data),
-      purpose: 'sale',
-      source: 'call',
-      assignedAgentId: inactive.id,
-      assignedAgentNameSnapshot: inactive.name,
-    },
-  });
-  await fixture.operator.deactivate(email);
-}
-
-// Task browser cases use isolated identities and deliberately overdue records.
-// These fixtures exist only in the disposable test process, never production.
-for (const project of ['desktop', 'mobile']) {
-  for (const suite of ['task', 'task-recovery'])
-    for (const identity of ['manager', 'agent', 'other-agent'] as const)
-      await fixture.operator.create({
-        name: `${suite} E2E ${project} ${identity}`,
-        email: `e2e-${suite}-${project}-${identity}@example.com`,
-        password,
-        role: identity === 'manager' ? 'manager' : 'agent',
+  if (viewingProperty)
+    for (const project of ['desktop', 'mobile']) {
+      const agent = await fixture.database.user.findUniqueOrThrow({
+        where: { email: `e2e-viewing-${project}-agent@example.com` },
       });
+      const data = {
+        name: `Started viewing ${project}`,
+        phone: '+971 50 123 4567',
+        email: null,
+        propertyTitleSnapshot: null,
+      };
+      const lead = await fixture.database.lead.create({
+        data: {
+          ...data,
+          ...leadSearch(data),
+          purpose: 'sale',
+          source: 'call',
+          assignedAgentId: agent.id,
+          assignedAgentNameSnapshot: agent.name,
+        },
+      });
+      await fixture.database.viewing.create({
+        data: {
+          submissionId: randomUUID(),
+          actorScope: agent.id,
+          payloadHash: 'disposable-started-viewing-fixture',
+          leadId: lead.id,
+          propertyId: viewingProperty.id,
+          propertyTitleSnapshot: viewingProperty.title,
+          propertyLocationSnapshot: viewingProperty.city,
+          startsAt: new Date(Date.now() - 3_600_000),
+          endsAt: new Date(Date.now() - 1_800_000),
+          createdById: agent.id,
+        },
+      });
+    }
 
-  const agent = await fixture.database.user.findUniqueOrThrow({
-    where: { email: `e2e-task-${project}-agent@example.com` },
-  });
-
-  for (const scenario of ['overdue', 'exact timestamp']) {
+  for (const project of ['desktop', 'mobile']) {
+    const email = `e2e-lead-${project}-inactive@example.com`;
+    const inactive = await fixture.operator.create({
+      name: `Lead E2E ${project} inactive agent`,
+      email,
+      password,
+      role: 'agent',
+    });
     const data = {
-      name: `Task ${scenario} ${project}`,
+      name: `Inactive assignment ${project}`,
       phone: '+971 50 123 4567',
       email: null,
       propertyTitleSnapshot: null,
     };
-    const lead = await fixture.database.lead.create({
+
+    await fixture.database.lead.create({
       data: {
         ...data,
         ...leadSearch(data),
         purpose: 'sale',
         source: 'call',
-        assignedAgentId: agent.id,
-        assignedAgentNameSnapshot: agent.name,
+        assignedAgentId: inactive.id,
+        assignedAgentNameSnapshot: inactive.name,
       },
     });
-    const count = scenario === 'overdue' ? 23 : 1;
+    await fixture.operator.deactivate(email);
+  }
 
-    for (let index = 0; index < count; index++)
-      await fixture.database.task.create({
+  // Task browser cases use isolated identities and deliberately overdue records.
+  // These fixtures exist only in the disposable test process, never production.
+  for (const project of ['desktop', 'mobile']) {
+    for (const suite of ['task', 'task-recovery'])
+      for (const identity of ['manager', 'agent', 'other-agent'] as const)
+        await fixture.operator.create({
+          name: `${suite} E2E ${project} ${identity}`,
+          email: `e2e-${suite}-${project}-${identity}@example.com`,
+          password,
+          role: identity === 'manager' ? 'manager' : 'agent',
+        });
+
+    const agent = await fixture.database.user.findUniqueOrThrow({
+      where: { email: `e2e-task-${project}-agent@example.com` },
+    });
+
+    for (const scenario of ['overdue', 'exact timestamp']) {
+      const data = {
+        name: `Task ${scenario} ${project}`,
+        phone: '+971 50 123 4567',
+        email: null,
+        propertyTitleSnapshot: null,
+      };
+      const lead = await fixture.database.lead.create({
         data: {
-          submissionId: randomUUID(),
-          actorScope: agent.id,
-          payloadHash: 'disposable-task-fixture',
-          leadId: lead.id,
-          title: `Follow-up ${scenario} ${project} ${String(index + 1).padStart(2, '0')}`,
-          notes: 'Fictional follow-up for browser acceptance checks.',
-          dueAt: new Date(Date.now() - 86_400_000 + index * 1000),
-          createdById: agent.id,
+          ...data,
+          ...leadSearch(data),
+          purpose: 'sale',
+          source: 'call',
+          assignedAgentId: agent.id,
+          assignedAgentNameSnapshot: agent.name,
         },
       });
+      const count = scenario === 'overdue' ? 23 : 1;
+
+      for (let index = 0; index < count; index++)
+        await fixture.database.task.create({
+          data: {
+            submissionId: randomUUID(),
+            actorScope: agent.id,
+            payloadHash: 'disposable-task-fixture',
+            leadId: lead.id,
+            title: `Follow-up ${scenario} ${project} ${String(index + 1).padStart(2, '0')}`,
+            notes: 'Fictional follow-up for browser acceptance checks.',
+            dueAt: new Date(Date.now() - 86_400_000 + index * 1000),
+            createdById: agent.id,
+          },
+        });
+    }
   }
 }
 
 const port = Number(process.env.PORT ?? 4311);
-const server = fixture.app.listen(port, '127.0.0.1', () =>
-  console.info('AUTH_E2E_READY'),
-);
+const server = fixture.app.listen(port, '127.0.0.1');
+server.once('listening', () => console.info('AUTH_E2E_READY'));
 
-server.on('error', async () => {
+server.on('error', async (error: NodeJS.ErrnoException) => {
+  console.error('AUTH_E2E_LISTEN_ERROR', error.code ?? 'UNKNOWN');
   await fixture.close();
   process.exitCode = 1;
 });

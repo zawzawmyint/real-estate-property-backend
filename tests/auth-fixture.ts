@@ -10,6 +10,12 @@ import { parseEnv } from '../src/config/env.js';
 export const testSecret = 'test-only-secret-for-authentication-integration';
 
 export async function authFixture() {
+  const port = process.env.E2E_BACKEND_PORT;
+  if (
+    port !== undefined &&
+    (!/^\d+$/.test(port) || Number(port) < 1 || Number(port) > 65535)
+  )
+    throw new Error('E2E_BACKEND_PORT must be a valid loopback port');
   const directory = await mkdtemp(join(tmpdir(), 'agency-auth-'));
   const env = parseEnv({
     NODE_ENV: 'test',
@@ -18,6 +24,9 @@ export async function authFixture() {
     BETTER_AUTH_SECRET: testSecret,
     DATABASE_URL: `file:${join(directory, 'auth.db')}`,
     STORAGE_ROOT: join(directory, 'media'),
+    ...(port === undefined
+      ? {}
+      : { PORT: port, PUBLIC_ORIGIN: `http://127.0.0.1:${port}` }),
   });
   const database = await createDatabase(env.DATABASE_URL);
   const migrations = new URL('../prisma/migrations/', import.meta.url);

@@ -1,0 +1,114 @@
+openapi: 3.1.0
+info:
+  title: Agency dashboard
+  version: 1.0.0
+paths:
+  /api/v1/staff/dashboard:
+    get:
+      operationId: getDashboardSummary
+      summary: Current authorized lead aggregates from one snapshot
+      description: No query parameters accepted. Admin and Manager include unassigned leads; Agent includes current own assignments. All counts exclude createdAt after generatedAt. Week is Monday midnight Asia/Dubai. Conversion is current Won divided by all visible leads, rounded to one decimal; not historical performance.
+      security:
+        - staffSession: []
+      responses:
+        '200':
+          description: Authorized dashboard snapshot
+          headers:
+            Cache-Control:
+              schema: { type: string, const: no-store }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardSummary'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '500':
+          $ref: '#/components/responses/Error'
+components:
+  securitySchemes:
+    staffSession:
+      type: apiKey
+      in: cookie
+      name: agency.session
+  responses:
+    Error:
+      description: Existing safe error envelope; authentication precedes query validation
+      headers:
+        Cache-Control:
+          schema: { type: string, const: no-store }
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [error]
+            properties:
+              error:
+                type: object
+                additionalProperties: false
+                required: [code, message, requestId]
+                properties:
+                  code: { type: string }
+                  message: { type: string }
+                  requestId: { type: string }
+  schemas:
+    DashboardSummary:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          generatedAt,
+          scope,
+          timezone,
+          weekStart,
+          weekEndExclusive,
+          totalLeads,
+          newLeadsThisWeek,
+          wonLeads,
+          conversionRatePercent,
+          leadsBySource,
+          pipelineByStage,
+        ]
+      properties:
+        generatedAt: { type: string, format: date-time }
+        scope: { type: string, enum: [agency, mine] }
+        timezone: { type: string, const: Asia/Dubai }
+        weekStart: { type: string, format: date-time }
+        weekEndExclusive: { type: string, format: date-time }
+        totalLeads: { type: integer, minimum: 0 }
+        newLeadsThisWeek: { type: integer, minimum: 0 }
+        wonLeads: { type: integer, minimum: 0 }
+        conversionRatePercent:
+          { type: [number, 'null'], minimum: 0, maximum: 100, multipleOf: 0.1 }
+        leadsBySource:
+          type: array
+          description: Fixed order website, call, walk_in; zero-filled; counts sum to totalLeads
+          minItems: 3
+          maxItems: 3
+          items:
+            type: object
+            additionalProperties: false
+            required: [source, count]
+            properties:
+              source: { type: string, enum: [website, call, walk_in] }
+              count: { type: integer, minimum: 0 }
+        pipelineByStage:
+          type: array
+          description: Fixed order new, contacted, viewing_scheduled, offer, won, lost; zero-filled; counts sum to totalLeads
+          minItems: 6
+          maxItems: 6
+          items:
+            type: object
+            additionalProperties: false
+            required: [stage, count]
+            properties:
+              stage:
+                {
+                  type: string,
+                  enum: [new, contacted, viewing_scheduled, offer, won, lost],
+                }
+              count: { type: integer, minimum: 0 }
