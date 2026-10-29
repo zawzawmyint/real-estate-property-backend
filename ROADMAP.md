@@ -8,7 +8,7 @@
 
 Track every Phase 1, 2 and 3 feature from the original **Real Estate CRM Checklist**, without treating project setup as completed business functionality.
 
-**Current baseline:** Foundation is complete; 20 verified Phase 1 checklist items are complete and 22 Phase 1–3 checklist items remain pending. The original five portfolio delivery items are retained separately. This roadmap is the workspace-wide source of truth for feature progress; repository-local specifications define implementation and acceptance.
+**Current baseline:** Foundation is complete; 23 verified Phase 1 checklist items are complete and 19 Phase 1–3 checklist items remain pending. The original five portfolio delivery items are retained separately. This roadmap is the workspace-wide source of truth for feature progress; repository-local specifications define implementation and acceptance.
 
 ---
 
@@ -170,11 +170,11 @@ This is an internal staff view of a lead, not the Phase 3 client portal. Its act
 
 #### Viewings
 
-**Proposed spec slug:** `viewing-management`.
+**Verified (2026-10-29):** [viewing management](specs/viewing-management/spec.md) completes P1-23–P1-25 with the [delivery plan](docs/superpowers/plans/2026-10-28-viewing-management.md). Two final-source browser runs passed with no failures: 34/34 viewing cases and 165 existing cases with 9 conditional project/viewport skips.
 
-- [ ] **P1-23** Schedule a viewing for a lead and a property
-- [ ] **P1-24** Calendar view
-- [ ] **P1-25** Feedback notes after the viewing
+- [x] **P1-23** Schedule a viewing for a lead and a property
+- [x] **P1-24** Calendar view
+- [x] **P1-25** Feedback notes after the viewing
 
 #### Tasks and reminders
 
@@ -301,6 +301,7 @@ Foundation smoke-test screenshots do not complete D-04: capture the delivered bu
 - **2026-10-27 — Sales pipeline verified:** P1-10 completed through the [sales-pipeline specification](specs/sales-pipeline/spec.md). Frontend API drift, lint, formatting and type checks passed with 142 unit tests in 26 files and an isolated production Webpack build. Backend `bun run check` passed with 78 tests in 20 files, including its build. The full isolated desktop/mobile browser regression passed 140 tests with 6 conditional viewport skips (146 total); focused pipeline coverage passed 20 tests with 2 mobile skips for desktop-only dragging. Coverage includes pointer and keyboard drag/cancel, terminal confirmation, conflicts, role ownership/reassignment, pagination/retry, held reads, lost save responses and session loss. Layouts were checked at 320, 390, 768 and 1440px; desktop/mobile screenshots were visually reviewed. Next.js DevTools confirmed an active pipeline browser session with no configuration or session errors. Existing Express lead contracts and authorization remain authoritative; no API/schema change or production deployment is claimed.
 - **2026-10-27 — Public contact and agent pages verified:** P1-17 completed through the [public contact and agent pages specification](specs/public-contact-and-agents/spec.md). Backend `bun run check` passed with 90 tests in 22 files and a production build; frontend API drift, lint, formatting, typecheck, 166 unit tests and an isolated production Webpack build passed. The final isolated sequential browser suite passed 161 tests with 7 intentional project-specific skips (168 total), and focused desktop/mobile receipt and validation-summary focus coverage passed 4/4. Coverage includes public-to-CRM assignment/Agent visibility, idempotent retries, held writes, edit-as-new, shared rate limits, 404/503 distinctions, portrait fallback, accessible names/focus, keyboard navigation, four viewport widths, 200% text and reduced motion. Final desktop/mobile screenshots were reviewed with all fictional portraits loaded; runtime inspection reported no configuration or session errors. This verifies the fictional demo delivery only: real contact facts, profile/portrait approvals and live inquiry wording remain required before real-business publication.
 - **2026-10-27 — Review remediation evidence:** No roadmap feature or checklist state changed. Frontend API drift, lint, formatting, typecheck, 199 unit tests in 34 files and an isolated production build passed; backend `bun run check` passed with 94 tests in 23 files. Focused browser regressions confirm canonical whitespace phones, full pasted phone preservation, unknown-mode Contact copy, saved-receipt recovery and outcome-accurate pipeline announcements. Runtime inspection confirmed the expected checkout and a 390px Contact probe with no configuration or session errors, without submitting against the user dev server. The full browser run reported 163 passed, 8 intentional skips and one pointer-cancel test synchronization failure. After correcting the test to wait for settled drop-animation geometry and verify an active drag before Escape, that case passed three consecutive isolated reruns. All 164 applicable browser cases are covered across these runs; a single clean full-suite rerun is not claimed. The real-business publication gate remains unchecked.
+- **2026-10-29 — Viewing management verified:** P1-23–P1-25 completed through the [viewing management specification](specs/viewing-management/spec.md). Backend `bun run check` passed with 105 tests in 28 files; additive migration and database checks passed, including a populated disposable upgrade and a backed-up local development upgrade. Frontend API drift, lint, formatting, typecheck, 218 unit tests in 39 files and an isolated production build passed. Two final-source browser runs passed with no failures: the viewing suites passed 34/34 desktop/mobile cases in 3.7 minutes, covering booking, rescheduling, cancellation, feedback, receipt recovery, reassignment, pagination, Dubai display in an America/New_York browser, dirty/pristine refresh guards and 320/390/768/1440px layouts; the remaining existing suites passed 165 cases with 9 conditional project/viewport skips in 12.9 minutes. Together, the runs cover 199 passing cases, 9 skips and 208 registered cases, and are not represented as one combined suite. Live runtime inspection confirmed `/crm/viewings` in the expected checkout with no configuration or session errors.
 - For later deliveries, append the date, checklist IDs, actual feature-spec links, verification evidence and any remaining gaps.
 
 ---

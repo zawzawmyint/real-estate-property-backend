@@ -26,6 +26,7 @@ try {
     db.leadNote.count(),
     db.leadActivity.count(),
     db.leadSubmissionReceipt.count(),
+    db.viewing.count(),
   ]);
   await verifyPropertySearch(db);
   await verifyLeadSearch(db);

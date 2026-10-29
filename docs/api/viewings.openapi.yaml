@@ -1,0 +1,270 @@
+openapi: 3.1.0
+info:
+  title: Viewing management
+  version: 1.0.0
+paths:
+  /api/v1/staff/viewings:
+    get:
+      operationId: listViewings
+      summary: List current-ownership scoped appointments ordered by startsAt and id
+      security: [{ staffSession: [] }]
+      parameters:
+        - {
+            in: query,
+            name: from,
+            required: true,
+            schema: { type: string, format: date-time },
+            description: Inclusive start; offset required,
+          }
+        - {
+            in: query,
+            name: to,
+            required: true,
+            schema: { type: string, format: date-time },
+            description: Exclusive end; range at most 42 days,
+          }
+        - {
+            in: query,
+            name: page,
+            schema: { type: integer, minimum: 1, maximum: 1000000, default: 1 },
+          }
+        - {
+            in: query,
+            name: pageSize,
+            schema: { type: integer, minimum: 1, maximum: 100, default: 50 },
+          }
+        - { in: query, name: leadId, schema: { type: string, format: uuid } }
+        - {
+            in: query,
+            name: status,
+            schema: { type: string, enum: [scheduled, completed, cancelled] },
+          }
+      responses:
+        '200':
+          description: Authorized appointments; all states by default
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [items, page, pageSize, total]
+                properties:
+                  items:
+                    {
+                      type: array,
+                      items: { $ref: '#/components/schemas/Viewing' },
+                    }
+                  page: { type: integer }
+                  pageSize: { type: integer }
+                  total: { type: integer }
+        '400': { $ref: '#/components/responses/ViewingError' }
+        '401': { $ref: '#/components/responses/ViewingError' }
+        '404': { $ref: '#/components/responses/ViewingError' }
+    post:
+      operationId: createViewing
+      summary: Book a future 15–240 minute appointment for an eligible assigned lead and published available property
+      security: [{ staffSession: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateViewing' }
+      responses:
+        '201': { $ref: '#/components/responses/ViewingSuccess' }
+        '200': { $ref: '#/components/responses/ViewingSuccess' }
+        '400': { $ref: '#/components/responses/ViewingError' }
+        '401': { $ref: '#/components/responses/ViewingError' }
+        '403': { $ref: '#/components/responses/ViewingError' }
+        '404': { $ref: '#/components/responses/ViewingError' }
+        '409': { $ref: '#/components/responses/ViewingError' }
+        '413': { $ref: '#/components/responses/ViewingError' }
+        '415': { $ref: '#/components/responses/ViewingError' }
+  /api/v1/staff/viewings/{id}:
+    parameters:
+      - {
+          in: path,
+          name: id,
+          required: true,
+          schema: { type: string, format: uuid },
+        }
+    get:
+      operationId: getViewing
+      security: [{ staffSession: [] }]
+      responses:
+        '200': { $ref: '#/components/responses/ViewingSuccess' }
+        '400': { $ref: '#/components/responses/ViewingError' }
+        '401': { $ref: '#/components/responses/ViewingError' }
+        '404': { $ref: '#/components/responses/ViewingError' }
+    patch:
+      operationId: rescheduleViewing
+      summary: Reschedule scheduled appointment with current lead/version/eligibility checks
+      security: [{ staffSession: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RescheduleViewing' }
+      responses:
+        '200': { $ref: '#/components/responses/ViewingSuccess' }
+        '400': { $ref: '#/components/responses/ViewingError' }
+        '401': { $ref: '#/components/responses/ViewingError' }
+        '403': { $ref: '#/components/responses/ViewingError' }
+        '404': { $ref: '#/components/responses/ViewingError' }
+        '409': { $ref: '#/components/responses/ViewingError' }
+        '413': { $ref: '#/components/responses/ViewingError' }
+        '415': { $ref: '#/components/responses/ViewingError' }
+  /api/v1/staff/viewings/{id}/status:
+    parameters:
+      - {
+          in: path,
+          name: id,
+          required: true,
+          schema: { type: string, format: uuid },
+        }
+    patch:
+      operationId: updateViewingStatus
+      summary: Cancel or complete a scheduled appointment; completion requires a started appointment and immutable feedback
+      security: [{ staffSession: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateViewingStatus' }
+      responses:
+        '200': { $ref: '#/components/responses/ViewingSuccess' }
+        '400': { $ref: '#/components/responses/ViewingError' }
+        '401': { $ref: '#/components/responses/ViewingError' }
+        '403': { $ref: '#/components/responses/ViewingError' }
+        '404': { $ref: '#/components/responses/ViewingError' }
+        '409': { $ref: '#/components/responses/ViewingError' }
+        '413': { $ref: '#/components/responses/ViewingError' }
+        '415': { $ref: '#/components/responses/ViewingError' }
+components:
+  securitySchemes:
+    staffSession:
+      type: apiKey
+      in: cookie
+      name: agency.session
+      description: Production __Host-agency.session
+  responses:
+    ViewingSuccess:
+      description: Privacy-safe viewing; identical authorized create replay returns 200
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Viewing' }
+    ViewingError:
+      description: Structured error; inaccessible records return 404, stale versions or lifecycle/eligibility conflicts return 409
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [error]
+            properties:
+              error:
+                type: object
+                additionalProperties: false
+                required: [code, message, requestId]
+                properties:
+                  code: { type: string }
+                  message: { type: string }
+                  requestId: { type: string }
+                  existingViewingId:
+                    type: string
+                    format: uuid
+                    description: Only for VIEWING_RECEIPT_CONFLICT after current access and same-actor verification; open the saved appointment for review. Retain submissionId across deliberate corrections to prevent delayed requests creating duplicates.
+  schemas:
+    Viewing:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          id,
+          lead,
+          property,
+          assignedAgent,
+          startsAt,
+          endsAt,
+          status,
+          feedback,
+          version,
+          createdAt,
+          updatedAt,
+        ]
+      properties:
+        id: { type: string, format: uuid }
+        lead:
+          type: object
+          additionalProperties: false
+          required: [id, name]
+          properties:
+            id: { type: string, format: uuid }
+            name: { type: string }
+        property:
+          type: object
+          additionalProperties: false
+          required: [id, title, location, bookable]
+          properties:
+            id: { type: string, format: uuid }
+            title: { type: string }
+            location: { type: [string, 'null'] }
+            bookable: { type: boolean }
+        assignedAgent:
+          oneOf:
+            - { type: 'null' }
+            - type: object
+              additionalProperties: false
+              required: [id, name]
+              properties:
+                id: { type: string }
+                name: { type: string }
+        startsAt: { type: string, format: date-time }
+        endsAt: { type: string, format: date-time }
+        status: { type: string, enum: [scheduled, completed, cancelled] }
+        feedback: { type: [string, 'null'] }
+        version: { type: integer, minimum: 1 }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    CreateViewing:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          submissionId,
+          leadId,
+          propertyId,
+          expectedLeadVersion,
+          startsAt,
+          endsAt,
+        ]
+      properties:
+        submissionId: { type: string, format: uuid }
+        leadId: { type: string, format: uuid }
+        propertyId: { type: string, format: uuid }
+        expectedLeadVersion: { type: integer, minimum: 1 }
+        startsAt: { type: string, format: date-time }
+        endsAt: { type: string, format: date-time }
+    RescheduleViewing:
+      type: object
+      additionalProperties: false
+      required: [expectedVersion, expectedLeadVersion, startsAt, endsAt]
+      properties:
+        expectedVersion: { type: integer, minimum: 1 }
+        expectedLeadVersion: { type: integer, minimum: 1 }
+        startsAt: { type: string, format: date-time }
+        endsAt: { type: string, format: date-time }
+    UpdateViewingStatus:
+      oneOf:
+        - type: object
+          additionalProperties: false
+          required: [expectedVersion, status]
+          properties:
+            expectedVersion: { type: integer, minimum: 1 }
+            status: { const: cancelled }
+        - type: object
+          additionalProperties: false
+          required: [expectedVersion, status, feedback]
+          properties:
+            expectedVersion: { type: integer, minimum: 1 }
+            status: { const: completed }
+            feedback: { type: string, minLength: 1, maxLength: 4000 }

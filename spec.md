@@ -52,6 +52,7 @@ The auth implementation uses Better Auth 1.7.12's native server handler in Expre
 - Public inquiry responses exclude lead data; staff lead data remains role-scoped and excludes property-owner details, staff email and receipt material.
 - SQLite and local public-image storage are current choices. PostgreSQL and S3 are deferred migrations; private documents need separate authorized storage and delivery.
 - Define session lifecycle, browser/proxy behavior and authenticated server requests in the authentication specs before implementation.
+- Viewing management is verified. It adds the backend-owned `/api/v1/staff/viewings` contract, additive SQLite persistence and current-lead-assignment authorization; see [the feature specification](specs/viewing-management/spec.md) and [OpenAPI contract](docs/api/viewings.openapi.yaml). Booking never changes lead stage or inquiry property.
 
 ## Specification and documentation ownership
 
