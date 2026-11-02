@@ -14,7 +14,7 @@ The catalog contains agency public content plus up to 24 profiles. Catalog-only 
 
 `AgentPortrait = { src: string, width: number, height: number }` or null. `src` is an authored allowlisted frontend website asset path matching `/images/agents/[a-z0-9-]+.webp`; no arbitrary URL, relative traversal, SVG or auth-avatar URL. Dimensions are positive integers; frontend supplies portrait alt/fallback presentation. The two deployments coordinate those public assets without importing sibling source.
 
-`PublicAgentSummary = { slug, name, title, specialties: string[], portrait: AgentPortrait, isDemo }`.
+`PublicAgentSummary = { slug, name, title, specialties: string[], languages: string[], portrait: AgentPortrait, isDemo }`.
 
 `PublicAgentDetail = PublicAgentSummary & { introduction: string, biography: string[], languages: string[], publicPhone: string|null, publicEmail: string|null }`.
 
