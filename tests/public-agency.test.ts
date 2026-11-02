@@ -2,6 +2,10 @@ import request from 'supertest';
 import { afterAll, expect, it } from 'vitest';
 import { authFixture } from './auth-fixture.js';
 import { createApp } from '../src/app.js';
+import {
+  publicAgentDetailDto,
+  publicAgentSummaryDto,
+} from '../src/modules/agency/agency.dto.js';
 
 const fixture = await authFixture();
 afterAll(() => fixture.close());
@@ -57,7 +61,15 @@ it('publishes a safe demo catalog without actionable invented contacts', async (
   expect(directory.body.total).toBe(3);
   for (const item of directory.body.items) {
     expect(Object.keys(item).sort()).toEqual(
-      ['slug', 'name', 'title', 'specialties', 'portrait', 'isDemo'].sort(),
+      [
+        'slug',
+        'name',
+        'title',
+        'specialties',
+        'languages',
+        'portrait',
+        'isDemo',
+      ].sort(),
     );
     expect(item.isDemo).toBe(true);
     const detail = await request(fixture.app).get(
@@ -67,6 +79,65 @@ it('publishes a safe demo catalog without actionable invented contacts', async (
     expect(detail.body.publicEmail).toBeNull();
     expect(detail.headers['cache-control']).toBe('no-store');
   }
+});
+
+it('detaches summary and detail languages from the catalog', () => {
+  const source = { ...profile, languages: ['Arabic', 'English'] };
+  const summary = publicAgentSummaryDto(source);
+  const detail = publicAgentDetailDto(source);
+
+  expect(summary).toEqual({
+    slug: 'sample-agent',
+    name: 'Sample Agent',
+    title: 'Demo advisor',
+    specialties: ['Homes'],
+    languages: ['Arabic', 'English'],
+    portrait: profile.portrait,
+    isDemo: true,
+  });
+  expect(detail).toEqual({
+    ...summary,
+    introduction: 'Fictional introduction.',
+    biography: ['Fictional biography.'],
+    publicPhone: null,
+    publicEmail: null,
+  });
+  expect(summary.languages).not.toBe(source.languages);
+  expect(detail.languages).not.toBe(source.languages);
+  summary.languages.push('French');
+  detail.languages.reverse();
+  expect(source.languages).toEqual(['Arabic', 'English']);
+});
+
+it('publishes empty and maximal languages in authored order with trimmed values', async () => {
+  const languages = [
+    'Zulu',
+    'Arabic',
+    'English',
+    'French',
+    'Hindi',
+    'Urdu',
+    'Tamil',
+    'L'.repeat(80),
+  ];
+  const application = app({
+    agency,
+    agents: [
+      { ...profile, slug: 'empty-agent', name: 'A', languages: [] },
+      { ...profile, languages: languages.map((language) => ` ${language} `) },
+    ],
+  });
+  const response = await request(application).get('/api/v1/public/agents');
+
+  expect(response.status).toBe(200);
+  expect(response.body.total).toBe(2);
+  expect(response.body.items[0].languages).toEqual([]);
+  expect(response.body.items[1].languages).toEqual(languages);
+  const detail = await request(application).get(
+    '/api/v1/public/agents/sample-agent',
+  );
+  expect(detail.status).toBe(200);
+  expect(detail.body.languages).toEqual(languages);
 });
 
 it('filters unpublished profiles, sorts by name then slug, and supports an empty directory', async () => {
@@ -152,6 +223,9 @@ it('fails closed for invalid catalog bounds, contacts, publication flags and ass
     { agency, agents: [profile, profile] },
     { agency, agents: [{ ...profile, published: 'yes' }] },
     { agency, agents: [{ ...profile, biography: [] }] },
+    { agency, agents: [{ ...profile, languages: Array(9).fill('English') }] },
+    { agency, agents: [{ ...profile, languages: ['L'.repeat(81)] }] },
+    { agency, agents: [{ ...profile, languages: ['   '] }] },
     {
       agency,
       agents: [

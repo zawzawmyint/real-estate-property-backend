@@ -22,6 +22,7 @@ export function publicAgentSummaryDto(agent: AgentContent) {
     name: agent.name,
     title: agent.title,
     specialties: [...agent.specialties],
+    languages: [...agent.languages],
     portrait: agent.portrait
       ? {
           src: agent.portrait.src,
@@ -38,7 +39,6 @@ export function publicAgentDetailDto(agent: AgentContent) {
     ...publicAgentSummaryDto(agent),
     introduction: agent.introduction,
     biography: [...agent.biography],
-    languages: [...agent.languages],
     publicPhone: agent.publicPhone,
     publicEmail: agent.publicEmail,
   };

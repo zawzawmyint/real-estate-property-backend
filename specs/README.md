@@ -6,6 +6,10 @@ Verified scopes are `project-foundation/spec.md`, `staff-authentication-and-role
 
 The root [project specification](../spec.md) summarizes project-wide scope and the verified baseline. Keep detailed requirements and acceptance evidence in the feature specs; keep checklist progress in [the roadmap](../ROADMAP.md).
 
+## Public agency directory languages — delivered
+
+- [Public agency pages redesign support](public-agency-pages-redesign/spec.md) and its [additive contract](public-agency-pages-redesign/contract.md) expose existing public catalog languages in agent summaries for the selected frontend directory. No migration, inquiry behavior or verified completion count changes.
+
 ## Verified dashboard
 
 - [Agency dashboard](agency-dashboard/spec.md): verified P1-28–P1-30 authorized aggregates with this [backend-owned contract](agency-dashboard/contract.md), full checks, final 16/16 desktop/mobile browser coverage and visual QA. All active legacy cases passed across two non-clean parallel runs; that limitation is recorded in the feature specification.
