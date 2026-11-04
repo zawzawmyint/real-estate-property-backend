@@ -10,6 +10,8 @@ This file defines project-wide scope and boundaries and indexes existing specifi
 
 ## Verified baseline
 
+- The [shared CRM workspace presentation compatibility record](specs/crm-workspace-presentation/spec.md) confirms the delivered frontend-only collection/calendar styling uses existing staff contracts. No Express route, schema, migration, configuration, dependency or authorization change was made; native 200% browser zoom remains frontend-owned and unresolved.
+
 - The [public agency directory-languages projection](specs/public-agency-pages-redesign/spec.md) is delivered as a backward-compatible summary field for the public agency-page redesign. It changes no persistence, authentication, inquiry or assignment behavior; native 200% browser-zoom verification remains frontend-owned and unresolved.
 
 - The [pull request branch naming workflow](specs/branch-naming/spec.md) is locally verified for PRs into main. GitHub-hosted execution and required-check activation remain pending.

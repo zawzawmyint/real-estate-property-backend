@@ -1,10 +1,18 @@
 # Feature specifications
 
+## Shared CRM workspace presentation — delivered frontend compatibility
+
+- [Frontend presentation compatibility](crm-workspace-presentation/spec.md): Properties/Leads/Tasks/Viewings visual presentation uses existing contracts. No backend executable change was made.
+
 Before implementation, create `specs/<feature-name>/spec.md` from `_template/spec.md`. Describe observable behavior, API contracts, permissions and exclusions. Keep acceptance criteria pending until verified. Update the spec when approved behavior changes; reconcile documentation after implementation.
 
 Verified scopes are `project-foundation/spec.md`, `staff-authentication-and-roles/spec.md` and the adopted [business module layering convention](business-module-layering/spec.md). The layering specification establishes future module responsibilities; it does not claim a business feature exists. Each future feature should be delivered and validated independently.
 
 The root [project specification](../spec.md) summarizes project-wide scope and the verified baseline. Keep detailed requirements and acceptance evidence in the feature specs; keep checklist progress in [the roadmap](../ROADMAP.md).
+
+## Frontend compatibility records
+
+- [Compact CRM property inventory toolbar](crm-property-inventory-toolbar/spec.md): records use of the existing staff property list contract by a frontend-only presentation change. No endpoint, schema, permission or runtime behavior changed.
 
 ## Public agency directory languages — delivered
 
