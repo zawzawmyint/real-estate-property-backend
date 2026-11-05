@@ -33,6 +33,8 @@ Public inquiries and staff lead management are implemented with role-enforced ow
 
 The [project review remediation](specs/project-review-remediation/spec.md) verifies SQLite-side literal Unicode search/count/pagination with bounded application reads, normalized search-field migration/backfill, and default fictional media in disposable browser fixtures. API contracts, roles and roadmap scope are preserved.
 
+The [November 5 Phase 1 review remediation](specs/phase-one-review-remediation/spec.md) verifies signed-only production inquiry ingress and transaction-scoped current-staff validation. Backend full checks, clean cross-repository browser/dashboard/runtime acceptance pass; Git-delivery acceptance remains open, and P1-14/P1-18 remain unchecked.
+
 ## Planned product scope
 
 Viewing and task workflows are verified. Reporting remains future work. The frontend pipeline is verified against the existing lead API. Later enhancements and the optional client portal remain subject to the roadmap.

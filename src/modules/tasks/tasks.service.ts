@@ -5,7 +5,7 @@ import {
   type Database,
   type Transaction,
 } from '../../infrastructure/database/transaction.js';
-import { isStaffRole } from '../auth/auth.js';
+import { requireCurrentStaff } from '../auth/staff-actor.js';
 import { createLeadRepository, type Actor } from '../leads/leads.repository.js';
 import { eligibleAgent } from '../leads/leads.dto.js';
 import { createTaskRepository } from './tasks.repository.js';
@@ -29,25 +29,6 @@ export function createTaskService(
 ) {
   const repository = createTaskRepository(database),
     leads = createLeadRepository(database);
-
-  async function current(identity: Actor, tx: Transaction): Promise<Actor> {
-    const session = await leads.actor(identity, tx),
-      user = session?.user;
-    if (
-      !user ||
-      user.disabled ||
-      user.banned ||
-      !isStaffRole(user.role) ||
-      session.credentialVersion !== user.credentialVersion
-    )
-      throw new AppError(401, 'UNAUTHENTICATED', 'Staff sign-in required');
-    return {
-      id: user.id,
-      name: user.name,
-      role: user.role,
-      sessionId: identity.sessionId,
-    };
-  }
 
   async function owned(id: string, actor: Actor, tx: Transaction) {
     const row = await repository.find(id, actor, tx);
@@ -99,7 +80,7 @@ export function createTaskService(
   return {
     async list(query: ListQuery, identity: Actor) {
       return serializedTransaction(database, async (tx) => {
-        const actor = await current(identity, tx),
+        const actor = await requireCurrentStaff(identity, tx),
           asOf = clock();
         if (query.leadId && !(await leads.find(query.leadId, actor, tx)))
           throw missing();
@@ -114,7 +95,7 @@ export function createTaskService(
 
     async detail(id: string, identity: Actor) {
       return serializedTransaction(database, async (tx) => {
-        const actor = await current(identity, tx),
+        const actor = await requireCurrentStaff(identity, tx),
           asOf = clock();
         return {
           task: taskDto(await owned(id, actor, tx), asOf),
@@ -137,7 +118,7 @@ export function createTaskService(
           .digest('hex');
       return serializedTransaction(database, async (tx) => {
         await repository.lockSubmission(input.submissionId, tx);
-        const actor = await current(identity, tx),
+        const actor = await requireCurrentStaff(identity, tx),
           asOf = clock(),
           receipt = await repository.receipt(input.submissionId, tx);
         if (receipt) {
@@ -179,7 +160,7 @@ export function createTaskService(
       const input = parse(updateSchema, raw);
       return serializedTransaction(database, async (tx) => {
         await repository.lock(id, tx);
-        const actor = await current(identity, tx),
+        const actor = await requireCurrentStaff(identity, tx),
           row = await owned(id, actor, tx),
           asOf = clock();
         if (row.version !== input.expectedVersion || row.status !== 'open')
@@ -202,7 +183,7 @@ export function createTaskService(
       const input = parse(statusSchema, raw);
       return serializedTransaction(database, async (tx) => {
         await repository.lock(id, tx);
-        const actor = await current(identity, tx),
+        const actor = await requireCurrentStaff(identity, tx),
           row = await owned(id, actor, tx),
           asOf = clock();
         if (row.version !== input.expectedVersion || row.status !== 'open')

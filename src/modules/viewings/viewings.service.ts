@@ -5,7 +5,7 @@ import {
   type Database,
   type Transaction,
 } from '../../infrastructure/database/transaction.js';
-import { isStaffRole } from '../auth/auth.js';
+import { requireCurrentStaff } from '../auth/staff-actor.js';
 import { createLeadRepository, type Actor } from '../leads/leads.repository.js';
 import { eligibleAgent } from '../leads/leads.dto.js';
 import { createViewingRepository } from './viewings.repository.js';
@@ -26,25 +26,6 @@ export function createViewingService(
 ) {
   const repository = createViewingRepository(database),
     leads = createLeadRepository(database);
-  async function current(identity: Actor, tx: Transaction): Promise<Actor> {
-    const session = await leads.actor(identity, tx),
-      user = session?.user;
-    if (
-      !user ||
-      user.disabled ||
-      user.banned ||
-      !isStaffRole(user.role) ||
-      session.credentialVersion !== user.credentialVersion
-    )
-      throw new AppError(401, 'UNAUTHENTICATED', 'Staff sign-in required');
-    return {
-      id: user.id,
-      name: user.name,
-      role: user.role,
-      sessionId: identity.sessionId,
-    };
-  }
-
   async function owned(id: string, actor: Actor, tx: Transaction) {
     const row = await repository.find(id, actor, tx);
     if (!row) throw missing();
@@ -109,7 +90,7 @@ export function createViewingService(
   return {
     async list(query: ListQuery, identity: Actor) {
       return serializedTransaction(database, async (tx) => {
-        const actor = await current(identity, tx);
+        const actor = await requireCurrentStaff(identity, tx);
         if (query.leadId && !(await leads.find(query.leadId, actor, tx)))
           throw missing();
         const result = await repository.list(query, actor, tx);
@@ -119,7 +100,9 @@ export function createViewingService(
 
     async detail(id: string, identity: Actor) {
       return serializedTransaction(database, async (tx) =>
-        viewingDto(await owned(id, await current(identity, tx), tx)),
+        viewingDto(
+          await owned(id, await requireCurrentStaff(identity, tx), tx),
+        ),
       );
     },
 
@@ -136,7 +119,7 @@ export function createViewingService(
           .digest('hex');
       return serializedTransaction(database, async (tx) => {
         await repository.lockSubmission(input.submissionId, tx);
-        const actor = await current(identity, tx),
+        const actor = await requireCurrentStaff(identity, tx),
           receipt = await repository.receipt(input.submissionId, tx);
         if (receipt) {
           const row = await owned(receipt.id, actor, tx);
@@ -180,7 +163,7 @@ export function createViewingService(
     async reschedule(id: string, input: RescheduleInput, identity: Actor) {
       return serializedTransaction(database, async (tx) => {
         await repository.lock(id, tx);
-        const actor = await current(identity, tx),
+        const actor = await requireCurrentStaff(identity, tx),
           row = await owned(id, actor, tx);
         if (row.version !== input.expectedVersion || row.status !== 'scheduled')
           throw conflict();
@@ -198,7 +181,7 @@ export function createViewingService(
     async status(id: string, input: StatusInput, identity: Actor) {
       return serializedTransaction(database, async (tx) => {
         await repository.lock(id, tx);
-        const actor = await current(identity, tx),
+        const actor = await requireCurrentStaff(identity, tx),
           row = await owned(id, actor, tx);
         if (row.version !== input.expectedVersion || row.status !== 'scheduled')
           throw conflict();

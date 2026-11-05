@@ -5,6 +5,7 @@ import { leadFixture } from './lead-fixture.js';
 import { createApp } from '../src/app.js';
 import { createDatabase } from '../src/infrastructure/database/client.js';
 import { createStaffAuth } from '../src/modules/auth/auth.js';
+import { parseEnv } from '../src/config/env.js';
 
 const fixture = await leadFixture();
 afterAll(() => fixture.close());
@@ -44,6 +45,81 @@ function submit(
     .set(headers)
     .send(payload);
 }
+
+it('rejects unsigned and untrusted production agency inquiries without consuming signed budget', async () => {
+  const env = parseEnv({
+    ...Object.fromEntries(
+      Object.entries(fixture.env).map(([key, value]) => [key, String(value)]),
+    ),
+    NODE_ENV: 'production',
+    APP_ORIGIN: 'https://agency.example',
+    BETTER_AUTH_URL: 'https://agency.example/api/v1/auth',
+    INQUIRY_RELAY_SECRET: secret,
+  });
+  const production = createApp(env, fixture.auth, fixture.database);
+  const home = await fixture.database.property.create({
+    data: {
+      title: 'Production home',
+      purpose: 'sale',
+      publishingState: 'published',
+    },
+  });
+  const before = await fixture.database.lead.count();
+  const valid = relay();
+  for (const headers of [
+    {},
+    { 'x-inquiry-client-key': valid['x-inquiry-client-key'] },
+    { 'x-inquiry-relay-signature': valid['x-inquiry-relay-signature'] },
+    { ...valid, 'x-inquiry-relay-signature': 'BAD' },
+    { ...valid, 'x-inquiry-relay-signature': '0'.repeat(64) },
+  ]) {
+    const response = await request(production)
+      .post('/api/v1/public/inquiries')
+      .set('Origin', env.APP_ORIGIN)
+      .set(headers)
+      .send(body());
+    expect(response.status).toBe(403);
+    expect(response.body.error).toMatchObject({
+      code: 'FORBIDDEN',
+      message: 'Untrusted inquiry relay',
+    });
+  }
+  expect(await fixture.database.lead.count()).toBe(before);
+  const payload = body();
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const path =
+      attempt % 2
+        ? `/api/v1/public/properties/${home.id}/inquiries`
+        : '/api/v1/public/inquiries';
+    const response = await request(production)
+      .post(path)
+      .set('Origin', env.APP_ORIGIN)
+      .set(valid)
+      .send(
+        attempt % 2
+          ? {
+              submissionId: randomUUID(),
+              name: 'Visitor',
+              email: 'visitor@example.test',
+            }
+          : payload,
+      );
+    expect(response.status).toBe(
+      attempt === 5 ? 429 : attempt === 0 || attempt % 2 ? 201 : 200,
+    );
+    if (attempt === 5)
+      expect(Number(response.headers['retry-after'])).toBeGreaterThan(0);
+    else expect(response.body).toEqual({ received: true });
+  }
+  expect(
+    (
+      await request(createApp(fixture.env, fixture.auth, fixture.database))
+        .post('/api/v1/public/inquiries')
+        .set('Origin', fixture.env.APP_ORIGIN)
+        .send(body())
+    ).status,
+  ).toBe(201);
+});
 
 it('atomically creates a normalized private agency lead and supports staff assignment', async () => {
   const payload = body();

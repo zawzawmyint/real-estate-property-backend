@@ -1,5 +1,9 @@
 # Feature specifications
 
+## Phase 1 review remediation — implemented; final acceptance pending
+
+- [November review remediation](phase-one-review-remediation/spec.md) and [backend-owned contract](phase-one-review-remediation/contract.md): verified production inquiry relay requirement, transaction-aware shared staff validation and roadmap reconciliation. Backend full checks, clean cross-repository browser/dashboard/runtime acceptance pass; Git-delivery acceptance remains pending.
+
 ## Shared CRM workspace presentation — delivered frontend compatibility
 
 - [Frontend presentation compatibility](crm-workspace-presentation/spec.md): Properties/Leads/Tasks/Viewings visual presentation uses existing contracts. No backend executable change was made.

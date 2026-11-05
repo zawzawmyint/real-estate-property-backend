@@ -43,7 +43,11 @@ export function inquiryProtection(
       const key = req.get('x-inquiry-client-key'),
         signature = req.get('x-inquiry-relay-signature');
       let identity: string;
-      if (key !== undefined || signature !== undefined) {
+      if (
+        env.NODE_ENV === 'production' ||
+        key !== undefined ||
+        signature !== undefined
+      ) {
         if (
           !env.INQUIRY_RELAY_SECRET ||
           !key ||

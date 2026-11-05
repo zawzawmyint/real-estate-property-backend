@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { AppError } from '../../shared/errors/app-error.js';
-import { isStaffRole } from '../auth/auth.js';
+import { requireCurrentStaff } from '../auth/staff-actor.js';
 import {
   serializedTransaction,
   type Database,
@@ -37,25 +37,6 @@ const hash = (payload: unknown) =>
 
 export function createLeadService(database: Database) {
   const repository = createLeadRepository(database);
-
-  async function current(actor: Actor, tx: Transaction): Promise<Actor> {
-    const session = await repository.actor(actor, tx),
-      user = session?.user;
-    if (
-      !user ||
-      user.disabled ||
-      user.banned ||
-      !isStaffRole(user.role) ||
-      session.credentialVersion !== user.credentialVersion
-    )
-      throw new AppError(401, 'UNAUTHENTICATED', 'Staff sign-in required');
-    return {
-      id: user.id,
-      name: user.name,
-      role: user.role,
-      sessionId: actor.sessionId,
-    };
-  }
 
   async function owned(id: string, actor: Actor, tx: Transaction) {
     const lead = await repository.find(id, actor, tx);
@@ -186,7 +167,7 @@ export function createLeadService(database: Database) {
   return {
     async list(query: ListQuery, identity: Actor) {
       return serializedTransaction(database, async (tx) => {
-        const actor = await current(identity, tx),
+        const actor = await requireCurrentStaff(identity, tx),
           view = query.view ?? (actor.role === 'agent' ? 'mine' : 'unassigned');
         if (
           actor.role === 'agent' &&
@@ -203,13 +184,16 @@ export function createLeadService(database: Database) {
 
     async detail(id: string, identity: Actor) {
       return serializedTransaction(database, async (tx) =>
-        leadDto(await owned(id, await current(identity, tx), tx), true),
+        leadDto(
+          await owned(id, await requireCurrentStaff(identity, tx), tx),
+          true,
+        ),
       );
     },
 
     async activity(id: string, page: number, identity: Actor) {
       return serializedTransaction(database, async (tx) => {
-        await owned(id, await current(identity, tx), tx);
+        await owned(id, await requireCurrentStaff(identity, tx), tx);
         const result = await repository.activity(id, page, tx);
         return { ...result, items: result.items.map(activityDto) };
       });
@@ -217,7 +201,8 @@ export function createLeadService(database: Database) {
 
     async candidates(query: CandidateQuery, identity: Actor) {
       return serializedTransaction(database, async (tx) => {
-        if ((await current(identity, tx)).role === 'agent') throw forbidden();
+        if ((await requireCurrentStaff(identity, tx)).role === 'agent')
+          throw forbidden();
         return repository.candidates(query, tx);
       });
     },
@@ -339,7 +324,7 @@ export function createLeadService(database: Database) {
         payloadHash = hash(canonical);
       return serializedTransaction(database, async (tx) => {
         await repository.lockUser(identity.id, tx);
-        const actor = await current(identity, tx);
+        const actor = await requireCurrentStaff(identity, tx);
         const replay = await receipt(
           input.submissionId,
           'create',
@@ -412,7 +397,7 @@ export function createLeadService(database: Database) {
     async patch(id: string, input: PatchInput, identity: Actor) {
       return serializedTransaction(database, async (tx) => {
         await repository.lock(id, tx);
-        const actor = await current(identity, tx),
+        const actor = await requireCurrentStaff(identity, tx),
           before = await owned(id, actor, tx);
         version(before, input.expectedVersion);
         const merged = {
@@ -497,7 +482,7 @@ export function createLeadService(database: Database) {
     ) {
       return serializedTransaction(database, async (tx) => {
         await repository.lock(id, tx);
-        const actor = await current(identity, tx);
+        const actor = await requireCurrentStaff(identity, tx);
         if (actor.role === 'agent') throw forbidden();
         const before = await owned(id, actor, tx);
         version(before, input.expectedVersion);
@@ -544,7 +529,7 @@ export function createLeadService(database: Database) {
     ) {
       return serializedTransaction(database, async (tx) => {
         await repository.lock(id, tx);
-        const actor = await current(identity, tx),
+        const actor = await requireCurrentStaff(identity, tx),
           before = await owned(id, actor, tx);
         version(before, input.expectedVersion);
         if (input.stage === before.stage) return leadDto(before, true);
@@ -563,7 +548,7 @@ export function createLeadService(database: Database) {
     async note(id: string, input: NoteInput, identity: Actor) {
       return serializedTransaction(database, async (tx) => {
         await repository.lock(id, tx);
-        const actor = await current(identity, tx),
+        const actor = await requireCurrentStaff(identity, tx),
           before = await owned(id, actor, tx),
           payloadHash = hash({
             leadId: id,

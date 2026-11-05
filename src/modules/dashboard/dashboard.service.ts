@@ -1,5 +1,6 @@
 import type { Database } from '../../infrastructure/database/transaction.js';
 import type { Actor } from '../leads/leads.repository.js';
+import { requireCurrentStaff } from '../auth/staff-actor.js';
 import { createDashboardRepository } from './dashboard.repository.js';
 import { sources, stages, type DashboardSummary } from './dashboard.dto.js';
 export function createDashboardService(
@@ -8,7 +9,7 @@ export function createDashboardService(
 ) {
   const repository = createDashboardRepository();
   return {
-    async summary(actor: Actor): Promise<DashboardSummary> {
+    async summary(identity: Actor): Promise<DashboardSummary> {
       const generatedAt = clock();
       // Dubai is UTC+4 year round. Shift to local date before finding Monday.
       const local = new Date(generatedAt.getTime() + 4 * 3600000);
@@ -21,15 +22,22 @@ export function createDashboardService(
       );
       const weekStart = new Date(monday.getTime() - 4 * 3600000);
       const weekEndExclusive = new Date(weekStart.getTime() + 7 * 86400000);
-      const scope = actor.role === 'agent' ? 'mine' : 'agency';
-      const where = {
-        createdAt: { lte: generatedAt },
-        ...(scope === 'mine' ? { assignedAgentId: actor.id } : {}),
-      };
       // All four bounded aggregates use one SQLite read snapshot; no write lock is needed.
-      const result = await database.$transaction((tx) =>
-        repository.aggregate(tx, where, weekStart, weekEndExclusive),
-      );
+      const { scope, result } = await database.$transaction(async (tx) => {
+        const actor = await requireCurrentStaff(identity, tx);
+        const scope = actor.role === 'agent' ? 'mine' : 'agency';
+        const where = {
+          createdAt: { lte: generatedAt },
+          ...(scope === 'mine' ? { assignedAgentId: actor.id } : {}),
+        };
+        const result = await repository.aggregate(
+          tx,
+          where,
+          weekStart,
+          weekEndExclusive,
+        );
+        return { scope, result } as const;
+      });
       const wonLeads =
         result.byStage.find((row) => row.stage === 'won')?._count._all ?? 0;
       return {
