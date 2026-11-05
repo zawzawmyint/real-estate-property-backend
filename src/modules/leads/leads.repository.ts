@@ -108,20 +108,6 @@ export function createLeadRepository(database: Database) {
       return tx.$executeRaw`UPDATE Property SET id=id WHERE id=${id}`;
     },
 
-    actor(actor: Actor, tx: Transaction) {
-      return tx.session.findFirst({
-        where: {
-          id: actor.sessionId,
-          userId: actor.id,
-          expiresAt: { gt: new Date() },
-        },
-        select: {
-          credentialVersion: true,
-          user: { select: { ...userSelect, credentialVersion: true } },
-        },
-      });
-    },
-
     find(id: string, actor: Actor | undefined, tx: Transaction = database) {
       return tx.lead.findFirst({
         where: {

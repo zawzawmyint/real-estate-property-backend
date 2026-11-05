@@ -46,6 +46,14 @@ for (const project of ['desktop', 'mobile'])
       role,
     });
 
+// The gallery test signs in independently of the property worker's session cache.
+await fixture.operator.create({
+  name: 'Gallery E2E Manager',
+  email: 'e2e-gallery-manager@example.com',
+  password,
+  role: 'manager',
+});
+
 await fixture.operator.create({
   name: 'E2E transition Agent',
   email: 'e2e-transition@example.com',

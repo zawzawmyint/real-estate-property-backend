@@ -1,12 +1,128 @@
 import { afterEach, beforeEach, expect, it } from 'vitest';
 import request from 'supertest';
 import { leadFixture } from './lead-fixture.js';
+import { createDashboardService } from '../src/modules/dashboard/dashboard.service.js';
+import { createLeadService } from '../src/modules/leads/leads.service.js';
+import { createTaskService } from '../src/modules/tasks/tasks.service.js';
+import { createViewingService } from '../src/modules/viewings/viewings.service.js';
+import {
+  listSchema,
+  parseQuery as leadQuery,
+} from '../src/modules/leads/leads.schema.js';
+import { parseQuery as taskQuery } from '../src/modules/tasks/tasks.schema.js';
+import { parseQuery as viewingQuery } from '../src/modules/viewings/viewings.schema.js';
+import type { Actor } from '../src/modules/leads/leads.repository.js';
 let f: Awaited<ReturnType<typeof leadFixture>>;
 beforeEach(async () => {
   f = await leadFixture();
 });
 afterEach(async () => {
   await f?.close();
+});
+async function capturedActor(): Promise<Actor> {
+  const session = await f.database.session.findFirstOrThrow({
+    where: { userId: f.ids.manager! },
+  });
+  return {
+    id: f.ids.manager!,
+    name: 'manager',
+    role: 'manager',
+    sessionId: session.id,
+  };
+}
+it('revalidates captured staff identities in every service after session or user state changes', async () => {
+  const identity = await capturedActor();
+  const original = await f.database.session.findUniqueOrThrow({
+    where: { id: identity.sessionId },
+  });
+  const services = [
+    () =>
+      createLeadService(f.database).list(leadQuery(listSchema, '/'), identity),
+    () => createTaskService(f.database).list(taskQuery('/'), identity),
+    () =>
+      createViewingService(f.database).list(
+        viewingQuery('/?from=2026-11-01T00:00:00Z&to=2026-11-08T00:00:00Z'),
+        identity,
+      ),
+    () => createDashboardService(f.database).summary(identity),
+  ];
+  const changes = [
+    () =>
+      f.database.session.update({
+        where: { id: identity.sessionId },
+        data: { expiresAt: new Date(0) },
+      }),
+    () =>
+      f.database.session.update({
+        where: { id: identity.sessionId },
+        data: { userId: f.ids.agent! },
+      }),
+    () =>
+      f.database.user.update({
+        where: { id: identity.id },
+        data: { disabled: true },
+      }),
+    () =>
+      f.database.user.update({
+        where: { id: identity.id },
+        data: { banned: true },
+      }),
+    () =>
+      f.database.user.update({
+        where: { id: identity.id },
+        data: { role: 'visitor' },
+      }),
+    () =>
+      f.database.user.update({
+        where: { id: identity.id },
+        data: { credentialVersion: original.credentialVersion + 1 },
+      }),
+    () => f.database.session.delete({ where: { id: identity.sessionId } }),
+  ];
+  for (const change of changes) {
+    await change();
+    for (const invoke of services)
+      await expect(invoke()).rejects.toMatchObject({
+        status: 401,
+        code: 'UNAUTHENTICATED',
+      });
+    await f.database.user.update({
+      where: { id: identity.id },
+      data: {
+        disabled: false,
+        banned: false,
+        role: 'manager',
+        credentialVersion: original.credentialVersion,
+      },
+    });
+    await f.database.session.upsert({
+      where: { id: original.id },
+      create: original,
+      update: original,
+    });
+  }
+});
+it('scopes dashboard counts using the current role after actor capture', async () => {
+  const identity = await capturedActor();
+  await f.create({ assignedAgentId: f.ids.agent });
+  await f.create();
+  await f.database.user.update({
+    where: { id: identity.id },
+    data: { role: 'agent' },
+  });
+  expect(
+    await createDashboardService(f.database).summary(identity),
+  ).toMatchObject({ scope: 'mine', totalLeads: 0 });
+  await f.database.user.update({
+    where: { id: identity.id },
+    data: { role: 'manager' },
+  });
+  expect(
+    await createDashboardService(f.database).summary({
+      ...identity,
+      role: 'agent',
+    }),
+  ).toMatchObject({ scope: 'agency', totalLeads: 2 });
 });
 it('requires live staff authentication before rejecting scope injection and never caches', async () => {
   const anonymous = await request(f.app).get(

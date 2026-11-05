@@ -11,11 +11,14 @@ afterEach(async () => {
   vi.restoreAllMocks();
   await f?.close();
 });
-function actor(
+async function actor(
   role: 'admin' | 'manager' | 'agent' = 'manager',
   id = f.ids[role]!,
-): Actor {
-  return { id, name: role, role, sessionId: 'test' };
+): Promise<Actor> {
+  const session = await f.database.session.findFirstOrThrow({
+    where: { userId: id },
+  });
+  return { id, name: role, role, sessionId: session.id };
 }
 async function lead(
   createdAt: string,
@@ -40,7 +43,7 @@ it('counts 10/2/3, excludes future records and uses current assignment and stage
   await lead('2026-10-29T08:00:00.001Z', 'won', f.ids.agent!);
   const service = createDashboardService(f.database, () => new Date(at));
   for (const role of ['admin', 'manager'] as const) {
-    const dto = await service.summary(actor(role));
+    const dto = await service.summary(await actor(role));
     expect(dto).toMatchObject({
       totalLeads: 10,
       wonLeads: 2,
@@ -52,13 +55,15 @@ it('counts 10/2/3, excludes future records and uses current assignment and stage
     expect(dto.leadsBySource.reduce((s, r) => s + r.count, 0)).toBe(10);
     expect(dto.pipelineByStage.reduce((s, r) => s + r.count, 0)).toBe(10);
   }
-  expect(await service.summary(actor('agent'))).toMatchObject({
+  expect(await service.summary(await actor('agent'))).toMatchObject({
     scope: 'mine',
     totalLeads: 3,
     wonLeads: 2,
     conversionRatePercent: 66.7,
   });
-  expect(await service.summary(actor('agent', f.ids.other!))).toMatchObject({
+  expect(
+    await service.summary(await actor('agent', f.ids.other!)),
+  ).toMatchObject({
     totalLeads: 3,
     wonLeads: 0,
   });
@@ -69,7 +74,7 @@ it('counts 10/2/3, excludes future records and uses current assignment and stage
     where: { id: won.id },
     data: { stage: 'contacted', assignedAgentId: f.ids.other! },
   });
-  expect(await service.summary(actor('agent'))).toMatchObject({
+  expect(await service.summary(await actor('agent'))).toMatchObject({
     totalLeads: 2,
     wonLeads: 1,
     conversionRatePercent: 50,
@@ -84,7 +89,7 @@ it('includes exact Dubai Monday and generatedAt, excludes following Monday and r
     await createDashboardService(
       f.database,
       () => new Date('2026-11-01T19:59:59.999Z'),
-    ).summary(actor()),
+    ).summary(await actor()),
   ).toMatchObject({
     totalLeads: 3,
     newLeadsThisWeek: 2,
@@ -94,7 +99,7 @@ it('includes exact Dubai Monday and generatedAt, excludes following Monday and r
     await createDashboardService(
       f.database,
       () => new Date('2026-11-01T20:00:00.000Z'),
-    ).summary(actor()),
+    ).summary(await actor()),
   ).toMatchObject({
     totalLeads: 4,
     newLeadsThisWeek: 1,
@@ -106,7 +111,7 @@ it('propagates database failures rather than reporting empty success', async () 
     new Error('private database failure'),
   );
   await expect(
-    createDashboardService(f.database).summary(actor()),
+    createDashboardService(f.database).summary(await actor()),
   ).rejects.toThrow('private database failure');
 });
 

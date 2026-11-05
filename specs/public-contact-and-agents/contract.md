@@ -54,6 +54,8 @@ For POST, apply existing no-store → exact trusted APP_ORIGIN → shared inquir
 
 Property and general inquiries share one limiter instance per app factory, including the same relay-verified client identity. Five attempts per rolling 15 minutes across both routes, including rejected/replay attempts after Origin check; sixth attempt → 429 with Retry-After. Retain existing capacity=10,000 live identities, hashed identities, fail-closed 503 capacity behavior and single-process/restart limitations. Reject invalid relay headers rather than bypassing into another identity bucket. Keep current trusted ingress and secret configuration; never expose it in catalog/client responses.
 
+In production, both relay headers are required and must validate before limiter consumption or persistence; missing, partial, malformed or invalid headers return the existing safe 403 relay error. Outside production, absence of both headers retains the existing hashed socket fallback. Supplied invalid headers never fall back.
+
 400 for invalid payload/JSON, 403 for untrusted Origin/relay, 409 for receipt conflict, 413 for oversize, 415 for non-JSON, 429 for rate limit, 503 for unavailable service. Safe unexpected errors follow existing handling. Creation cannot acknowledge success before commit. Rolled-back known transaction contention may use the existing bounded transaction policy; never replay a potentially committed write automatically at the HTTP/client boundary.
 
 ## Compatibility and implementation work

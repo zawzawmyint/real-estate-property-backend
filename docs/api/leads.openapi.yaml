@@ -15,7 +15,7 @@
             {
               'operationId': 'submitAgencyInquiry',
               'summary': 'Capture a property-independent unassigned website lead',
-              'description': 'Exact APP_ORIGIN; trusted inquiry relay; JSON <=16KiB. Required purpose (sale/rent), message and at least one phone/email. Server controls Website/New/unassigned/null property and budget. Atomic lead, created activity and agency_inquiry receipt. Identical canonical replay returns acknowledgement; changed payload or cross-operation ID reuse returns 409. Responses never expose lead IDs or submitted values. Shares one five-attempt / 15-minute budget with property inquiries, including invalid/replayed attempts. Existing signed-client/socket and bounded single-process limiter semantics apply.',
+              'description': 'Exact APP_ORIGIN; trusted inquiry relay; JSON <=16KiB. Required purpose (sale/rent), message and at least one phone/email. Server controls Website/New/unassigned/null property and budget. Atomic lead, created activity and agency_inquiry receipt. Identical canonical replay returns acknowledgement; changed payload or cross-operation ID reuse returns 409. Responses never expose lead IDs or submitted values. Shares one five-attempt / 15-minute budget with property inquiries, including invalid/replayed attempts. Production requires complete valid signed relay headers; missing, partial, malformed or invalid signatures return 403 before limiter consumption or persistence. Outside production, absence of both headers permits hashed socket fallback. Bounded single-process limiter semantics apply.',
               'requestBody':
                 {
                   'required': true,
@@ -186,7 +186,7 @@
             {
               'operationId': 'submitPropertyInquiry',
               'summary': 'Capture an unassigned website lead',
-              'description': 'Exact APP_ORIGIN and JSON <=16KiB. Forces New/unassigned website lead with property purpose/snapshots. No lead identifiers returned. Same canonical submission replays even after property unavailability. Five attempts shared with POST /api/v1/public/inquiries per signed client/socket in rolling 15 minutes; invalid attempts and replays count. Single-process bounded limiter; saturated map fails closed. Server relay sends HMAC-SHA256(INQUIRY_RELAY_SECRET, real ingress identity) as x-inquiry-client-key and HMAC-SHA256(secret, clientKey) as x-inquiry-relay-signature. Untrusted relay headers rejected; raw forwarded headers ignored; direct calls use socket identity.',
+              'description': 'Exact APP_ORIGIN and JSON <=16KiB. Forces New/unassigned website lead with property purpose/snapshots. No lead identifiers returned. Same canonical submission replays even after property unavailability. Five attempts shared with POST /api/v1/public/inquiries per signed client/socket in rolling 15 minutes; invalid attempts and replays count. Single-process bounded limiter; saturated map fails closed. Server relay sends HMAC-SHA256(INQUIRY_RELAY_SECRET, real ingress identity) as x-inquiry-client-key and HMAC-SHA256(secret, clientKey) as x-inquiry-relay-signature. Production requires both valid relay headers; missing, partial, malformed or invalid signatures return 403 before limiter consumption or persistence. Outside production, absence of both headers permits hashed socket fallback. Supplied invalid headers never fall back; raw forwarded headers are ignored.',
               'parameters':
                 [
                   {

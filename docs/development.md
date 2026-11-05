@@ -15,7 +15,7 @@ Follow README installation steps from the backend working directory. `.env.examp
 - `BETTER_AUTH_URL`: exact public auth base URL, `${APP_ORIGIN}/api/v1/auth`.
 - `BETTER_AUTH_SECRET`: server-only random secret, at least 32 characters; never commit it.
 - `INQUIRY_RELAY_SECRET`: server-only random secret, at least 32 characters and independent of the auth secret. It must exactly match the trusted frontend relay configuration; never commit it.
-- Public inquiry identity is accepted only from the relay or direct loopback development fallback. The backend verifies the signed relay header and socket identity; it does not trust arbitrary `X-Forwarded-For` values.
+- In production, public inquiry identity is accepted only from a complete valid signed relay. Missing, partial, malformed or invalid relay headers return the safe 403 response before limiter consumption or persistence. Outside production, absence of both headers uses the hashed socket fallback; supplied invalid headers never fall back. The backend does not trust arbitrary `X-Forwarded-For` values.
 
 No Redis, queue, email or S3 integration is installed. The inquiry limiter is in-process: five attempts per identity in 15 minutes, capped at 10,000 live identities; restart resets it and a multi-instance deployment requires a shared limiter decision. Staff auth, property/photo and lead models are implemented. Environment validation names invalid fields without printing input values.
 
