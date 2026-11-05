@@ -1,6 +1,6 @@
 # Phase 1 review remediation
 
-Status: Verified implementation and release checks — Git delivery remains pending.
+Status: Verified implementation, release checks and pushed scoped Git delivery — no deployment or Phase 1 closure.
 
 ## Goal
 
@@ -44,10 +44,12 @@ Define production inquiry ingress explicitly and centralize live staff validatio
 
 - The user confirmed on 2026-11-05 that inquiries currently come only from the frontend. No other current caller requires unsigned production access. Deploy/verify signed frontend requests before backend enforcement; future integrations must use a trusted server relay. Development/test fallback remains explicit.
 - Keep session lookups inside transactions; moving validation outside reintroduces revocation races. Do not broaden this into a replacement auth framework.
-- Documentation is reconciled against verification evidence. Production deployment and a Git commit require separate authorization and have not been performed.
+- Documentation is reconciled against verification evidence. The user authorized scoped commits and pushes on November 5; production deployment remains outside this delivery.
 
 ## Implementation evidence
 
 - Backend HEAD `3690d3a` plus reviewed dirty candidate digest `20f08ac413902b9358ca1e26f470a1d618c6136d4af6455fd2d0d59257813c5c`; this is candidate identity, not a committed-delivery claim.
 - `bun run check` passed (lint, formatting, typecheck, 132 tests in 35 files and build). Focused ingress/current-staff coverage passed 31 tests in seven files. Local report: `var/review-remediation-report.md`.
-- The frontend final quality gate passed for its dirty tested candidate, followed by a clean 341-pass/65-intentional-skip serial run, 16/16 exact-data dashboard acceptance and guarded normal-runtime inspection with no browser/DevTools errors. No deployment or commit is claimed.
+- The frontend final quality gate passed for its dirty tested candidate, followed by a clean 341-pass/65-intentional-skip serial run, 16/16 exact-data dashboard acceptance and guarded normal-runtime inspection with no browser/DevTools errors. Those results predate the scoped Git delivery below; no deployment is claimed.
+
+- Authorized Git delivery on November 5: backend `5086b6507f0c12e99a5e309ef6313429a7509c9f` and frontend `655587e6dc10ea467223c1b1c06c4984f86bba1b` were pushed to the existing working branches. Frontend F08 is verified. P1-14/P1-18 and the later frontend pre-hydration property-form defect remain open. Fresh pre-push unit suites passed: backend 132, frontend 297.
