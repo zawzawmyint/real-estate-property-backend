@@ -20,6 +20,7 @@
     "db:generate": "prisma generate",
     "db:check": "node --env-file-if-exists=.env --import tsx scripts/check-database.ts",
     "demo:seed": "node --env-file-if-exists=.env --import tsx scripts/seed-properties.ts",
+    "chat:index": "node --env-file-if-exists=.env --import tsx scripts/index-public-chat-faq.ts",
     "staff": "node --env-file-if-exists=.env --import tsx scripts/staff.ts",
     "db:migrate": "node --env-file-if-exists=.env --import tsx scripts/migrate-database.ts",
     "test:auth:e2e-server": "node --import tsx scripts/auth-e2e-server.ts"

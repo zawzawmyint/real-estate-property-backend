@@ -6,6 +6,28 @@ Status: Verified 2026-10-29 on `feat/follow-up-tasks`.
 
 Give staff a dated next action for a lead and make missed follow-ups visible, using the existing lead ownership boundary.
 
+## Software design at a glance
+
+```mermaid
+flowchart TD
+    request["Staff task request"]
+    scope["Recheck staff and current lead assignment"]
+    reads["Read scoped tasks using one server asOf"]
+    eligibility["Check lead eligibility and due date rules"]
+    transition["Apply completion or cancellation"]
+    write["Commit task write with state and version checks"]
+    response["Return task data with derived overdue flag"]
+
+    request --> scope
+    scope -->|"Read"| reads --> response
+    scope -->|"Create or edit"| eligibility --> write
+    scope -->|"Complete or cancel"| transition --> write
+    write --> response
+```
+
+- **Task lifecycle.** The [service](../../src/modules/tasks/tasks.service.ts) handles creation replays and versioned updates. Completing or cancelling still checks current access if the lead has become ineligible for edits.
+- **Overdue calculation.** The [repository](../../src/modules/tasks/tasks.repository.ts) filters open tasks due before `asOf`. The [DTO mapper](../../src/modules/tasks/tasks.dto.ts) uses the same cutoff to mark overdue tasks in the response.
+
 ## Scope and exclusions
 
 - In scope: lead-linked tasks; create, list, read, edit, complete and cancel; due date/time; overdue filtering/highlighting; current-assignment authorization; durable creation deduplication and versioned updates.

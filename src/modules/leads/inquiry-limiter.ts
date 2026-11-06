@@ -1,7 +1,7 @@
-import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 import { AppError } from '../../shared/errors/app-error.js';
 import type { RequestHandler } from 'express';
 import type { Env } from '../../config/env.js';
+import { inquiryRelayIdentity } from '../../shared/http/inquiry-relay.js';
 
 export class InquiryLimiter {
   private readonly clients = new Map<string, number[]>();
@@ -40,33 +40,7 @@ export function inquiryProtection(
 ): RequestHandler {
   return (req, res, next) => {
     try {
-      const key = req.get('x-inquiry-client-key'),
-        signature = req.get('x-inquiry-relay-signature');
-      let identity: string;
-      if (
-        env.NODE_ENV === 'production' ||
-        key !== undefined ||
-        signature !== undefined
-      ) {
-        if (
-          !env.INQUIRY_RELAY_SECRET ||
-          !key ||
-          !signature ||
-          !/^[a-f0-9]{64}$/.test(key) ||
-          !/^[a-f0-9]{64}$/.test(signature)
-        )
-          throw new AppError(403, 'FORBIDDEN', 'Untrusted inquiry relay');
-        const expected = createHmac('sha256', env.INQUIRY_RELAY_SECRET)
-          .update(key)
-          .digest();
-        if (!timingSafeEqual(expected, Buffer.from(signature, 'hex')))
-          throw new AppError(403, 'FORBIDDEN', 'Untrusted inquiry relay');
-        identity = `relay:${key}`;
-      } else
-        identity = `socket:${createHash('sha256')
-          .update(req.socket.remoteAddress ?? 'unknown')
-          .digest('hex')}`;
-      const retry = limiter.consume(identity);
+      const retry = limiter.consume(inquiryRelayIdentity(req, env));
       if (retry) {
         res.setHeader('Retry-After', retry);
         throw new AppError(

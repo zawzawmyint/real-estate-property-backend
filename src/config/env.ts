@@ -47,6 +47,28 @@ const schema = z
     BETTER_AUTH_URL: z.url().default('http://localhost:3100/api/v1/auth'),
     BETTER_AUTH_SECRET: z.string().min(32),
     INQUIRY_RELAY_SECRET: z.string().min(32).optional(),
+    PUBLIC_CHAT_ENABLED: z.stringbool().default(false),
+    OPENROUTER_API_KEY: z.string().trim().optional(),
+    OPENROUTER_CHAT_MODEL: z
+      .string()
+      .trim()
+      .min(1)
+      .default('nvidia/nemotron-3.5-lightning:free'),
+    OPENROUTER_EMBEDDING_MODEL: z
+      .string()
+      .trim()
+      .min(1)
+      .default('nvidia/nemotron-3-embed-1b:free'),
+    PUBLIC_CHAT_INDEX_PATH: z
+      .string()
+      .min(1)
+      .default('./var/public-chat/faq-index.json'),
+    PUBLIC_CHAT_UPSTREAM_CALLS_PER_DAY: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(10_000)
+      .default(45),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV === 'production' && !env.INQUIRY_RELAY_SECRET)
@@ -80,5 +102,9 @@ export function parseEnv(input: Record<string, string | undefined>): Env {
       `Invalid environment configuration: ${result.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`).join('; ')}`,
     );
 
-  return { ...result.data, STORAGE_ROOT: resolve(result.data.STORAGE_ROOT) };
+  return {
+    ...result.data,
+    STORAGE_ROOT: resolve(result.data.STORAGE_ROOT),
+    PUBLIC_CHAT_INDEX_PATH: resolve(result.data.PUBLIC_CHAT_INDEX_PATH),
+  };
 }

@@ -6,6 +6,28 @@ Status: Verified — 2026-10-29. Backend, frontend, browser and live-runtime evi
 
 Deliver P1-23–P1-25: arrange a property visit for an assigned lead, review appointments in a calendar and record feedback afterward.
 
+## Software design at a glance
+
+```mermaid
+flowchart TD
+    request["Staff viewing request"]
+    scope["Recheck staff and current lead assignment"]
+    reads["Read scoped appointment or calendar range"]
+    booking["Check lead, property and future start time"]
+    closing["Require scheduled state and feedback on completion"]
+    write["Save or update the viewing in a transaction"]
+    response["Return viewing data"]
+
+    request --> scope
+    scope -->|"Read"| reads --> response
+    scope -->|"Book or reschedule"| booking --> write
+    scope -->|"Cancel or complete"| closing --> write
+    write --> response
+```
+
+- **Appointment rules.** The [service](../../src/modules/viewings/viewings.service.ts) checks booking eligibility, handles authorized submission replays, and allows completion with feedback once the appointment has started.
+- **Persistence.** The [repository](../../src/modules/viewings/viewings.repository.ts) scopes calendar queries through lead ownership and matches the viewing version and scheduled state on updates.
+
 ## Scope and exclusions
 
 - In scope: create, read, reschedule, cancel and complete viewings; one lead and one property per appointment; role-scoped date-range reads; post-viewing feedback.

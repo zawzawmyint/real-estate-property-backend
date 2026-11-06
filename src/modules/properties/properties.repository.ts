@@ -6,6 +6,8 @@ import type {
 import type { PropertyQuery } from './properties.schema.js';
 import { normalizeSearchText } from '../../shared/search/normalize-search-text.js';
 
+type PropertyListQuery = PropertyQuery & { exactBedrooms?: number };
+
 const photoSelect = {
   id: true,
   storageKey: true,
@@ -57,7 +59,7 @@ export type PublicRecord = Prisma.PropertyGetPayload<{
 }>;
 
 export function propertyWhere(
-  query: PropertyQuery,
+  query: PropertyListQuery,
   staff: boolean,
 ): Prisma.PropertyWhereInput {
   const where: Prisma.PropertyWhereInput = staff
@@ -81,7 +83,9 @@ export function propertyWhere(
         ? { lte: BigInt(query.maxPriceFils) }
         : {}),
     };
-  if (query.minBedrooms !== undefined)
+  if (!staff && query.exactBedrooms !== undefined)
+    where.bedrooms = query.exactBedrooms;
+  else if (query.minBedrooms !== undefined)
     where.bedrooms = { gte: query.minBedrooms };
 
   return where;
@@ -104,7 +108,7 @@ export function propertyOrder(
 
 async function searchPage(
   tx: Transaction,
-  query: PropertyQuery,
+  query: PropertyListQuery,
   where: Prisma.PropertyWhereInput,
   staff: boolean,
 ) {
@@ -124,7 +128,9 @@ async function searchPage(
     clauses.push(Prisma.sql`priceFils >= ${BigInt(query.minPriceFils)}`);
   if (query.maxPriceFils !== undefined)
     clauses.push(Prisma.sql`priceFils <= ${BigInt(query.maxPriceFils)}`);
-  if (query.minBedrooms !== undefined)
+  if (!staff && query.exactBedrooms !== undefined)
+    clauses.push(Prisma.sql`bedrooms = ${query.exactBedrooms}`);
+  else if (query.minBedrooms !== undefined)
     clauses.push(Prisma.sql`bedrooms >= ${query.minBedrooms}`);
   if (query.location) {
     const location = normalizeSearchText(query.location);
@@ -160,7 +166,11 @@ async function searchPage(
 
 export function createPropertyRepository(database: Database) {
   return {
-    async list(query: PropertyQuery, staff: boolean, privateOwner: boolean) {
+    async list(
+      query: PropertyListQuery,
+      staff: boolean,
+      privateOwner: boolean,
+    ) {
       const where = propertyWhere(query, staff);
       const select = staff
         ? privateOwner

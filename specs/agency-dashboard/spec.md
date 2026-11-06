@@ -6,6 +6,23 @@ Status: Verified (2026-10-29) — P1-28, P1-29 and P1-30 are delivered with auto
 
 Supply a consistent, authorized aggregate of existing lead data for the CRM Overview without disclosing individual lead records.
 
+## Software design at a glance
+
+```mermaid
+flowchart TD
+    request["Staff dashboard request · require live session"]
+    clock["Set generatedAt and Dubai week bounds"]
+    scope["Recheck staff and choose agency or own leads"]
+    query["Count and group leads in one SQLite snapshot"]
+    metrics["Compute Won ratio and zero-fill categories"]
+    response["Return summary with no-store"]
+
+    request --> clock --> scope --> query --> metrics --> response
+```
+
+- **Request handling.** The [controller](../../src/modules/dashboard/dashboard.controller.ts) rejects query parameters before requesting the summary.
+- **Aggregation.** The [service](../../src/modules/dashboard/dashboard.service.ts) owns the scope, clock and response metrics. The [repository](../../src/modules/dashboard/dashboard.repository.ts) applies the same lead predicate across counts and distributions.
+
 ## Scope and exclusions
 
 - In scope: authenticated read-only dashboard endpoint, new-leads-this-week metric, current Won count, all-time Won/total ratio, source and stage distribution.

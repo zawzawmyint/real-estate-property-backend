@@ -6,10 +6,11 @@ import { createStaffAuth } from '../src/modules/auth/auth.js';
 import { createStaffOperator } from '../src/modules/auth/staff-operator.js';
 import { createApp } from '../src/app.js';
 import { parseEnv } from '../src/config/env.js';
+import { preparePublicChatFixture } from './public-chat-fixture.js';
 
 export const testSecret = 'test-only-secret-for-authentication-integration';
 
-export async function authFixture() {
+export async function authFixture(options: { publicChat?: boolean } = {}) {
   const port = process.env.E2E_BACKEND_PORT;
   if (
     port !== undefined &&
@@ -17,6 +18,9 @@ export async function authFixture() {
   )
     throw new Error('E2E_BACKEND_PORT must be a valid loopback port');
   const directory = await mkdtemp(join(tmpdir(), 'agency-auth-'));
+  const chat = options.publicChat
+    ? await preparePublicChatFixture(directory)
+    : undefined;
   const env = parseEnv({
     NODE_ENV: 'test',
     INQUIRY_RELAY_SECRET: process.env.INQUIRY_RELAY_SECRET,
@@ -24,6 +28,13 @@ export async function authFixture() {
     BETTER_AUTH_SECRET: testSecret,
     DATABASE_URL: `file:${join(directory, 'auth.db')}`,
     STORAGE_ROOT: join(directory, 'media'),
+    ...chat?.env,
+    ...(chat && process.env.E2E_APP_ORIGIN
+      ? {
+          APP_ORIGIN: process.env.E2E_APP_ORIGIN,
+          BETTER_AUTH_URL: `${process.env.E2E_APP_ORIGIN}/api/v1/auth`,
+        }
+      : {}),
     ...(port === undefined
       ? {}
       : { PORT: port, PUBLIC_ORIGIN: `http://127.0.0.1:${port}` }),
@@ -55,7 +66,7 @@ export async function authFixture() {
     database,
     auth,
     operator: createStaffOperator(auth, database),
-    app: createApp(env, auth, database),
+    app: createApp(env, auth, database, undefined, undefined, chat?.fetch),
 
     async close() {
       await database.$disconnect();

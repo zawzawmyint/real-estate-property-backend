@@ -15,9 +15,21 @@ Follow README installation steps from the backend working directory. `.env.examp
 - `BETTER_AUTH_URL`: exact public auth base URL, `${APP_ORIGIN}/api/v1/auth`.
 - `BETTER_AUTH_SECRET`: server-only random secret, at least 32 characters; never commit it.
 - `INQUIRY_RELAY_SECRET`: server-only random secret, at least 32 characters and independent of the auth secret. It must exactly match the trusted frontend relay configuration; never commit it.
+- `PUBLIC_CHAT_ENABLED`: defaults to `false`. Enable only for the approved demo after the frontend has also set its own server-side flag to `true`.
+- `OPENROUTER_API_KEY`: server-only provider key for the public chatbot. Never expose it to the browser or commit it.
+- `OPENROUTER_CHAT_MODEL`: defaults to `nvidia/nemotron-3.5-lightning:free`.
+- `OPENROUTER_EMBEDDING_MODEL`: defaults to `nvidia/nemotron-3-embed-1b:free`. Rebuild the FAQ index before changing it.
+- `PUBLIC_CHAT_INDEX_PATH`: absolute-or-relative JSON index path, defaulting to `./var/public-chat/faq-index.json`.
+- `PUBLIC_CHAT_UPSTREAM_CALLS_PER_DAY`: provider-call limit per application instance in a rolling 24-hour period, defaulting to 45.
 - In production, public inquiry identity is accepted only from a complete valid signed relay. Missing, partial, malformed or invalid relay headers return the safe 403 response before limiter consumption or persistence. Outside production, absence of both headers uses the hashed socket fallback; supplied invalid headers never fall back. The backend does not trust arbitrary `X-Forwarded-For` values.
 
 No Redis, queue, email or S3 integration is installed. The inquiry limiter is in-process: five attempts per identity in 15 minutes, capped at 10,000 live identities; restart resets it and a multi-instance deployment requires a shared limiter decision. Staff auth, property/photo and lead models are implemented. Environment validation names invalid fields without printing input values.
+
+## Public chatbot demo operations
+
+Keep `PUBLIC_CHAT_ENABLED=false` in both repositories until the demo is intentionally enabled. Add an `OPENROUTER_API_KEY`, verify the selected models are available, then run `bun run chat:index` from `backend/` whenever approved FAQ content, embedding model or embedding configuration changes. The command writes the JSON index atomically. Restart Express after a successful index because it reads and validates the index at startup. The public route applies trusted-ingress identity and permits five requests per client per minute. The provider budget is 45 calls per rolling day per process instance, so multi-instance deployments need an explicit shared-budget decision.
+
+The FAQ catalog can only expose the public `/contact` and `/properties` source routes. OpenRouter receives bounded questions and relevant public FAQ passages. Use synthetic prompts in demo verification and direct visitors to the inquiry form for personal details. For the opt-in browser fixture, set `STAFF_E2E_PUBLIC_CHAT=1`. This flag configures the disposable test backend. Before real-business publication, approve FAQ text and visitor-data wording, provision trusted ingress, and decide provider availability, quota and multi-instance operations.
 
 ## Database maintenance and browser fixtures
 

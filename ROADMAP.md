@@ -19,7 +19,7 @@ Track every Phase 1, 2 and 3 feature from the original **Real Estate CRM Checkli
 **In scope**
 
 - **Phase 1:** All core public website and staff CRM features: 30 checklist items.
-- **Phase 2:** Seven enhancement items; select two or three initially, with the remainder retained in the backlog.
+- **Phase 2:** Eight enhancement items, including the public property chatbot. Select two or three initially and retain the rest in the backlog.
 - **Phase 3:** Five optional stretch items, including the client portal, after earlier releases are live.
 - **Delivery:** Five original portfolio/demo items, tracked separately from product features.
 
@@ -205,7 +205,7 @@ The source requires dated tasks and overdue highlighting here; scheduled email o
 
 ### Phase 2 — Features that make it stand out
 
-**Selection rule:** Pick two or three initially. The original checklist recommends auto-reply, property matching and CSV export as the best value; these are recommendations, not a confirmed selection. Retain all seven items for later prioritization.
+**Selection rule:** Pick two or three initially. The public property chatbot is the verified opt-in demo selection for Phase 2. The original checklist recommends auto-reply, property matching and CSV export. The remaining initial selections are open.
 
 #### Automation and matching
 
@@ -230,6 +230,12 @@ If CSV export is delivered first, P2-04 stays unchecked until both import and ex
 **Proposed spec slug:** `agent-performance-reporting`.
 
 - [ ] **P2-07** Agent performance report: leads handled, deals closed, response time
+
+#### Public property chatbot
+
+- [x] **P2-08** [Public property chatbot](specs/public-property-chatbot/spec.md) with semantic FAQ search, live listing matches and inquiry handoff.
+
+The chatbot can reuse public listing filters. P2-03 separately tracks matching properties to CRM leads.
 
 ### Phase 3 — Optional stretch features
 
@@ -322,6 +328,7 @@ Foundation smoke-test screenshots do not complete D-04: capture the delivered bu
 - **2026-11-03 — CRM account popover footer stability correction:** Frontend companion specification: `frontend/specs/crm-account-popover/spec.md`. Wrapping the account slot as one sidebar-footer item prevents Base UI focus-guard siblings from triggering footer `space-y-4` and moving the account/View website controls when the popup opens. Native normal-runtime geometry checks recorded identical open/closed positions in collapsed and expanded sidebars; the focused existing desktop assertion now covers both states. Fresh lint, TypeScript, 297 unit tests in 47 files and the current-source isolated production build passed. This wrapper-only correction does not claim a fresh full authentication browser suite; existing authentication evidence remains historical. No API, session/sign-out, sidebar behavior, public-page or backend change, checklist item or Phase 1 completion count changed.
 - **2026-11-04 — Phase 1 regression stabilization remains in verification:** The frontend-owned Phase 1 public-completion specification records a dedicated gallery Manager fixture, an event-ready hover-animation sampler, DOM-ready singleton-heading public-route assertions, long-location wrapping at 320px/390px, and tracked frontend LF checkout rules. The initial stabilized isolated serial run passed 322 cases with 65 intentional skips; its only failure was a transient duplicate Contact `h1` during streaming, and all five original failures passed. The final Contact/Tasks readiness test then passed four serial repetitions. API drift, lint, 297 unit tests, TypeScript and isolated build passed; the formatter now reports only an unrelated untracked review document. The final clean serial rerun remains pending. No checkbox changes: Phase 1 remains 28/30 verified.
 - **2026-11-05 — Review remediation verified before Git delivery:** [Repository-local remediation specification](specs/phase-one-review-remediation/spec.md) and its [backend-owned contract](specs/phase-one-review-remediation/contract.md) record the verified production relay and transaction-scoped current-staff changes. Frontend gallery, inquiry-recovery and shortcut coverage is documented in the companion frontend repository at `frontend/specs/phase-one-review-remediation/spec.md` (plain companion path; not a backend link). The initial valid serial attempt exposed two-photo gallery autofocus scrolling Close from view; its minimal focus fix passed focused coverage. Backend `bun run check` passed with 132 tests in 35 files; the frontend final check passed API validation, lint, formatting, typecheck, 297 unit tests in 47 files and build; the fresh serial run passed 341 cases with 65 intentional skips and no failures (406 registered), and the separate exact-data dashboard run passed 16/16. Guarded normal runtime on the actual port-3100 checkout had no browser/DevTools errors; it used normal backend public reads only, not mutation verification. Both candidates are dirty and identified by HEAD plus reviewed source/test/config digest in the repository-local remediation spec; no commit, push or deployment is claimed. P1-14/P1-18 and F08 remain unchecked; Phase 1 remains 28/30 verified.
+- **2026-11-06 — Public property chatbot verified:** P2-08 is delivered as an opt-in demo through the [public property chatbot specification](specs/public-property-chatbot/spec.md). Backend lint, typecheck and build passed with 151 tests. Frontend API drift, lint, type generation, typecheck and 300 unit tests passed. The isolated production Webpack build produced 18 static outputs. Six targeted desktop/mobile browser cases passed against a disposable Express/SQLite fixture with deterministic provider adapters, including 320px layout, duplicate suppression, Escape focus return, annual-rent inquiry handoff and outage draft preservation. A bounded live OpenRouter smoke indexed five 2048-dimensional FAQ vectors and returned a sourced FAQ answer plus an eligible two-bedroom listing using the configured NVIDIA defaults. The feature remains disabled by default; real-business publication requires approved FAQ content and visitor-data wording, trusted ingress and an operations decision for provider availability and multi-instance quotas.
 - For later deliveries, append the date, checklist IDs, actual feature-spec links, verification evidence and any remaining gaps.
 
 ---
@@ -340,7 +347,7 @@ Foundation smoke-test screenshots do not complete D-04: capture the delivered bu
 - **Staff access:** What can Managers and Agents create, edit, assign, archive or delete? Who manages staff accounts?
 - **Properties and leads:** Confirm sales/rentals scope, draft/publish behavior, delete/archive rules and how repeat inquiries or interest in multiple properties should be represented.
 - **Pipeline and reports:** What event means Won, how is conversion calculated, and what timestamps define agent response time?
-- **Phase 2 selection:** Which two or three enhancements come first? Does WhatsApp mean a user-opened link or an automated messaging integration?
+- **Phase 2 selection:** Which additional enhancements join the chatbot in the initial Phase 2 release? Does WhatsApp mean a user-opened link or an automated messaging integration?
 - **Later release scope:** Confirm production versus portfolio delivery, hosting, language needs, and the requirements for each selected Phase 3 feature when it is prioritized.
 
 - **2026-10-27 — Shared-code naming maintenance verified:** [Shared-code naming and ownership](specs/shared-code-naming/spec.md) moves common transaction, HTTP and search helpers out of property-owned modules, separates LoadingState from skyline artwork and explicitly names PropertyInquiryCard. All imports and current documentation are reconciled. Frontend API drift, lint, formatting, TypeScript, 199 tests in 34 files and isolated production build passed; backend complete quality checks passed with 94 tests in 23 files, production build and disposable database verification. Isolated desktop/mobile smoke coverage passed 11 tests with one intentional mobile skip. Fresh scoped review found no actionable findings. No roadmap checklist state or real-business publication gate changed.

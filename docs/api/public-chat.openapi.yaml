@@ -1,0 +1,94 @@
+openapi: 3.1.0
+info:
+  title: Public property chatbot API
+  version: 1.0.0
+paths:
+  /api/v1/public/chat:
+    post:
+      operationId: replyToPublicChat
+      summary: Answer a public property or agency question
+      description: Anonymous, stateless and read-only. Requires trusted origin and relay in production. The JSON body limit is 8 KiB.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [message]
+              properties:
+                message:
+                  type: string
+                  minLength: 1
+                  maxLength: 500
+                  description: Length limits apply after trimming.
+      responses:
+        '200':
+          description: A sourced answer, live property matches, clarification, or fallback.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicChatReply'
+        '400':
+          $ref: '#/components/responses/ChatError'
+        '403':
+          $ref: '#/components/responses/ChatError'
+        '413':
+          $ref: '#/components/responses/ChatError'
+        '415':
+          $ref: '#/components/responses/ChatError'
+        '429':
+          $ref: '#/components/responses/ChatError'
+        '500':
+          $ref: '#/components/responses/ChatError'
+        '503':
+          $ref: '#/components/responses/ChatError'
+components:
+  responses:
+    ChatError:
+      description: Safe public error envelope.
+      content:
+        application/json:
+          schema:
+            $ref: './openapi.yaml#/components/schemas/ApiError'
+  schemas:
+    PublicChatReply:
+      type: object
+      additionalProperties: false
+      required: [kind, message, sources, properties]
+      properties:
+        kind:
+          type: string
+          enum: [faq, properties, clarify, no_answer]
+        message:
+          type: string
+          minLength: 1
+          maxLength: 1500
+        sources:
+          type: array
+          maxItems: 3
+          description: Only FAQ replies include sources and include at least one.
+          items:
+            type: object
+            additionalProperties: false
+            required: [id, title, path]
+            properties:
+              id:
+                type: string
+              title:
+                type: string
+              path:
+                type: string
+                enum: [/contact, /properties]
+                description: Allowlisted public site path from the FAQ catalog.
+        properties:
+          type: array
+          maxItems: 3
+          description: Only listing replies include property results. An empty listing result means no available matches.
+          items:
+            $ref: './openapi.yaml#/components/schemas/PublicPropertySummary'
