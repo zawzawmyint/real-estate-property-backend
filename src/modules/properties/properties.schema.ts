@@ -102,6 +102,16 @@ const staffQuery = z.strictObject({
 
 export type PropertyQuery = z.infer<typeof staffQuery>;
 
+export type ChatPropertyFilters = Pick<
+  PropertyQuery,
+  | 'purpose'
+  | 'type'
+  | 'location'
+  | 'minBedrooms'
+  | 'minPriceFils'
+  | 'maxPriceFils'
+> & { exactBedrooms?: number };
+
 export function parseQuery(url: string, staff: boolean): PropertyQuery {
   const params = new URL(url, 'http://local').searchParams;
   const values: Record<string, string> = Object.create(null) as Record<

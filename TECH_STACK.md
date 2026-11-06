@@ -104,6 +104,10 @@ The following lists every direct backend package declared in package.json (compa
 | `@types/node`       | 24.19.2        | Node.js TypeScript definitions                                |
 | `@types/supertest`  | 7.2.1          | Supertest TypeScript definitions                              |
 
+## Public chatbot runtime
+
+The verified P2-08 demo uses OpenRouter over its HTTPS API, not a new application package. Express calls the configured chat and embedding models with a server-only key. The default chat model is `nvidia/nemotron-3.5-lightning:free`; the default embedding model is `nvidia/nemotron-3-embed-1b:free`. FAQ vectors live in a versioned JSON index and are searched in memory. Generation, embeddings and FAQ retrieval have separate backend interfaces, so a compatible vector store can replace JSON without changing the public API. Reindex before switching embeddings or embedding configuration; validate behavior before switching chat models. Free-provider availability is not guaranteed.
+
 ## Planned and deferred tools
 
 **None of the named deferred packages below are direct dependencies in either repository.** React Hook Form and Zod are installed for the staff login and property create/edit forms; their use does not imply delivery of later business forms such as inquiries or leads. Recharts is installed separately in the frontend for the verified dashboard delivery. No deferred tool below has a pinned version.
@@ -138,7 +142,7 @@ Private contracts and IDs in P3-02 require separately authorized storage and del
 - **Agent instructions and specs:** Repository `AGENTS.md` files hold coding conventions; feature `spec.md` files hold requirements and acceptance. This follows the intent of the original agent/spec notes using the repository's established filenames.
 - **Git and CI:** Independent Git repositories and GitHub Actions verification workflows are configured. No remote repository or deployment was created by the foundation setup.
 - **Quality checks:** Both repositories provide linting, formatting, strict type checking, tests and production builds via `bun run check`. Backend database verification uses `bun run db:generate`, `bun run db:migrate`, then `bun run db:check` on a fresh checkout. Auth integration checks run from the frontend with the real backend running.
-- **Environment handling:** Frontend uses server-only `API_URL` and its browser proxy; backend uses validated environment configuration. Local secrets, database files, uploads and generated build artifacts stay outside Git.
+- **Environment handling:** Frontend uses server-only `API_URL` and its browser proxy. The public-chat launcher also requires its server-side `PUBLIC_CHAT_ENABLED=true` flag, while the backend independently requires `PUBLIC_CHAT_ENABLED=true`, a JSON FAQ index and a server-only `OPENROUTER_API_KEY`. Local secrets, database files, uploads and generated build artifacts stay outside Git.
 
 ## Keeping this document current
 

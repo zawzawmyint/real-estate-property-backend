@@ -6,6 +6,30 @@ Status: Verified on 2026-10-22.
 
 Provide the first business flow: staff creates a property, attaches photos and publishes a privacy-safe listing for public discovery. Express owns persistence, permissions, publishing rules, validation and image storage; frontend owns the agreed Property Finder-inspired Avenor interface.
 
+## Software design at a glance
+
+```mermaid
+flowchart TD
+    staff["Staff write request"]
+    access["Live role and trusted origin checks"]
+    lifecycle["Service · validate lifecycle transition"]
+    image["Check property state, then decode image"]
+    storage["Save public WebP"]
+    records["SQLite · properties and photo records"]
+    visitor["Public list or detail request"]
+    eligibility["Repository · published and available"]
+    response["Return public listing fields"]
+
+    staff --> access
+    access -->|"Lifecycle write"| lifecycle --> records
+    access -->|"Photo upload"| image --> storage -->|"Recheck and attach"| records
+    visitor --> eligibility --> response
+    eligibility -.->|"Query eligible records"| records
+```
+
+- The [property routes](../../src/modules/properties/properties.routes.ts) apply write guards and run photo preflight before the request body is read.
+- The [property service](../../src/modules/properties/properties.service.ts) enforces publishing and photo rules. The [repository](../../src/modules/properties/properties.repository.ts) applies public visibility filters and selects response fields.
+
 ## Scope and exclusions
 
 - In scope: P1-11/P1-12/P1-13 property management, bounded image uploads, public filtered listings/detail, featured query support and explicit public/staff DTOs.

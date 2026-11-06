@@ -14,6 +14,7 @@ import {
 } from './properties.repository.js';
 import {
   toData,
+  type ChatPropertyFilters,
   type CreatePropertyInput,
   type PropertyInput,
   type PropertyQuery,
@@ -98,6 +99,18 @@ export function createPropertyService(
   }
 
   return {
+    async searchForChat(filters: ChatPropertyFilters) {
+      const { items } = await repository.list(
+        { ...filters, page: 1, pageSize: 3, sort: 'newest' },
+        false,
+        false,
+      );
+
+      return items.map((record) =>
+        propertyDto(record as PropertyRecord, storage),
+      );
+    },
+
     async list(query: PropertyQuery, role?: StaffRole) {
       const result = await repository.list(
         query,

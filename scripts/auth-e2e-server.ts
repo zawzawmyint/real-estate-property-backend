@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { LocalStorage } from '../src/infrastructure/storage/local-storage.js';
 import { seedDemoProperties } from '../src/modules/properties/demo-seed.js';
 import { leadSearch } from '../src/modules/leads/leads.repository.js';
+import { preparePublicChatListing } from '../tests/public-chat-fixture.js';
 
 const password = process.env.STAFF_E2E_PASSWORD;
 
@@ -14,13 +15,15 @@ process.env.INQUIRY_RELAY_SECRET ??=
 if (!password || password.length < 12 || password.length > 128)
   throw new Error('STAFF_E2E_PASSWORD must be 12-128 characters');
 
-const fixture = await authFixture();
+const publicChat = process.env.STAFF_E2E_PUBLIC_CHAT === '1';
+const fixture = await authFixture({ publicChat });
 
-if (process.env.STAFF_E2E_SEED_PROPERTIES !== '0')
+if (publicChat || process.env.STAFF_E2E_SEED_PROPERTIES !== '0')
   await seedDemoProperties(
     fixture.database,
     new LocalStorage(fixture.env.STORAGE_ROOT, fixture.env.PUBLIC_ORIGIN),
   );
+if (publicChat) await preparePublicChatListing(fixture.database);
 if (process.env.STAFF_E2E_STATE_FILE)
   await writeFile(
     process.env.STAFF_E2E_STATE_FILE,

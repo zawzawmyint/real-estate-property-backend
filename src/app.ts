@@ -21,6 +21,9 @@ import { mountProperties } from './modules/properties/properties.routes.js';
 import type { Database } from './infrastructure/database/transaction.js';
 import type { Storage } from './infrastructure/storage/storage.js';
 import { mountAgency } from './modules/agency/agency.routes.js';
+import { createPropertyService } from './modules/properties/properties.service.js';
+import { mountPublicChat } from './modules/public-chat/public-chat.routes.js';
+import { configurePublicChat } from './modules/public-chat/public-chat.runtime.js';
 
 export function createApp(
   env: Env,
@@ -28,6 +31,7 @@ export function createApp(
   database: Database,
   propertyStorage?: Storage,
   readAgencyCatalog?: () => unknown,
+  fetchPublicChat?: typeof fetch,
 ) {
   const app = express();
   const logger = createLogger(env.LOG_LEVEL);
@@ -60,6 +64,16 @@ export function createApp(
   mountDashboard(app, auth, database);
   mountAgency(app, readAgencyCatalog);
   mountProperties(app, auth, env, database, propertyStorage ?? storage, logger);
+  const chatReply = env.PUBLIC_CHAT_ENABLED
+    ? configurePublicChat(
+        env,
+        logger,
+        createPropertyService(database, propertyStorage ?? storage, logger)
+          .searchForChat,
+        fetchPublicChat,
+      )
+    : undefined;
+  mountPublicChat(app, env, chatReply);
 
   app.use(express.json({ limit: '100kb' }));
   app.use('/api/v1/health', healthRouter);

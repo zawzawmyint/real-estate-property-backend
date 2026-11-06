@@ -9,7 +9,9 @@ This folder holds two independent Git repositories. It is not a monorepo and doe
 
 The selected agency name is **Avenor Properties**, used throughout the current website and CRM.
 
-The foundation is followed by a verified staff-authentication slice. `/crm` enforces an Express-verified staff session; Admin, Manager and Agent identities are available. Properties, leads, viewings, the client portal and lead ownership are future features.
+The public site supports property discovery and inquiries. The staff CRM covers property inventory, leads, pipeline, viewings, tasks and dashboard. Express verifies staff sessions and enforces Admin, Manager and Agent permissions. The client portal is a later feature.
+
+See the [system design](system-design.md) for a diagram of the running applications, storage and external services, plus examples of how requests cross their boundaries.
 
 Shared-document policy: edit shared content in the frontend repository first and synchronize the backend copy in the same delivery. Links in each copy resolve within that repository. Companion-repository source paths are shown as text because GitHub remotes are not configured. Repository-local feature specs and API contracts remain authoritative for their respective projects.
 
@@ -56,7 +58,3 @@ The archived [workspace foundation specification](foundation-spec.md) describes 
 - Feature code stays together. Shared code is extracted when an actual reusable responsibility appears.
 - Local uploads and SQLite databases are runtime data, not Git assets. Local disk requires persistent deployment storage and backups.
 - PostgreSQL and S3 are future migrations with explicit data-transfer steps, not automatic configuration switches.
-
-## Next delivery slice
-
-Specify property publishing next. Generate demo property images alongside the property feature, when image dimensions and sample records are defined. P1-03 lead ownership needs a separate lead-management model and authorization specification.

@@ -1,0 +1,32 @@
+[
+  {
+    "id": "request-viewing",
+    "title": "Arrange a property viewing",
+    "path": "/contact",
+    "text": "Open the property's details and submit its inquiry form to request a viewing. An agent can confirm available dates and times after reviewing the request. The inquiry form does not reserve an appointment."
+  },
+  {
+    "id": "listing-search",
+    "title": "Browse properties",
+    "path": "/properties",
+    "text": "The listings page shows available properties. Choose buy or rent, then filter by location, property type, price and minimum bedrooms. Open a result to see its full details and photos."
+  },
+  {
+    "id": "general-inquiry",
+    "title": "Contact Avenor Properties",
+    "path": "/contact",
+    "text": "For a general question or help with a property search, use the Contact page's inquiry form. Share contact details in the inquiry form and use the message to describe what you need."
+  },
+  {
+    "id": "listing-price",
+    "title": "Read listing prices",
+    "path": "/properties",
+    "text": "Public listing prices use UAE dirhams (AED). A rental price is for one year. A sale price is the listed total asking price."
+  },
+  {
+    "id": "demo-listings",
+    "title": "Identify demo properties",
+    "path": "/properties",
+    "text": "Properties marked as demo are fictional examples for the Avenor portfolio demonstration. Demo listings illustrate the search and inquiry flow."
+  }
+]

@@ -6,6 +6,29 @@ Status: Delivered and verified on 2026-10-22.
 
 Allow provisioned agency staff to sign in and out, protect CRM access with revocable database sessions, and establish Admin, Manager and Agent identities before business records exist. Covers P1-01 and the authentication portion of P1-02. P1-03 remains pending until lead ownership can be enforced against real records.
 
+## Software design at a glance
+
+```mermaid
+flowchart TD
+    authRequest["Sign in, look up session or sign out"]
+    authRoute["Express · allowlist and request guards"]
+    authHandler["Better Auth · native handler"]
+    sessionStore["Prisma / SQLite · staff and sessions"]
+    staffRequest["Protected request with session cookie"]
+    staffGuard["Staff guard · live session lookup"]
+    role{"Current role allowed?"}
+    staffRoute["Continue to staff route"]
+    denied["Reject unauthorized request"]
+
+    authRequest --> authRoute --> authHandler <--> sessionStore
+    staffRequest --> staffGuard --> role -->|"Yes"| staffRoute
+    role -->|"No"| denied
+    staffGuard -.->|"Read via Better Auth"| sessionStore
+```
+
+- The [auth routes](../../src/modules/auth/auth.routes.ts) enforce the HTTP boundary and pass native responses and cookies through to the client.
+- The [Better Auth configuration](../../src/modules/auth/auth.ts) owns database sessions and credential and account checks. The [staff guard](../../src/modules/auth/auth.middleware.ts) requires a live session and an allowed current role.
+
 ## Scope and exclusions
 
 - In scope: email/password login, logout, session lookup, database migrations, backend authentication and role helpers, trusted operator commands for staff provisioning/recovery/deactivation, configuration and security tests.

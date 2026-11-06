@@ -1,5 +1,24 @@
 # Feature specifications
 
+## Software design diagrams
+
+| Feature                                                                                              | Flow                                                        |
+| ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| [Staff authentication and roles](staff-authentication-and-roles/spec.md#software-design-at-a-glance) | Sign-in and live session checks                             |
+| [Property management and discovery](property-management/spec.md#software-design-at-a-glance)         | Draft, photos, publishing and public listing visibility     |
+| [Public contact and agents](public-contact-and-agents/spec.md#software-design-at-a-glance)           | Public catalog reads and inquiry handoff                    |
+| [Inquiry capture and lead management](lead-management/spec.md#software-design-at-a-glance)           | Inquiry capture, assignment and scoped staff access         |
+| [Viewing management](viewing-management/spec.md#software-design-at-a-glance)                         | Booking eligibility, scheduling and status changes          |
+| [Follow-up tasks](follow-up-tasks/spec.md#software-design-at-a-glance)                               | Lead-linked task creation, status changes and overdue state |
+| [Agency dashboard](agency-dashboard/spec.md#software-design-at-a-glance)                             | Role-scoped lead counts and distributions                   |
+| [Property chatbot](public-property-chatbot/spec.md#software-design-at-a-glance)                      | Listing and FAQ routing, models and vector search           |
+
+Start with the [system design](../docs/shared/system-design.md) for the shared architecture. The Sales Pipeline board and chatbot UI diagrams are in the companion frontend repository's `specs/README.md`.
+
+## Verified public property chatbot
+
+- [Public property chatbot](public-property-chatbot/spec.md) and [backend-owned contract](public-property-chatbot/contract.md): verified P2-08 opt-in FAQ retrieval, public listing handoff and bounded OpenRouter calls. The companion frontend snapshot has local property-summary references. Real-business publication remains gated on approved FAQ and visitor-data wording.
+
 ## Phase 1 review remediation — implemented; final acceptance pending
 
 - [November review remediation](phase-one-review-remediation/spec.md) and [backend-owned contract](phase-one-review-remediation/contract.md): verified production inquiry relay requirement, transaction-aware shared staff validation and roadmap reconciliation. Backend full checks, clean cross-repository browser/dashboard/runtime acceptance pass; Git-delivery acceptance remains pending.

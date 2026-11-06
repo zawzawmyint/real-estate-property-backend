@@ -6,6 +6,27 @@ Status: Verified — delivered and reconciled, 2026-10-26.
 
 Persist property inquiries as unassigned leads, let Admin/Manager distribute them, and enforce agent ownership throughout follow-up.
 
+## Software design at a glance
+
+```mermaid
+flowchart TD
+    inquiry["Public inquiry · check origin and rate limit"]
+    staff["CRM request · require live staff session"]
+    intake["Create New, unassigned website lead"]
+    scope["Scope Agent access to current assignments"]
+    reads["Return scoped leads or activity"]
+    writes["Enforce write permissions and version checks"]
+    save["Commit lead and activity together"]
+
+    inquiry --> intake --> save
+    staff --> scope
+    scope -->|"Read"| reads
+    scope -->|"Write"| writes --> save
+```
+
+- **Request handling.** The [routes](../../src/modules/leads/leads.routes.ts) share an inquiry limiter across property and agency intake and reserve assignment changes for Admin/Manager.
+- **Consistency and ownership.** The [service](../../src/modules/leads/leads.service.ts) coordinates lead, activity and applicable submission receipt writes. The [repository](../../src/modules/leads/leads.repository.ts) applies ownership predicates to reads and versioned updates.
+
 ## Scope and exclusions
 
 - In scope: website inquiries, manual creation, scoped list/detail/edit, active-agent assignment, stage changes, append-only notes/call logs, paginated activity, concurrency/idempotency and safe account/property lifecycle behavior.

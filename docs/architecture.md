@@ -1,5 +1,7 @@
 # Backend architecture
 
+Start with the [system design](shared/system-design.md) for a diagram of both applications, their data stores and the main request paths.
+
 ## Boundaries
 
 The frontend calls Express; Express owns validation, permissions, business rules and persistence. The application factory (`src/app.ts`) can be tested without a listener; `src/server.ts` owns HTTP startup, request timeouts and bounded SIGINT/SIGTERM shutdown. The health route is liveness, not database readiness.
@@ -20,7 +22,7 @@ Helmet provides baseline response headers; business JSON bodies are limited to 1
 
 Prisma 7.10.1 is pinned to a stable version rather than the registry's Prisma 8 release-candidate tag. `prisma.config.ts` defines SQLite and generation paths. `createDatabase` owns adapter construction; callers own disconnecting. The liveness app does not open a database unnecessarily. `db:check` proves the real Prisma/SQLite connection with `SELECT 1`.
 
-Paths use the backend working directory as the base. The committed Prisma migrations create Better Auth's SQLite User, Session, Account and Verification tables, including additive credential-version fields used to invalidate reset races, plus Property, PropertyPhoto, Lead, LeadNote, LeadActivity and LeadSubmissionReceipt tables. Moving to PostgreSQL requires provider-compatible schema/migrations and data transfer; it is not a configuration-only operation.
+Paths use the backend working directory as the base. See the [data model diagrams](data-model.md) for the current SQLite tables and relationships, including Better Auth, properties, leads, viewings and tasks. Moving to PostgreSQL requires provider-compatible schema and migrations, plus data transfer.
 
 ## Storage
 

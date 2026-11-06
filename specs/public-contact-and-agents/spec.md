@@ -6,6 +6,30 @@ Status: Verified — demo delivery accepted 2026-10-27; real-business publicatio
 
 Support public Contact/Agents pages with an explicit public content boundary and property-independent enquiries that enter the existing staff CRM. This is the backend portion of P1-17; frontend design and acceptance live in that repository's `specs/public-contact-and-agents/spec.md`.
 
+## Software design at a glance
+
+```mermaid
+flowchart TD
+    read["Read agency or agent profile"]
+    catalog["Agency service · validate editorial catalog"]
+    profile["Return public content and published profiles"]
+    inquiry["Submit general enquiry"]
+    guards["Verify origin and relay, limit and validate input"]
+    receipt{"Submission receipt?"}
+    write["Create unassigned lead, activity and receipt together"]
+    accepted["Return public acknowledgement"]
+    conflict["Reject with 409"]
+
+    read --> catalog --> profile
+    inquiry --> guards --> receipt
+    receipt -->|"New"| write --> accepted
+    receipt -->|"Matching replay"| accepted
+    receipt -->|"Conflicting reuse"| conflict
+```
+
+- The [agency service](../../src/modules/agency/agency.service.ts) validates the editorial catalog and selects published profiles for public responses.
+- The [lead routes](../../src/modules/leads/leads.routes.ts) share one rate limiter across enquiry endpoints. The [lead service](../../src/modules/leads/leads.service.ts) checks for replay and records new enquiries in a single transaction.
+
 ## Scope and exclusions
 
 - In scope: a validated backend-owned editorial catalog, anonymous agency/profile reads, published-profile projection, and one additive public enquiry route using existing lead/receipt/activity persistence.
