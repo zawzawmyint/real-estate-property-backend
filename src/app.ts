@@ -36,6 +36,11 @@ export function createApp(
   const app = express();
   const logger = createLogger(env.LOG_LEVEL);
   const storage = new LocalStorage(env.STORAGE_ROOT, env.PUBLIC_ORIGIN);
+  const properties = createPropertyService(
+    database,
+    propertyStorage ?? storage,
+    logger,
+  );
 
   app.disable('x-powered-by');
   app.use(requestId);
@@ -58,18 +63,17 @@ export function createApp(
   });
 
   mountAuth(app, auth, env);
-  mountLeads(app, auth, env, database);
+  mountLeads(app, auth, env, database, properties.listPropertyMatches);
   mountViewings(app, auth, env, database);
   mountTasks(app, auth, env, database);
   mountDashboard(app, auth, database);
   mountAgency(app, readAgencyCatalog);
-  mountProperties(app, auth, env, database, propertyStorage ?? storage, logger);
+  mountProperties(app, auth, env, properties);
   const chatReply = env.PUBLIC_CHAT_ENABLED
     ? configurePublicChat(
         env,
         logger,
-        createPropertyService(database, propertyStorage ?? storage, logger)
-          .searchForChat,
+        properties.searchForChat,
         fetchPublicChat,
       )
     : undefined;

@@ -10,15 +10,22 @@ import {
   requireTrustedOrigin,
 } from '../../shared/http/middleware.js';
 import { inquiryProtection } from './inquiry-limiter.js';
-import { createLeadService } from './leads.service.js';
+import {
+  createLeadService,
+  type ListPropertyMatches,
+} from './leads.service.js';
 
 export function mountLeads(
   app: Express,
   auth: StaffAuth,
   env: Env,
   database: Database,
+  listPropertyMatches: ListPropertyMatches,
 ) {
-  const controller = createLeadController(createLeadService(database)),
+  const controller = createLeadController(
+      createLeadService(database),
+      listPropertyMatches,
+    ),
     staff = express.Router(),
     inquiries = express.Router(),
     agencyInquiries = express.Router();
@@ -35,6 +42,7 @@ export function mountLeads(
   staff.get('/assignment-candidates', managers, controller.candidates);
   staff.get('/:id', live, controller.detail);
   staff.get('/:id/activity', live, controller.activity);
+  staff.get('/:id/property-matches', live, controller.propertyMatches);
 
   staff.post('/', ...write, controller.create);
   staff.patch('/:id', ...write, controller.patch);

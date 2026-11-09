@@ -10,6 +10,8 @@ This file defines project-wide scope and boundaries and indexes existing specifi
 
 ## Verified baseline
 
+- The [CRM property matching](specs/property-matching/spec.md) feature verifies P2-03 locally: `listLeadPropertyMatches` authorizes live staff and current lead access in the same SQLite transaction as an available, published public-listing search. Its additive read-only contract is in the leads OpenAPI document and the matching frontend snapshot. No migration, provider or extraction path is included; backend checks, integration coverage and OpenAPI parity passed. Deployment remains pending.
+
 - The [shared CRM workspace presentation compatibility record](specs/crm-workspace-presentation/spec.md) confirms the delivered frontend-only collection/calendar styling uses existing staff contracts. No Express route, schema, migration, configuration, dependency or authorization change was made; native 200% browser zoom remains frontend-owned and unresolved.
 
 - The [public agency directory-languages projection](specs/public-agency-pages-redesign/spec.md) is delivered as a backward-compatible summary field for the public agency-page redesign. It changes no persistence, authentication, inquiry or assignment behavior; native 200% browser-zoom verification remains frontend-owned and unresolved.

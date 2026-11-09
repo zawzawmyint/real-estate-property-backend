@@ -9,6 +9,159 @@
   'servers': [{ 'url': 'http://localhost:4311' }],
   'paths':
     {
+      '/api/v1/staff/leads/{id}/property-matches':
+        {
+          'get':
+            {
+              'operationId': 'listLeadPropertyMatches',
+              'summary': 'Find available public properties for a lead',
+              'description': 'Live staff session required. Admin and Manager can access all leads; Agent can access currently assigned leads only. Uses confirmed query values and returns published, available listings in newest order with a fixed page size of 10. Price cap is inclusive, using sale total or annual rent.',
+              'security': [{ 'StaffCookie': [] }],
+              'parameters':
+                [
+                  {
+                    'name': 'id',
+                    'in': 'path',
+                    'required': true,
+                    'schema': { 'type': 'string', 'format': 'uuid' },
+                  },
+                  {
+                    'name': 'purpose',
+                    'in': 'query',
+                    'required': true,
+                    'schema': { 'type': 'string', 'enum': ['sale', 'rent'] },
+                  },
+                  {
+                    'name': 'maxPriceFils',
+                    'in': 'query',
+                    'schema':
+                      {
+                        'type': 'integer',
+                        'minimum': 0,
+                        'maximum': 1000000000000,
+                      },
+                  },
+                  {
+                    'name': 'location',
+                    'in': 'query',
+                    'schema':
+                      { 'type': 'string', 'minLength': 1, 'maxLength': 120 },
+                  },
+                  {
+                    'name': 'type',
+                    'in': 'query',
+                    'schema':
+                      {
+                        'type': 'string',
+                        'enum':
+                          ['apartment', 'villa', 'townhouse', 'penthouse'],
+                      },
+                  },
+                  {
+                    'name': 'exactBedrooms',
+                    'in': 'query',
+                    'schema':
+                      { 'type': 'integer', 'minimum': 0, 'maximum': 20 },
+                  },
+                  {
+                    'name': 'page',
+                    'in': 'query',
+                    'schema':
+                      {
+                        'type': 'integer',
+                        'minimum': 1,
+                        'maximum': 10000,
+                        'default': 1,
+                      },
+                  },
+                ],
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': 'Page of published and available properties',
+                      'headers':
+                        {
+                          'Cache-Control':
+                            {
+                              'schema':
+                                { 'type': 'string', 'const': 'no-store' },
+                            },
+                        },
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  '$ref': './openapi.yaml#/components/schemas/PublicPropertyList',
+                                },
+                            },
+                        },
+                    },
+                  '400':
+                    {
+                      'description': 'Invalid search',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/LeadApiError' },
+                            },
+                        },
+                    },
+                  '401':
+                    {
+                      'description': 'Session required',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/LeadApiError' },
+                            },
+                        },
+                    },
+                  '403':
+                    {
+                      'description': 'Staff access required',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/LeadApiError' },
+                            },
+                        },
+                    },
+                  '404':
+                    {
+                      'description': 'Lead unavailable',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/LeadApiError' },
+                            },
+                        },
+                    },
+                  '500':
+                    {
+                      'description': 'Unexpected error',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/LeadApiError' },
+                            },
+                        },
+                    },
+                },
+            },
+        },
       '/api/v1/public/inquiries':
         {
           'post':

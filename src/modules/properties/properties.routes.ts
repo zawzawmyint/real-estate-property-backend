@@ -1,7 +1,5 @@
 import express, { type Express } from 'express';
-import type { Logger } from 'pino';
 import type { Env } from '../../config/env.js';
-import type { Storage } from '../../infrastructure/storage/storage.js';
 import type { StaffAuth } from '../auth/auth.js';
 import { requireStaff } from '../auth/auth.middleware.js';
 import { createPropertyController } from './properties.controller.js';
@@ -11,18 +9,14 @@ import {
   requireJsonContentType,
   requireTrustedOrigin,
 } from '../../shared/http/middleware.js';
-import type { Database } from '../../infrastructure/database/transaction.js';
-import { createPropertyService } from './properties.service.js';
+import type { PropertyService } from './properties.service.js';
 
 export function mountProperties(
   app: Express,
   auth: StaffAuth,
   env: Env,
-  database: Database,
-  storage: Storage,
-  logger: Logger,
+  service: PropertyService,
 ) {
-  const service = createPropertyService(database, storage, logger);
   const controller = createPropertyController(service);
 
   const router = express.Router();

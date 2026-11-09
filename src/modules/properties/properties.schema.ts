@@ -86,6 +86,18 @@ const queryFields = {
   page: integer(1, 10_000).default(1),
   pageSize: integer(1, 48).default(12),
 };
+
+export const propertyMatchQuerySchema = z.strictObject({
+  purpose: z.enum(purposes),
+  maxPriceFils: queryFields.maxPriceFils,
+  location: queryFields.location,
+  type: queryFields.type,
+  exactBedrooms: integer(0, 20).optional(),
+  page: queryFields.page,
+});
+
+export type PropertyMatchQuery = z.infer<typeof propertyMatchQuerySchema>;
+
 const publicQuery = z.strictObject({
   ...queryFields,
   sort: z.enum(['newest', 'price_asc', 'price_desc']).default('newest'),
