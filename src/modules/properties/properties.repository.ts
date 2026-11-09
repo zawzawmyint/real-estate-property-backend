@@ -6,7 +6,7 @@ import type {
 import type { PropertyQuery } from './properties.schema.js';
 import { normalizeSearchText } from '../../shared/search/normalize-search-text.js';
 
-type PropertyListQuery = PropertyQuery & { exactBedrooms?: number };
+type PropertyListQuery = PropertyQuery & { exactBedrooms?: number | undefined };
 
 const photoSelect = {
   id: true,
@@ -170,6 +170,7 @@ export function createPropertyRepository(database: Database) {
       query: PropertyListQuery,
       staff: boolean,
       privateOwner: boolean,
+      tx?: Transaction,
     ) {
       const where = propertyWhere(query, staff);
       const select = staff
@@ -177,7 +178,7 @@ export function createPropertyRepository(database: Database) {
           ? internalSelect
           : staffSelect
         : summarySelect;
-      const { items, total } = await database.$transaction(async (tx) => {
+      const listPage = async (tx: Transaction) => {
         if (query.location || (staff && query.q)) {
           const { ids, total } = await searchPage(tx, query, where, staff);
           const items = await tx.property.findMany({
@@ -200,7 +201,11 @@ export function createPropertyRepository(database: Database) {
         const total = await tx.property.count({ where });
 
         return { items, total };
-      });
+      };
+
+      const { items, total } = tx
+        ? await listPage(tx)
+        : await database.$transaction(listPage);
 
       return { items, total, page: query.page, pageSize: query.pageSize };
     },

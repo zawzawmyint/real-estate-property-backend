@@ -10,6 +10,8 @@ paths:
     $ref: './public-chat.openapi.yaml#/paths/~1api~1v1~1public~1chat'
   /api/v1/staff/dashboard:
     $ref: './dashboard.openapi.yaml#/paths/~1api~1v1~1staff~1dashboard'
+  /api/v1/staff/leads/{id}/property-matches:
+    $ref: './leads.openapi.yaml#/paths/~1api~1v1~1staff~1leads~1{id}~1property-matches'
   /api/v1/staff/tasks:
     $ref: './tasks.openapi.yaml#/paths/~1api~1v1~1staff~1tasks'
   /api/v1/staff/tasks/{id}:

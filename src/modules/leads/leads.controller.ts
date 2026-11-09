@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
+import { propertyMatchQuerySchema } from '../properties/properties.schema.js';
 import type { Actor } from './leads.repository.js';
-import type { LeadService } from './leads.service.js';
+import type { LeadService, ListPropertyMatches } from './leads.service.js';
 import {
   agencyInquirySchema,
   assignmentSchema,
@@ -18,7 +19,10 @@ import {
 } from './leads.schema.js';
 const actor = (res: Response) => res.locals.staff as Actor;
 
-export function createLeadController(service: LeadService) {
+export function createLeadController(
+  service: LeadService,
+  listPropertyMatches: ListPropertyMatches,
+) {
   return {
     async list(req: Request, res: Response) {
       res.json(
@@ -36,6 +40,17 @@ export function createLeadController(service: LeadService) {
           parseId(req.params.id),
           parseQuery(pageSchema, req.originalUrl).page,
           actor(res),
+        ),
+      );
+    },
+
+    async propertyMatches(req: Request, res: Response) {
+      res.json(
+        await service.propertyMatches(
+          parseId(req.params.id),
+          parseQuery(propertyMatchQuerySchema, req.originalUrl),
+          actor(res),
+          listPropertyMatches,
         ),
       );
     },

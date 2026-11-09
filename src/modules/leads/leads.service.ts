@@ -6,6 +6,8 @@ import {
   type Database,
   type Transaction,
 } from '../../infrastructure/database/transaction.js';
+import type { PropertyMatchQuery } from '../properties/properties.schema.js';
+import type { PropertyService } from '../properties/properties.service.js';
 import { activityDto, eligibleAgent, leadDto } from './leads.dto.js';
 import {
   createLeadRepository,
@@ -34,6 +36,8 @@ const invalid = () =>
   new AppError(400, 'VALIDATION_ERROR', 'Invalid lead input');
 const hash = (payload: unknown) =>
   createHash('sha256').update(JSON.stringify(payload)).digest('hex');
+
+export type ListPropertyMatches = PropertyService['listPropertyMatches'];
 
 export function createLeadService(database: Database) {
   const repository = createLeadRepository(database);
@@ -196,6 +200,19 @@ export function createLeadService(database: Database) {
         await owned(id, await requireCurrentStaff(identity, tx), tx);
         const result = await repository.activity(id, page, tx);
         return { ...result, items: result.items.map(activityDto) };
+      });
+    },
+
+    async propertyMatches(
+      id: string,
+      query: PropertyMatchQuery,
+      identity: Actor,
+      listPropertyMatches: ListPropertyMatches,
+    ) {
+      return serializedTransaction(database, async (tx) => {
+        await owned(id, await requireCurrentStaff(identity, tx), tx);
+
+        return listPropertyMatches(query, tx);
       });
     },
 

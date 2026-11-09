@@ -15,6 +15,10 @@
 
 Start with the [system design](../docs/shared/system-design.md) for the shared architecture. The Sales Pipeline board and chatbot UI diagrams are in the companion frontend repository's `specs/README.md`.
 
+## Verified CRM property matching
+
+- [CRM property matching](property-matching/spec.md): verified P2-03 backend-owned `listLeadPropertyMatches` route. It checks live staff and current lead access in the same SQLite transaction as the read-only, published-and-available public-listing search; it does not write data or call a provider. The operation is documented in [leads OpenAPI](../docs/api/leads.openapi.yaml) and represented by the companion frontend snapshot.
+
 ## Verified public property chatbot
 
 - [Public property chatbot](public-property-chatbot/spec.md) and [backend-owned contract](public-property-chatbot/contract.md): verified P2-08 opt-in FAQ retrieval, public listing handoff and bounded OpenRouter calls. The companion frontend snapshot has local property-summary references. Real-business publication remains gated on approved FAQ and visitor-data wording.

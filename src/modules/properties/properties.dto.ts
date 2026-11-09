@@ -2,8 +2,9 @@ import type { Storage } from '../../infrastructure/storage/storage.js';
 import type { StaffRole } from '../auth/auth.js';
 import type { PublicRecord, PropertyRecord } from './properties.repository.js';
 
-type RecordWithPhotos =
-  PublicRecord | Omit<PropertyRecord, 'ownerName' | 'ownerPhone'>;
+type RecordWithPhotos = Omit<PublicRecord, 'description'> & {
+  description?: string | null;
+};
 
 export function propertyDto(
   record: RecordWithPhotos,

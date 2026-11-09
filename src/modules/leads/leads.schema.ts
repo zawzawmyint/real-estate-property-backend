@@ -120,7 +120,7 @@ export function parse<T>(schema: z.ZodType<T>, input: unknown): T {
 export const parseId = (id: unknown) => parse(z.uuid(), id);
 
 export function parseQuery<T>(schema: z.ZodType<T>, url: string): T {
-  const values: Record<string, string> = {};
+  const values = Object.create(null) as Record<string, string>;
   for (const [key, value] of new URL(url, 'http://local').searchParams) {
     if (Object.hasOwn(values, key))
       throw new AppError(400, 'VALIDATION_ERROR', 'Duplicate query parameter');

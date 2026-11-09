@@ -16,6 +16,7 @@ import {
   toData,
   type ChatPropertyFilters,
   type CreatePropertyInput,
+  type PropertyMatchQuery,
   type PropertyInput,
   type PropertyQuery,
 } from './properties.schema.js';
@@ -99,6 +100,20 @@ export function createPropertyService(
   }
 
   return {
+    async listPropertyMatches(query: PropertyMatchQuery, tx: Transaction) {
+      const result = await repository.list(
+        { ...query, sort: 'newest', pageSize: 10 },
+        false,
+        false,
+        tx,
+      );
+
+      return {
+        ...result,
+        items: result.items.map((record) => propertyDto(record, storage)),
+      };
+    },
+
     async searchForChat(filters: ChatPropertyFilters) {
       const { items } = await repository.list(
         { ...filters, page: 1, pageSize: 3, sort: 'newest' },
