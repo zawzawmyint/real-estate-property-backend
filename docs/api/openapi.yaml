@@ -6,6 +6,12 @@ info:
 servers:
   - url: http://localhost:4311
 paths:
+  /api/v1/staff/notifications:
+    $ref: './notifications.openapi.yaml#/paths/~1api~1v1~1staff~1notifications'
+  /api/v1/staff/notifications/{id}/read:
+    $ref: './notifications.openapi.yaml#/paths/~1api~1v1~1staff~1notifications~1{id}~1read'
+  /api/v1/staff/notifications/stream:
+    $ref: './notifications.openapi.yaml#/paths/~1api~1v1~1staff~1notifications~1stream'
   /api/v1/public/chat:
     $ref: './public-chat.openapi.yaml#/paths/~1api~1v1~1public~1chat'
   /api/v1/staff/dashboard:

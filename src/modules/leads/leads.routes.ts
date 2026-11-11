@@ -2,6 +2,7 @@ import express, { type Express } from 'express';
 import type { Env } from '../../config/env.js';
 import type { StaffAuth } from '../auth/auth.js';
 import { requireStaff } from '../auth/auth.middleware.js';
+import type { NotificationService } from '../notifications/notifications.service.js';
 import type { Database } from '../../infrastructure/database/transaction.js';
 import { createLeadController } from './leads.controller.js';
 import {
@@ -21,9 +22,10 @@ export function mountLeads(
   env: Env,
   database: Database,
   listPropertyMatches: ListPropertyMatches,
+  notifications: NotificationService,
 ) {
   const controller = createLeadController(
-      createLeadService(database),
+      createLeadService(database, notifications),
       listPropertyMatches,
     ),
     staff = express.Router(),

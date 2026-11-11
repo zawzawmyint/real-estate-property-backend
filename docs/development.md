@@ -35,6 +35,8 @@ The FAQ catalog can only expose the public `/contact` and `/properties` source r
 
 For an existing database, migrations require a maintenance window: stop the backend and all operator writes, back up SQLite (including any WAL files) and its matching media, then deploy the updated source and run `bun run db:generate`, `bun run db:migrate`, and `bun run db:check` before restarting. The migration command also backfills NFC/lowercase property, lead and staff search fields in bounded batches without changing business timestamps; running `prisma migrate deploy` alone does not complete this data migration. Keep writes stopped until the updated application starts. The backfill is idempotent, so a failed run can be retried while offline. Restore the compatible database/media/application backup together if rolling back. This is a single-process offline migration, not a rolling-deployment procedure.
 
+The CRM notifications migration is additive: it creates the persistent notification inbox and does not backfill historic workflow events. Apply it through the same `db:generate`, `db:migrate`, `db:check` sequence before deploying the matching frontend bell. On startup, the application wires the active signal adapter and begins the reminder scan; graceful shutdown stops scans and closes notification streams. The current adapter is process-local, so do not run multiple API instances for shared live delivery until a shared transport is configured.
+
 The disposable browser fixture includes fictional featured demo listings by default so public photo tests do not depend on other tests. Set `STAFF_E2E_SEED_PROPERTIES=0` only for targeted suites that do not require public property media. Ordinary application startup never seeds data.
 
 ## Feature development
@@ -81,6 +83,8 @@ Use this procedure only in a maintenance window after a property cleanup log rep
 ## Operation
 
 The server logs safe startup failure codes, returns generic unexpected error responses and stops accepting requests on SIGINT/SIGTERM with a 10-second connection shutdown window. Windows process termination may not deliver Unix signals; exercise deployment shutdown on its actual process manager.
+
+The authenticated notification stream is `GET /api/v1/staff/notifications/stream`. It emits payload-free `notifications.changed` events, with a 15-second authorization heartbeat; clients reload the inbox after a change or reconnect. Its response explicitly sets `Cache-Control: no-store, no-transform` to prevent the current Next rewrite from buffering the stream, and `X-Accel-Buffering: no` for compatible reverse proxies. Verify the production ingress forwards the stream promptly before release. Redis Pub/Sub and email delivery are not configured.
 
 Use persistent storage and database backups before deployment. There is no deployment automation yet. Remove disposable development data only when intentionally resetting local work; database files and public assets are not source code or reproducible migrations.
 

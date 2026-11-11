@@ -10,6 +10,8 @@ This file defines project-wide scope and boundaries and indexes existing specifi
 
 ## Verified baseline
 
+- The [CRM notifications](specs/crm-notifications/spec.md) feature verifies P2-02 with recipient-scoped persistent inbox rows, idempotent reads and payload-free SSE invalidation for lead assignment/reassignment. Viewing changes, due-task reminders and staff website-inquiry alerts are verified supplemental producers. It uses an additive SQLite migration, a startup-wired in-process signal adapter and an earliest-due-first, 100-candidate reminder scan; Redis fanout, email delivery and deployed-ingress verification remain future work.
+
 - The [CRM property matching](specs/property-matching/spec.md) feature verifies P2-03 locally: `listLeadPropertyMatches` authorizes live staff and current lead access in the same SQLite transaction as an available, published public-listing search. Its additive read-only contract is in the leads OpenAPI document and the matching frontend snapshot. No migration, provider or extraction path is included; backend checks, integration coverage and OpenAPI parity passed. Deployment remains pending.
 
 - The [shared CRM workspace presentation compatibility record](specs/crm-workspace-presentation/spec.md) confirms the delivered frontend-only collection/calendar styling uses existing staff contracts. No Express route, schema, migration, configuration, dependency or authorization change was made; native 200% browser zoom remains frontend-owned and unresolved.

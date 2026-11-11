@@ -8,6 +8,7 @@ import {
 import { requireCurrentStaff } from '../auth/staff-actor.js';
 import { createLeadRepository, type Actor } from '../leads/leads.repository.js';
 import { eligibleAgent } from '../leads/leads.dto.js';
+import { createNotificationService } from '../notifications/notifications.service.js';
 import { createTaskRepository } from './tasks.repository.js';
 import { taskDto } from './tasks.dto.js';
 import {
@@ -26,6 +27,7 @@ const conflict = () =>
 export function createTaskService(
   database: Database,
   clock: () => Date = () => new Date(),
+  notifications = createNotificationService(database),
 ) {
   const repository = createTaskRepository(database),
     leads = createLeadRepository(database);
@@ -158,7 +160,7 @@ export function createTaskService(
 
     async update(id: string, raw: UpdateInput, identity: Actor) {
       const input = parse(updateSchema, raw);
-      return serializedTransaction(database, async (tx) => {
+      return notifications.transactionWithChanges(async (tx, recipientIds) => {
         await repository.lock(id, tx);
         const actor = await requireCurrentStaff(identity, tx),
           row = await owned(id, actor, tx),
@@ -166,9 +168,10 @@ export function createTaskService(
         if (row.version !== input.expectedVersion || row.status !== 'open')
           throw conflict();
         await eligibility(row.leadId, input.expectedLeadVersion, actor, tx);
-        const dueAt = new Date(input.dueAt);
-        if (dueAt.getTime() !== row.dueAt.getTime()) future(dueAt, asOf);
-        return persist(
+        const dueAt = new Date(input.dueAt),
+          dueChanged = dueAt.getTime() !== row.dueAt.getTime();
+        if (dueChanged) future(dueAt, asOf);
+        const result = await persist(
           id,
           input.expectedVersion,
           actor,
@@ -176,19 +179,24 @@ export function createTaskService(
           asOf,
           tx,
         );
+        if (dueChanged)
+          recipientIds.push(
+            ...(await notifications.retireNotifications({ taskId: id }, tx)),
+          );
+        return result;
       });
     },
 
     async status(id: string, raw: StatusInput, identity: Actor) {
       const input = parse(statusSchema, raw);
-      return serializedTransaction(database, async (tx) => {
+      return notifications.transactionWithChanges(async (tx, recipientIds) => {
         await repository.lock(id, tx);
         const actor = await requireCurrentStaff(identity, tx),
           row = await owned(id, actor, tx),
           asOf = clock();
         if (row.version !== input.expectedVersion || row.status !== 'open')
           throw conflict();
-        return persist(
+        const result = await persist(
           id,
           input.expectedVersion,
           actor,
@@ -201,6 +209,10 @@ export function createTaskService(
           asOf,
           tx,
         );
+        recipientIds.push(
+          ...(await notifications.retireNotifications({ taskId: id }, tx)),
+        );
+        return result;
       });
     },
   };

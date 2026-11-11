@@ -137,6 +137,17 @@ export function createLeadRepository(database: Database) {
       return tx.user.findUnique({ where: { id }, select: userSelect });
     },
 
+    activeManagers(tx: Transaction) {
+      return tx.user.findMany({
+        where: {
+          role: { in: ['admin', 'manager'] },
+          disabled: false,
+          OR: [{ banned: false }, { banned: null }],
+        },
+        select: { id: true },
+      });
+    },
+
     receipt(id: string, tx: Transaction) {
       return tx.leadSubmissionReceipt.findUnique({ where: { id } });
     },

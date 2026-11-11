@@ -28,11 +28,12 @@ try {
     db.leadSubmissionReceipt.count(),
     db.viewing.count(),
     db.task.count(),
+    db.notification.count(),
   ]);
   await verifyPropertySearch(db);
   await verifyLeadSearch(db);
   console.info(
-    'SQLite connection, staff-authentication, property and lead schemas/search verified.',
+    'SQLite connection, agency tables, property and lead search verified.',
   );
 } finally {
   await db.$disconnect();

@@ -8,7 +8,11 @@ import {
 import { requireCurrentStaff } from '../auth/staff-actor.js';
 import { createLeadRepository, type Actor } from '../leads/leads.repository.js';
 import { eligibleAgent } from '../leads/leads.dto.js';
-import { createViewingRepository } from './viewings.repository.js';
+import { createNotificationService } from '../notifications/notifications.service.js';
+import {
+  createViewingRepository,
+  type ViewingRecord,
+} from './viewings.repository.js';
 import { viewingDto } from './viewings.dto.js';
 import type {
   CreateInput,
@@ -23,6 +27,7 @@ const conflict = () =>
 export function createViewingService(
   database: Database,
   clock: () => Date = () => new Date(),
+  notifications = createNotificationService(database),
 ) {
   const repository = createViewingRepository(database),
     leads = createLeadRepository(database);
@@ -84,7 +89,28 @@ export function createViewingService(
   ) {
     if ((await repository.update(id, expected, actor, data, tx)).count !== 1)
       throw conflict();
-    return viewingDto(await owned(id, actor, tx));
+    return owned(id, actor, tx);
+  }
+
+  function notifyAssignee(
+    viewing: ViewingRecord,
+    actor: Actor,
+    type: 'viewing_rescheduled' | 'viewing_cancelled',
+    tx: Transaction,
+  ) {
+    const recipientId = viewing.lead.assignedAgentId;
+    if (!recipientId || recipientId === actor.id) return null;
+
+    return notifications.createNotification(
+      {
+        recipientId,
+        type,
+        leadId: viewing.leadId,
+        viewingId: viewing.id,
+        occurrenceKey: `${type}:${viewing.id}:${viewing.version}`,
+      },
+      tx,
+    );
   }
 
   return {
@@ -161,7 +187,7 @@ export function createViewingService(
     },
 
     async reschedule(id: string, input: RescheduleInput, identity: Actor) {
-      return serializedTransaction(database, async (tx) => {
+      return notifications.transactionWithChanges(async (tx, recipientIds) => {
         await repository.lock(id, tx);
         const actor = await requireCurrentStaff(identity, tx),
           row = await owned(id, actor, tx);
@@ -174,12 +200,27 @@ export function createViewingService(
           actor,
           tx,
         );
-        return persist(id, input.expectedVersion, actor, times(input), tx);
+        const dates = times(input);
+        const viewing = await persist(
+          id,
+          input.expectedVersion,
+          actor,
+          dates,
+          tx,
+        );
+        if (
+          dates.startsAt.getTime() !== row.startsAt.getTime() ||
+          dates.endsAt.getTime() !== row.endsAt.getTime()
+        )
+          recipientIds.push(
+            await notifyAssignee(viewing, actor, 'viewing_rescheduled', tx),
+          );
+        return viewingDto(viewing);
       });
     },
 
     async status(id: string, input: StatusInput, identity: Actor) {
-      return serializedTransaction(database, async (tx) => {
+      return notifications.transactionWithChanges(async (tx, recipientIds) => {
         await repository.lock(id, tx);
         const actor = await requireCurrentStaff(identity, tx),
           row = await owned(id, actor, tx);
@@ -187,7 +228,7 @@ export function createViewingService(
           throw conflict();
         if (input.status === 'completed' && row.startsAt > clock())
           throw conflict();
-        return persist(
+        const viewing = await persist(
           id,
           input.expectedVersion,
           actor,
@@ -200,6 +241,11 @@ export function createViewingService(
 
           tx,
         );
+        if (input.status === 'cancelled')
+          recipientIds.push(
+            await notifyAssignee(viewing, actor, 'viewing_cancelled', tx),
+          );
+        return viewingDto(viewing);
       });
     },
   };

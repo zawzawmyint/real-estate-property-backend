@@ -3,6 +3,7 @@ import type { Env } from '../../config/env.js';
 import type { Database } from '../../infrastructure/database/transaction.js';
 import type { StaffAuth } from '../auth/auth.js';
 import { requireStaff } from '../auth/auth.middleware.js';
+import type { NotificationService } from '../notifications/notifications.service.js';
 import {
   noStore,
   requireTrustedOrigin,
@@ -15,9 +16,12 @@ export function mountViewings(
   auth: StaffAuth,
   env: Env,
   database: Database,
+  notifications: NotificationService,
 ) {
   const router = express.Router(),
-    controller = createViewingController(createViewingService(database));
+    controller = createViewingController(
+      createViewingService(database, undefined, notifications),
+    );
   const live = requireStaff(auth),
     write = [
       live,

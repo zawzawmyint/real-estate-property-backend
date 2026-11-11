@@ -15,8 +15,9 @@
 
 Start with the [system design](../docs/shared/system-design.md) for the shared architecture. The Sales Pipeline board and chatbot UI diagrams are in the companion frontend repository's `specs/README.md`.
 
-## Verified CRM property matching
+## Verified Phase 2 CRM enhancements
 
+- [CRM notifications](crm-notifications/spec.md): verified P2-02 assignment/reassignment notifications with a persistent inbox, unread/read state and SSE. Verified supplemental viewing, task-reminder and staff-inquiry alerts share the inbox. Email/WhatsApp delivery, Redis fanout and deployed-ingress verification remain follow-up work.
 - [CRM property matching](property-matching/spec.md): verified P2-03 backend-owned `listLeadPropertyMatches` route. It checks live staff and current lead access in the same SQLite transaction as the read-only, published-and-available public-listing search; it does not write data or call a provider. The operation is documented in [leads OpenAPI](../docs/api/leads.openapi.yaml) and represented by the companion frontend snapshot.
 
 ## Verified public property chatbot

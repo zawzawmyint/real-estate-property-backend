@@ -8,6 +8,7 @@ import {
 } from '../../infrastructure/database/transaction.js';
 import type { PropertyMatchQuery } from '../properties/properties.schema.js';
 import type { PropertyService } from '../properties/properties.service.js';
+import { createNotificationService } from '../notifications/notifications.service.js';
 import { activityDto, eligibleAgent, leadDto } from './leads.dto.js';
 import {
   createLeadRepository,
@@ -39,7 +40,10 @@ const hash = (payload: unknown) =>
 
 export type ListPropertyMatches = PropertyService['listPropertyMatches'];
 
-export function createLeadService(database: Database) {
+export function createLeadService(
+  database: Database,
+  notifications = createNotificationService(database),
+) {
   const repository = createLeadRepository(database);
 
   async function owned(id: string, actor: Actor, tx: Transaction) {
@@ -139,6 +143,7 @@ export function createLeadService(database: Database) {
     operation: 'inquiry' | 'agency_inquiry',
     payloadHash: string,
     tx: Transaction,
+    recipientIds: (string | null)[],
   ) {
     const lead = await repository.create({ ...data, ...leadSearch(data) }, tx);
     await event(lead.id, 'created', null, {}, tx);
@@ -152,7 +157,36 @@ export function createLeadService(database: Database) {
       },
       tx,
     );
+    for (const { id } of await repository.activeManagers(tx)) {
+      recipientIds.push(
+        await notifications.createNotification(
+          {
+            recipientId: id,
+            type: 'website_inquiry_received',
+            leadId: lead.id,
+            occurrenceKey: `website_inquiry_received:${lead.id}`,
+          },
+          tx,
+        ),
+      );
+    }
     return { replay: false };
+  }
+
+  function notifyAssignment(
+    lead: LeadRecord,
+    recipientId: string,
+    tx: Transaction,
+  ) {
+    return notifications.createNotification(
+      {
+        recipientId,
+        type: 'lead_assigned',
+        leadId: lead.id,
+        occurrenceKey: `lead_assigned:${lead.id}:${lead.version}`,
+      },
+      tx,
+    );
   }
 
   async function update(
@@ -233,7 +267,7 @@ export function createLeadService(database: Database) {
           message: input.message ?? null,
         },
         payloadHash = hash(canonical);
-      return serializedTransaction(database, async (tx) => {
+      return notifications.transactionWithChanges(async (tx, recipientIds) => {
         await repository.lockProperty(propertyId, tx);
         const replay = await receipt(
           input.submissionId,
@@ -276,6 +310,7 @@ export function createLeadService(database: Database) {
           'inquiry',
           payloadHash,
           tx,
+          recipientIds,
         );
       });
     },
@@ -290,7 +325,7 @@ export function createLeadService(database: Database) {
         },
         payloadHash = hash(canonical);
 
-      return serializedTransaction(database, async (tx) => {
+      return notifications.transactionWithChanges(async (tx, recipientIds) => {
         await repository.lockSubmission(input.submissionId, tx);
         const replay = await receipt(
           input.submissionId,
@@ -323,6 +358,7 @@ export function createLeadService(database: Database) {
           'agency_inquiry',
           payloadHash,
           tx,
+          recipientIds,
         );
       });
     },
@@ -339,7 +375,7 @@ export function createLeadService(database: Database) {
           assignedAgentId: input.assignedAgentId ?? null,
         },
         payloadHash = hash(canonical);
-      return serializedTransaction(database, async (tx) => {
+      return notifications.transactionWithChanges(async (tx, recipientIds) => {
         await repository.lockUser(identity.id, tx);
         const actor = await requireCurrentStaff(identity, tx);
         const replay = await receipt(
@@ -407,6 +443,8 @@ export function createLeadService(database: Database) {
           },
           tx,
         );
+        if (assigned && actor.role !== 'agent')
+          recipientIds.push(await notifyAssignment(lead, assigned.id, tx));
         return { replay: false, lead: leadDto(lead, true) };
       });
     },
@@ -497,7 +535,7 @@ export function createLeadService(database: Database) {
       input: { expectedVersion: number; assignedAgentId: string | null },
       identity: Actor,
     ) {
-      return serializedTransaction(database, async (tx) => {
+      return notifications.transactionWithChanges(async (tx, recipientIds) => {
         await repository.lock(id, tx);
         const actor = await requireCurrentStaff(identity, tx);
         if (actor.role === 'agent') throw forbidden();
@@ -535,6 +573,32 @@ export function createLeadService(database: Database) {
           },
           tx,
         );
+        if (before.assignedAgentId) {
+          recipientIds.push(
+            ...(await notifications.retireNotifications(
+              {
+                leadId: id,
+                recipientId: before.assignedAgentId,
+                types: [
+                  'lead_assigned',
+                  'viewing_rescheduled',
+                  'viewing_cancelled',
+                  'task_due_soon',
+                ],
+              },
+              tx,
+            )),
+          );
+        }
+        if (target) {
+          recipientIds.push(
+            ...(await notifications.retireNotifications(
+              { leadId: id, types: ['website_inquiry_received'] },
+              tx,
+            )),
+          );
+          recipientIds.push(await notifyAssignment(lead, target.id, tx));
+        }
         return leadDto(lead, true);
       });
     },
