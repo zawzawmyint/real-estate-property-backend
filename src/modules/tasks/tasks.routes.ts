@@ -3,6 +3,7 @@ import type { Env } from '../../config/env.js';
 import type { Database } from '../../infrastructure/database/transaction.js';
 import type { StaffAuth } from '../auth/auth.js';
 import { requireStaff } from '../auth/auth.middleware.js';
+import type { NotificationService } from '../notifications/notifications.service.js';
 import {
   noStore,
   requireTrustedOrigin,
@@ -15,9 +16,12 @@ export function mountTasks(
   auth: StaffAuth,
   env: Env,
   database: Database,
+  notifications: NotificationService,
 ) {
   const router = express.Router(),
-    controller = createTaskController(createTaskService(database));
+    controller = createTaskController(
+      createTaskService(database, undefined, notifications),
+    );
   const live = requireStaff(auth),
     write = [
       live,

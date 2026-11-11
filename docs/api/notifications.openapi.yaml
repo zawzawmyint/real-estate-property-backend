@@ -1,0 +1,155 @@
+openapi: 3.1.0
+info:
+  title: CRM notifications
+  version: 1.0.0
+paths:
+  /api/v1/staff/notifications:
+    get:
+      operationId: listStaffNotifications
+      summary: List the session recipient's visible notifications
+      description: Newest first by creation timestamp and ID. The unread count includes all visible unread items, independent of the cursor.
+      security:
+        - staffSession: []
+      parameters:
+        - in: query
+          name: cursor
+          schema: { type: string, maxLength: 160 }
+          description: Opaque cursor from a previous response.
+        - in: header
+          name: X-Staff-Account
+          schema: { type: string }
+          description: Optional expected staff ID. A mismatch with the live session identity returns 403.
+      responses:
+        '200':
+          description: Visible notification page and total unread count
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationPage'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '500':
+          $ref: '#/components/responses/Error'
+  /api/v1/staff/notifications/{id}/read:
+    patch:
+      operationId: markStaffNotificationRead
+      summary: Mark an owned and visible notification as read
+      description: No body. Requires Origin equal to APP_ORIGIN. Repeated calls preserve the first read timestamp.
+      security:
+        - staffSession: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Marked read or already read
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '500':
+          $ref: '#/components/responses/Error'
+  /api/v1/staff/notifications/stream:
+    get:
+      operationId: streamStaffNotifications
+      summary: Receive session-scoped notification change signals
+      description: Sends a named notifications.changed event with JSON data {} after subscribing and after committed inbox changes. A comment heartbeat checks live access every 15 seconds. Reconnect and refresh the inbox to recover missed signals.
+      security:
+        - staffSession: []
+      responses:
+        '200':
+          description: Server-sent event stream
+          headers:
+            Cache-Control:
+              schema: { type: string, const: 'no-store, no-transform' }
+          content:
+            text/event-stream:
+              schema: { type: string }
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+        '500':
+          $ref: '#/components/responses/Error'
+components:
+  securitySchemes:
+    staffSession:
+      type: apiKey
+      in: cookie
+      name: agency.session
+  headers:
+    NoStore:
+      schema: { type: string, const: no-store }
+  responses:
+    Error:
+      description: Safe API error
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/NoStore'
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [error]
+            properties:
+              error:
+                type: object
+                additionalProperties: false
+                required: [code, message, requestId]
+                properties:
+                  code: { type: string }
+                  message: { type: string }
+                  requestId: { type: string }
+  schemas:
+    NotificationType:
+      type: string
+      enum:
+        - lead_assigned
+        - viewing_rescheduled
+        - viewing_cancelled
+        - task_due_soon
+        - website_inquiry_received
+    NotificationItem:
+      type: object
+      additionalProperties: false
+      required: [id, type, leadId, viewingId, taskId, createdAt, readAt]
+      properties:
+        id: { type: string, format: uuid }
+        type:
+          $ref: '#/components/schemas/NotificationType'
+        leadId: { type: string, format: uuid }
+        viewingId: { type: [string, 'null'], format: uuid }
+        taskId: { type: [string, 'null'], format: uuid }
+        createdAt: { type: string, format: date-time }
+        readAt: { type: [string, 'null'], format: date-time }
+    NotificationPage:
+      type: object
+      additionalProperties: false
+      required: [items, unreadCount, nextCursor]
+      properties:
+        items:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/NotificationItem'
+        unreadCount: { type: integer, minimum: 0 }
+        nextCursor: { type: [string, 'null'] }

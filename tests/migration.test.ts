@@ -68,6 +68,7 @@ it('deploys auth migrations into a missing nested SQLite file and can be rerun',
           'LeadSubmissionReceipt',
           'Viewing',
           'Task',
+          'Notification',
         ]),
       );
     } finally {
@@ -134,6 +135,7 @@ it('upgrades an existing auth database without losing credentials and persists p
       VALUES ('legacy-search', 'Étage %_', 'sale', 'MÜNCHEN', 'Canal_', '2026-01-01T00:00:00.000Z')`;
     for (const name of names.slice(propertyMigrationIndex + 1))
       await apply(name);
+    expect(await database.notification.count()).toBe(0);
     await backfillPropertySearch(database);
     await backfillPropertySearch(database);
     await backfillLeadSearch(database);

@@ -26,6 +26,46 @@ export const taskSelect = {
   },
 } satisfies Prisma.TaskSelect;
 export type TaskRecord = Prisma.TaskGetPayload<{ select: typeof taskSelect }>;
+type ReminderCandidate = {
+  taskId: string;
+  leadId: string;
+  recipientId: string;
+  occurrenceKey: string;
+};
+
+export function lockReminderScan(tx: Transaction) {
+  // Reserve SQLite's writer lock before the scan reads its clock and candidates.
+  return tx.$executeRaw`UPDATE Task SET version=version WHERE 0`;
+}
+
+export function findDueReminderCandidates(
+  now: Date,
+  until: Date,
+  limit: number,
+  tx: Transaction,
+) {
+  return tx.$queryRaw<ReminderCandidate[]>`
+    WITH candidate AS (
+      SELECT task.id AS taskId, task.leadId, task.dueAt, assignee.id AS recipientId,
+        'task_due_soon:' || task.id || ':' || strftime('%Y-%m-%dT%H:%M:%fZ', task.dueAt) AS occurrenceKey
+      FROM Task AS task
+      JOIN Lead AS lead ON lead.id = task.leadId
+      JOIN User AS assignee ON assignee.id = lead.assignedAgentId
+      WHERE task.status = 'open' AND task.dueAt >= ${now} AND task.dueAt <= ${until}
+        AND assignee.role = 'agent' AND assignee.disabled = 0 AND assignee.banned IS NOT TRUE
+    )
+    SELECT taskId, leadId, recipientId, occurrenceKey
+    FROM candidate
+    WHERE NOT EXISTS (
+      SELECT 1 FROM Notification AS alert
+      WHERE alert.recipientId = candidate.recipientId
+        AND alert.occurrenceKey = candidate.occurrenceKey
+    )
+    ORDER BY dueAt, taskId
+    LIMIT ${limit}
+  `;
+}
+
 const scope = (actor: Actor): Prisma.TaskWhereInput =>
   actor.role === 'agent' ? { lead: { assignedAgentId: actor.id } } : {};
 export function createTaskRepository(database: Database) {

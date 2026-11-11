@@ -8,7 +8,7 @@
 
 Track every Phase 1, 2 and 3 feature from the original **Real Estate CRM Checklist**, without treating project setup as completed business functionality.
 
-**Current baseline:** Foundation is complete; 28 Phase 1 and two Phase 2 checklist items are verified; 13 Phase 1–3 checklist items remain pending. The original five portfolio delivery items are retained separately. This roadmap is the workspace-wide source of truth for feature progress; repository-local specifications define implementation and acceptance.
+**Current baseline:** Foundation is complete; 28 Phase 1 and three Phase 2 checklist items are verified; 12 Phase 1–3 checklist items remain pending. The original five portfolio delivery items are retained separately. This roadmap is the workspace-wide source of truth for feature progress; repository-local specifications define implementation and acceptance.
 
 **November 5 Git delivery:** Frontend implementation commit `655587e6dc10ea467223c1b1c06c4984f86bba1b` and backend implementation commit `5086b6507f0c12e99a5e309ef6313429a7509c9f` were pushed to their existing working branches after user authorization. The [review remediation](specs/phase-one-review-remediation/spec.md) Git-evidence item F08 is complete. P1-14/P1-18 remain open at 28/30; the later property-form pre-hydration defect remains unresolved. No deployment occurred.
 
@@ -205,15 +205,17 @@ The source requires dated tasks and overdue highlighting here; scheduled email o
 
 ### Phase 2 — Features that make it stand out
 
-**Selection rule:** Pick two or three initially. The initial selections are the verified opt-in public property chatbot and locally verified CRM property matching. An optional third selection is open.
+**Selection rule:** Pick two or three initially. The initial selections are the verified opt-in public property chatbot, CRM property matching and CRM assignment notifications.
 
 #### Automation and matching
 
-**Proposed spec slugs:** `lead-auto-reply`, `lead-assignment-notifications`, `property-matching`.
+**Specifications:** [CRM notifications](specs/crm-notifications/spec.md), [property matching](specs/property-matching/spec.md). Proposed P2-01 spec slug: `lead-auto-reply`.
 
 - [ ] **P2-01** Auto-reply to new leads by email or WhatsApp link
-- [ ] **P2-02** Notify the agent when a lead is assigned
+- [x] **P2-02** [Notify the agent when a lead is assigned](specs/crm-notifications/spec.md) — Verified persistent inbox, read state and SSE assignment/reassignment delivery. The same delivered inbox also supports viewing changes, task reminders and staff inquiry alerts as supplemental slices. Email/WhatsApp auto-reply remains P2-01.
 - [x] **P2-03** [Suggest properties that fit a lead's budget and preferences](specs/property-matching/spec.md)
+
+**2026-11-10 notification delivery evidence:** Backend 173/173 tests (43 files), lint, typecheck, production build, disposable migrated database check and fresh/populated migration coverage passed. Frontend 306/306 tests (49 files), contract drift, lint, typecheck, isolated production Webpack build and contract-snapshot parity passed. A targeted Edge suite passed 4/4 desktop/mobile cases against disposable services, and reviewed screenshots plus active-page runtime inspection had no configuration/session errors. This verifies application behavior, not a deployed ingress, Redis fanout, email delivery or the full legacy browser suite.
 
 #### Data tools
 

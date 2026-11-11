@@ -24,6 +24,18 @@ import { mountAgency } from './modules/agency/agency.routes.js';
 import { createPropertyService } from './modules/properties/properties.service.js';
 import { mountPublicChat } from './modules/public-chat/public-chat.routes.js';
 import { configurePublicChat } from './modules/public-chat/public-chat.runtime.js';
+import { mountNotifications } from './modules/notifications/notifications.routes.js';
+import { createNotificationService } from './modules/notifications/notifications.service.js';
+import { createNotificationStreams } from './modules/notifications/notifications.stream.js';
+import {
+  createInProcessNotificationTransport,
+  type NotificationSignalTransport,
+} from './modules/notifications/notifications.transport.js';
+
+type NotificationOptions = {
+  transport?: NotificationSignalTransport;
+  heartbeatMs?: number;
+};
 
 export function createApp(
   env: Env,
@@ -32,6 +44,7 @@ export function createApp(
   propertyStorage?: Storage,
   readAgencyCatalog?: () => unknown,
   fetchPublicChat?: typeof fetch,
+  notificationOptions?: NotificationOptions,
 ) {
   const app = express();
   const logger = createLogger(env.LOG_LEVEL);
@@ -40,6 +53,15 @@ export function createApp(
     database,
     propertyStorage ?? storage,
     logger,
+  );
+  const transport =
+    notificationOptions?.transport ?? createInProcessNotificationTransport();
+  const notifications = createNotificationService(database, transport, logger);
+  const streams = createNotificationStreams(
+    notifications,
+    transport,
+    logger,
+    notificationOptions?.heartbeatMs,
   );
 
   app.disable('x-powered-by');
@@ -63,9 +85,17 @@ export function createApp(
   });
 
   mountAuth(app, auth, env);
-  mountLeads(app, auth, env, database, properties.listPropertyMatches);
-  mountViewings(app, auth, env, database);
-  mountTasks(app, auth, env, database);
+  mountLeads(
+    app,
+    auth,
+    env,
+    database,
+    properties.listPropertyMatches,
+    notifications,
+  );
+  mountViewings(app, auth, env, database, notifications);
+  mountTasks(app, auth, env, database, notifications);
+  mountNotifications(app, auth, env, notifications, streams);
   mountDashboard(app, auth, database);
   mountAgency(app, readAgencyCatalog);
   mountProperties(app, auth, env, properties);
@@ -107,5 +137,8 @@ export function createApp(
   app.use(notFound);
   app.use(errorHandler(logger));
 
-  return app;
+  return Object.assign(app, {
+    notifications,
+    closeNotificationStreams: streams.closeAll,
+  });
 }

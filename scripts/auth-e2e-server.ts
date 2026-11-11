@@ -84,6 +84,16 @@ for (const project of ['desktop', 'mobile'])
       role: identity === 'other-agent' ? 'agent' : identity,
     });
 
+// Notification journeys keep independent sessions for the sender and recipients.
+for (const project of ['desktop', 'mobile'])
+  for (const identity of ['manager', 'agent', 'other-agent'] as const)
+    await fixture.operator.create({
+      name: `Notification E2E ${project} ${identity}`,
+      email: `e2e-notification-${project}-${identity}@example.com`,
+      password,
+      role: identity === 'manager' ? 'manager' : 'agent',
+    });
+
 // Pipeline tests have their own sign-in budget alongside the lead regression suite.
 for (const project of ['desktop', 'mobile'])
   for (const role of ['manager', 'agent'] as const)
@@ -324,6 +334,7 @@ function stop() {
   if (stopping) return;
 
   stopping = true;
+  fixture.app.closeNotificationStreams();
   server.close(async () => {
     await fixture.close();
   });

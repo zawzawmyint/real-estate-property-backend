@@ -31,6 +31,7 @@ model User {
   leadActivities    LeadActivity[]
   createdTasks      Task[]
   createdViewings   Viewing[]
+  notifications     Notification[]
 }
 
 model Session {
@@ -156,6 +157,7 @@ model Lead {
   receipts                  LeadSubmissionReceipt[]
   tasks                     Task[]
   viewings                  Viewing[]
+  notifications             Notification[]
 
   @@index([assignedAgentId, createdAt, id])
   @@index([assignedAgentId, stage, createdAt])
@@ -215,25 +217,26 @@ model LeadSubmissionReceipt {
 }
 
 model Viewing {
-  id                       String   @id @default(uuid())
-  submissionId             String   @unique
+  id                       String         @id @default(uuid())
+  submissionId             String         @unique
   actorScope               String
   payloadHash              String
   leadId                   String
-  lead                     Lead     @relation(fields: [leadId], references: [id], onDelete: Restrict)
+  lead                     Lead           @relation(fields: [leadId], references: [id], onDelete: Restrict)
   propertyId               String
-  property                 Property @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  property                 Property       @relation(fields: [propertyId], references: [id], onDelete: Restrict)
   propertyTitleSnapshot    String
   propertyLocationSnapshot String?
   startsAt                 DateTime
   endsAt                   DateTime
-  status                   String   @default("scheduled")
+  status                   String         @default("scheduled")
   feedback                 String?
-  version                  Int      @default(1)
+  version                  Int            @default(1)
   createdById              String?
-  createdBy                User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
-  createdAt                DateTime @default(now())
-  updatedAt                DateTime @updatedAt
+  createdBy                User?          @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt                DateTime       @default(now())
+  updatedAt                DateTime       @updatedAt
+  notifications            Notification[]
 
   @@index([startsAt, id])
   @@index([leadId, startsAt, id])
@@ -241,24 +244,56 @@ model Viewing {
 }
 
 model Task {
-  id           String    @id @default(uuid())
-  submissionId String    @unique
-  actorScope   String
-  payloadHash  String
-  leadId       String
-  lead         Lead      @relation(fields: [leadId], references: [id], onDelete: Restrict)
-  title        String
-  notes        String?
-  dueAt        DateTime
-  status       String    @default("open")
-  version      Int       @default(1)
-  completedAt  DateTime?
-  cancelledAt  DateTime?
-  createdById  String?
-  createdBy    User?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id            String         @id @default(uuid())
+  submissionId  String         @unique
+  actorScope    String
+  payloadHash   String
+  leadId        String
+  lead          Lead           @relation(fields: [leadId], references: [id], onDelete: Restrict)
+  title         String
+  notes         String?
+  dueAt         DateTime
+  status        String         @default("open")
+  version       Int            @default(1)
+  completedAt   DateTime?
+  cancelledAt   DateTime?
+  createdById   String?
+  createdBy     User?          @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  notifications Notification[]
 
   @@index([status, dueAt, id])
   @@index([leadId, status, dueAt, id])
+}
+
+enum NotificationType {
+  lead_assigned
+  viewing_rescheduled
+  viewing_cancelled
+  task_due_soon
+  website_inquiry_received
+}
+
+model Notification {
+  id            String           @id @default(uuid())
+  recipientId   String
+  recipient     User             @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  type          NotificationType
+  leadId        String
+  lead          Lead             @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  viewingId     String?
+  viewing       Viewing?         @relation(fields: [viewingId], references: [id], onDelete: Cascade)
+  taskId        String?
+  task          Task?            @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  occurrenceKey String
+  createdAt     DateTime
+  readAt        DateTime?
+  retiredAt     DateTime?
+
+  @@unique([recipientId, occurrenceKey])
+  @@index([recipientId, retiredAt, createdAt, id])
+  @@index([recipientId, retiredAt, readAt])
+  @@index([leadId, retiredAt])
+  @@index([taskId, retiredAt])
 }
