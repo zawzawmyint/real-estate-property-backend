@@ -106,13 +106,12 @@ export function propertyOrder(
   return [primary as Prisma.PropertyOrderByWithRelationInput, { id: 'asc' }];
 }
 
-async function searchPage(
-  tx: Transaction,
+function propertyPredicate(
   query: PropertyListQuery,
   where: Prisma.PropertyWhereInput,
   staff: boolean,
 ) {
-  const clauses: Prisma.Sql[] = [];
+  const clauses: Prisma.Sql[] = [Prisma.sql`1=1`];
   // Column names come only from this fixed list; every value is a parameter.
   for (const field of [
     'purpose',
@@ -153,6 +152,16 @@ async function searchPage(
         : query.sort === 'updated_desc'
           ? Prisma.sql`updatedAt DESC, id ASC`
           : Prisma.sql`createdAt DESC, id ASC`;
+  return { predicate, order };
+}
+
+async function searchPage(
+  tx: Transaction,
+  query: PropertyListQuery,
+  where: Prisma.PropertyWhereInput,
+  staff: boolean,
+) {
+  const { predicate, order } = propertyPredicate(query, where, staff);
   // instr() keeps percent/underscore literal. SQLite does the scan/count;
   // only the requested page of IDs and projected DTOs crosses into Node.
   const count = await tx.$queryRaw<Array<{ total: bigint }>>`
@@ -166,6 +175,44 @@ async function searchPage(
 
 export function createPropertyRepository(database: Database) {
   return {
+    async exportRows(
+      query: Omit<PropertyQuery, 'page' | 'pageSize'>,
+      privateOwner: boolean,
+      tx: Transaction,
+    ) {
+      const full = { ...query, page: 1, pageSize: 1 };
+      const { predicate, order } = propertyPredicate(
+        full,
+        propertyWhere(full, true),
+        true,
+      );
+      return tx.$queryRaw<
+        Array<{
+          property_id: string;
+          title: string;
+          purpose: string;
+          type: string | null;
+          price_aed: bigint | null;
+          city: string | null;
+          community: string | null;
+          bedrooms: number | null;
+          bathrooms: number | null;
+          area_sqft: number | null;
+          publishing_state: string;
+          availability: string;
+          featured: boolean | number;
+          is_demo: boolean | number;
+          created_at_utc: Date | string | number;
+          updated_at_utc: Date | string | number;
+          owner_name?: string | null;
+          owner_phone?: string | null;
+        }>
+      >`
+ SELECT id AS property_id,title,purpose,type,priceFils AS price_aed,city,community,bedrooms,bathrooms,areaHundredths AS area_sqft,publishingState AS publishing_state,availability,featured,isDemo AS is_demo,createdAt AS created_at_utc,updatedAt AS updated_at_utc
+ ${privateOwner ? Prisma.sql`,ownerName AS owner_name,ownerPhone AS owner_phone` : Prisma.empty}
+ FROM Property WHERE ${predicate} ORDER BY ${order} LIMIT 5001`;
+    },
+
     async list(
       query: PropertyListQuery,
       staff: boolean,

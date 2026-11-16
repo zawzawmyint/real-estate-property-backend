@@ -141,3 +141,6 @@ export type NoteInput = z.infer<typeof noteSchema>;
 export type ListQuery = z.infer<typeof listSchema>;
 
 export type CandidateQuery = z.infer<typeof candidatesSchema>;
+
+export const exportSchema = listSchema.omit({ page: true });
+export type ExportQuery = z.infer<typeof exportSchema>;

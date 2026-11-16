@@ -1,3 +1,5 @@
+import { serializeExport, decimalHundredths } from '../../shared/csv/export.js';
+import type { ExportQuery } from './leads.schema.js';
 import { createHash } from 'node:crypto';
 import { AppError } from '../../shared/errors/app-error.js';
 import { requireCurrentStaff } from '../auth/staff-actor.js';
@@ -203,6 +205,48 @@ export function createLeadService(
     return await owned(lead.id, actor, tx);
   }
   return {
+    async exportCsv(query: ExportQuery, identity: Actor): Promise<string> {
+      const rows = await serializedTransaction(database, async (tx) => {
+        const actor = await requireCurrentStaff(identity, tx);
+        const view =
+          query.view ?? (actor.role === 'agent' ? 'mine' : 'unassigned');
+        if (
+          actor.role === 'agent' &&
+          (view !== 'mine' ||
+            (query.agentId !== undefined && query.agentId !== actor.id))
+        )
+          throw forbidden();
+        if (query.agentId && actor.role !== 'agent' && view !== 'all')
+          throw invalid();
+        return repository.exportRows({ ...query, view }, actor, tx);
+      });
+      return serializeExport(
+        [
+          'lead_id',
+          'name',
+          'phone',
+          'email',
+          'purpose',
+          'budget_aed',
+          'source',
+          'stage',
+          'assigned_agent_id',
+          'assigned_agent_name',
+          'property_id',
+          'property_title',
+          'property_location',
+          'created_at_utc',
+          'updated_at_utc',
+        ],
+        rows.map((row) => ({
+          ...row,
+          budget_aed: decimalHundredths(row.budget_aed),
+          created_at_utc: new Date(row.created_at_utc).toISOString(),
+          updated_at_utc: new Date(row.updated_at_utc).toISOString(),
+        })),
+      );
+    },
+
     async list(query: ListQuery, identity: Actor) {
       return serializedTransaction(database, async (tx) => {
         const actor = await requireCurrentStaff(identity, tx),

@@ -7,6 +7,26 @@ datasource db {
   provider = "sqlite"
 }
 
+model LeadImportReceipt {
+  id            String   @id
+  actorId       String
+  contentDigest String
+  schemaVersion Int
+  createdCount  Int
+  leadIdsJson   String
+  createdAt     DateTime @default(now())
+}
+
+model PropertyImportReceipt {
+  id              String   @id
+  actorId         String
+  contentDigest   String
+  schemaVersion   Int
+  createdCount    Int
+  propertyIdsJson String
+  createdAt       DateTime @default(now())
+}
+
 // Better Auth 1.7.12 core + Admin plugin schema, reviewed against installed getAuthTables.
 model User {
   id                String         @id

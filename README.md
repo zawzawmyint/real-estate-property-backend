@@ -2,7 +2,7 @@
 
 Start with the [project specification](spec.md) for scope, boundaries and current status, then read the relevant feature spec before implementation. Keep the root spec synchronized after verified feature delivery.
 
-Express 5 + strict TypeScript + Prisma 7 with SQLite. This repository is independent of the sibling frontend. It provides foundation infrastructure, public image delivery, staff authentication, property-management/public-discovery APIs, public inquiries and role-scoped lead management.
+Express 5 + strict TypeScript + Prisma 7 with SQLite. This repository is independent of the sibling frontend. It provides foundation infrastructure, public image delivery, staff authentication, property-management/public-discovery APIs, public inquiries, role-scoped lead management, bounded CRM CSV exports, and Admin/Manager property-draft and New/unassigned lead CSV imports. See the [lead import specification](specs/lead-import/spec.md), its [contract](specs/lead-import/contract.md), the [property import specification](specs/property-import/spec.md), and the historical [CSV export slice](specs/csv-import-export/spec.md).
 
 ## Local development
 
@@ -41,6 +41,8 @@ API: `http://localhost:4311/api/v1/health`. Frontend development origin: `http:/
 - `bun run staff -- bootstrap-admin|create|reset-password|deactivate`: trusted, interactive staff lifecycle commands; password prompts are masked. Deactivation reports the assigned-lead count and does not redistribute leads. This is not an HTTP management API.
 
 SQLite files and uploaded files live under ignored `var/`. The committed migrations create Better Auth identity/session, property/photo and lead/activity/receipt tables. Generate a fresh `BETTER_AUTH_SECRET` and `INQUIRY_RELAY_SECRET`, each at least 32 characters and with independent values, before startup, then bootstrap the first Admin locally. Read the [development guide](docs/development.md#media-reconciliation) before manually reconciling media after a logged cleanup failure.
+
+Before deployment or using either CSV import against a database that has not been migrated, run `bun run db:migrate` so the additive property- and lead-import receipt migrations are present. Its operational workflow and rollback boundary are documented in the [development guide](docs/development.md#crm-csv-import-use).
 
 `INQUIRY_RELAY_SECRET` is required at startup and must be an independent server-only value of at least 32 characters matching the trusted frontend relay; do not expose it. Real-customer collection additionally requires ingress that overwrites the configured identity header and blocks direct Next access, plus operator-approved privacy/retention wording.
 

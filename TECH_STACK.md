@@ -86,6 +86,8 @@ The following lists every direct backend package declared in package.json (compa
 | `better-auth`                    | 1.7.12         | Native staff authentication server, Prisma adapter integration and sessions      |
 | `better-call`                    | 1.4.4          | Node/Web Request adapter used to bound native auth request bodies                |
 | `sharp`                          | 0.35.5         | Decode, validate and normalise public property-photo uploads to WebP             |
+| `csv-stringify`                  | 6.9.0          | Bounded CRM lead/property CSV serialization; backend-only export dependency      |
+| `csv-parse`                      | 7.0.3          | Bounded property/lead-import CSV syntax/header parsing; backend-only dependency  |
 
 ### Backend development dependencies
 
@@ -109,6 +111,8 @@ The following lists every direct backend package declared in package.json (compa
 The verified P2-08 demo uses OpenRouter over its HTTPS API, not a new application package. Express calls the configured chat and embedding models with a server-only key. The default chat model is `nvidia/nemotron-3.5-lightning:free`; the default embedding model is `nvidia/nemotron-3-embed-1b:free`. FAQ vectors live in a versioned JSON index and are searched in memory. Generation, embeddings and FAQ retrieval have separate backend interfaces, so a compatible vector store can replace JSON without changing the public API. Reindex before switching embeddings or embedding configuration; validate behavior before switching chat models. Free-provider availability is not guaranteed.
 
 ## Planned and deferred tools
+
+**CSV imports (2026-11-13):** The backend uses exact `csv-parse` 7.0.3 for the verified property and lead import specifications. The frontend has no CSV parser dependency; its shared decoder/UI send bounded file text to backend-owned parsing.
 
 **None of the named deferred packages below are direct dependencies in either repository.** React Hook Form and Zod are installed for the staff login and property create/edit forms; their use does not imply delivery of later business forms such as inquiries or leads. Recharts is installed separately in the frontend for the verified dashboard delivery. No deferred tool below has a pinned version.
 

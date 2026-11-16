@@ -89,6 +89,31 @@ export const leadSearch = (value: {
   searchPropertyTitle: normalizeSearchText(value.propertyTitleSnapshot),
 });
 
+function leadPredicate(query: Omit<ListQuery, 'page'>, actor: Actor) {
+  const clauses: Prisma.Sql[] = [Prisma.sql`1=1`];
+  const view = query.view ?? (actor.role === 'agent' ? 'mine' : 'unassigned');
+  if (view === 'mine') clauses.push(Prisma.sql`assignedAgentId=${actor.id}`);
+  if (view === 'unassigned') clauses.push(Prisma.sql`assignedAgentId IS NULL`);
+  if (query.agentId) clauses.push(Prisma.sql`assignedAgentId=${query.agentId}`);
+  if (query.stage) clauses.push(Prisma.sql`stage=${query.stage}`);
+  if (query.source) clauses.push(Prisma.sql`source=${query.source}`);
+  if (query.q) {
+    const text = normalizeSearchText(query.q),
+      phone = phoneSearch(query.q);
+    clauses.push(
+      Prisma.sql`(instr(searchName,${text})>0 OR instr(searchEmail,${text})>0 OR instr(searchPropertyTitle,${text})>0 ${phone ? Prisma.sql`OR instr(searchPhone,${phone})>0` : Prisma.empty})`,
+    );
+  }
+  const where = Prisma.join(clauses, ' AND '),
+    order =
+      query.sort === 'oldest'
+        ? Prisma.sql`createdAt ASC,id ASC`
+        : query.sort === 'updated'
+          ? Prisma.sql`updatedAt DESC,id DESC`
+          : Prisma.sql`createdAt DESC,id DESC`;
+  return { where, order };
+}
+
 export function createLeadRepository(database: Database) {
   return {
     lockSubmission(id: string, tx: Transaction) {
@@ -208,32 +233,41 @@ export function createLeadRepository(database: Database) {
       return { items, total, page, pageSize: 20 as const };
     },
 
+    async exportRows(
+      query: Omit<ListQuery, 'page'>,
+      actor: Actor,
+      tx: Transaction,
+    ) {
+      const { where, order } = leadPredicate(query, actor);
+      return tx.$queryRaw<
+        Array<{
+          lead_id: string;
+          name: string;
+          phone: string | null;
+          email: string | null;
+          purpose: string;
+          budget_aed: bigint | null;
+          source: string;
+          stage: string;
+          assigned_agent_id: string | null;
+          assigned_agent_name: string | null;
+          property_id: string | null;
+          property_title: string | null;
+          property_location: string | null;
+          created_at_utc: Date | number | string;
+          updated_at_utc: Date | number | string;
+        }>
+      >`
+ SELECT l.id AS lead_id,l.name,l.phone,l.email,l.purpose,l.budgetFils AS budget_aed,l.source,l.stage,
+ u.id AS assigned_agent_id,COALESCE(u.name,CASE WHEN l.assignedAgentId IS NULL THEN l.assignedAgentNameSnapshot END) AS assigned_agent_name,
+ l.propertyId AS property_id,l.propertyTitleSnapshot AS property_title,l.propertyLocationSnapshot AS property_location,l.createdAt AS created_at_utc,l.updatedAt AS updated_at_utc
+ FROM (SELECT id,name,phone,email,purpose,budgetFils,source,stage,assignedAgentId,assignedAgentNameSnapshot,propertyId,propertyTitleSnapshot,propertyLocationSnapshot,createdAt,updatedAt FROM Lead WHERE ${where} ORDER BY ${order} LIMIT 5001) l
+ LEFT JOIN User u ON u.id=l.assignedAgentId
+ ORDER BY ${query.sort === 'oldest' ? Prisma.sql`l.createdAt ASC,l.id ASC` : query.sort === 'updated' ? Prisma.sql`l.updatedAt DESC,l.id DESC` : Prisma.sql`l.createdAt DESC,l.id DESC`}`;
+    },
+
     async list(query: ListQuery, actor: Actor, tx: Transaction) {
-      const clauses: Prisma.Sql[] = [Prisma.sql`1=1`];
-      const view =
-        query.view ?? (actor.role === 'agent' ? 'mine' : 'unassigned');
-      if (view === 'mine')
-        clauses.push(Prisma.sql`assignedAgentId=${actor.id}`);
-      if (view === 'unassigned')
-        clauses.push(Prisma.sql`assignedAgentId IS NULL`);
-      if (query.agentId)
-        clauses.push(Prisma.sql`assignedAgentId=${query.agentId}`);
-      if (query.stage) clauses.push(Prisma.sql`stage=${query.stage}`);
-      if (query.source) clauses.push(Prisma.sql`source=${query.source}`);
-      if (query.q) {
-        const text = normalizeSearchText(query.q),
-          phone = phoneSearch(query.q);
-        clauses.push(
-          Prisma.sql`(instr(searchName,${text})>0 OR instr(searchEmail,${text})>0 OR instr(searchPropertyTitle,${text})>0 ${phone ? Prisma.sql`OR instr(searchPhone,${phone})>0` : Prisma.empty})`,
-        );
-      }
-      const where = Prisma.join(clauses, ' AND '),
-        order =
-          query.sort === 'oldest'
-            ? Prisma.sql`createdAt ASC,id ASC`
-            : query.sort === 'updated'
-              ? Prisma.sql`updatedAt DESC,id DESC`
-              : Prisma.sql`createdAt DESC,id DESC`;
+      const { where, order } = leadPredicate(query, actor);
       const counts = await tx.$queryRaw<
         Array<{ total: bigint }>
       >`SELECT COUNT(*) AS total FROM Lead WHERE ${where}`;

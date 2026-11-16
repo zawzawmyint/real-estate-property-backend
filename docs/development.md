@@ -39,6 +39,26 @@ The CRM notifications migration is additive: it creates the persistent notificat
 
 The disposable browser fixture includes fictional featured demo listings by default so public photo tests do not depend on other tests. Set `STAFF_E2E_SEED_PROPERTIES=0` only for targeted suites that do not require public property media. Ordinary application startup never seeds data.
 
+## CRM CSV export use
+
+Authenticated CRM staff can use **Export CSV** on the Leads and Properties inventories. The export contains all authorized rows matching the applied filters and sort, not only the visible page. It is a report rather than an import template or complete CRM backup: it omits descriptions, photos, notes, activities and other excluded data; Agent property files omit owner contact columns.
+
+Exports are limited to 5,000 rows and 10 MiB. On `EXPORT_LIMIT_EXCEEDED`, narrow the filters and try again; do not expect a partial file. A successful browser message means the download was started, not that it was saved to a particular disk location. CSV has no reliable cell-type guarantee: when opening an export with international or leading-zero phone numbers, choose the spreadsheet application's text-column import option to preserve the displayed digits. The exact routes, query rules, columns and error contract are in the [CSV export contract](../specs/csv-import-export/contract.md).
+
+## CRM CSV import use
+
+After applying the receipt migration with `bun run db:migrate`, an Admin or Manager can open **Properties → Import CSV**, download the header-only template, select one UTF-8 CSV (up to 1 MiB and 500 data rows), preview it, and explicitly commit the resulting drafts. Every row must be valid: confirmation is all-or-nothing, creates new draft properties only, and does not update existing records, publish properties, attach photos, or match duplicates. Exported reports are not templates.
+
+Use plain decimal values for price and area, and use the spreadsheet application's text-column import option for phone values so leading zeroes are retained. Preview and commit require the same file/version. If a request outcome is uncertain, use **Retry confirmation** on the current page. After a reload, reselect the same file and preview again to recover the saved retry identity. If the browser warns that reload recovery is unavailable, keep the page open for safe retries. Do not start a fresh batch without acknowledging its duplicate risk. A changed staff session requires reloading before importing. The receipt records retry metadata and created IDs, never the raw CSV or owner-contact values.
+
+For rollback, disable the import UI/routes but retain created business records and receipts; do not remove either as an automatic rollback. The exact endpoints, limits, error responses and retry contract are in the [property import contract](../specs/property-import/contract.md).
+
+## Lead CSV import use
+
+After applying the lead receipt migration with `bun run db:migrate`, an Admin or Manager can open **Leads → Import CSV**, download the header-only template, select one UTF-8 CSV (up to 1 MiB and 500 data rows), preview it, and explicitly commit New/unassigned/unlinked leads. Use the six-column template `name,phone,email,purpose,budget_aed,source`: name, purpose, source and at least one valid phone or email are required; sources are `call` or `walk_in`. Budgets are plain decimal AED values, and phone fields should be imported as spreadsheet text to preserve leading zeroes. Every row must be valid; confirmation is all-or-nothing and creates one actor-attributed creation activity per lead. It does not update or deduplicate existing leads, assign agents, link properties, create notifications, or accept website as an import source.
+
+Preview and commit require the same file/version. For an uncertain outcome, use **Retry confirmation** with the same file. After a reload, reselect and preview that exact file to recover the saved identity; do not start a fresh batch without acknowledging duplicate risk. Changed staff sessions require a reload. Receipts retain retry metadata and created IDs, never raw CSV/contact values. The lead receipt migration is additive: for an existing database, stop writes, make a consistent database/media backup, deploy updated source, then run `bun run db:generate`, `bun run db:migrate`, and `bun run db:check` before restarting. Rollback disables UI/routes but retains leads, activities and receipts. See the [lead import contract](../specs/lead-import/contract.md) for exact endpoints, limits and errors.
+
 ## Feature development
 
 1. Create `specs/<feature-name>/spec.md` before code changes.

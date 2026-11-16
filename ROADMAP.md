@@ -8,9 +8,9 @@
 
 Track every Phase 1, 2 and 3 feature from the original **Real Estate CRM Checklist**, without treating project setup as completed business functionality.
 
-**Current baseline:** Foundation is complete; 28 Phase 1 and three Phase 2 checklist items are verified; 12 Phase 1–3 checklist items remain pending. The original five portfolio delivery items are retained separately. This roadmap is the workspace-wide source of truth for feature progress; repository-local specifications define implementation and acceptance.
+**Current baseline:** Foundation is complete; 28 Phase 1 and four Phase 2 checklist items are verified; 11 Phase 1–3 checklist items remain pending. The original five portfolio delivery items are retained separately. This roadmap is the workspace-wide source of truth for feature progress; repository-local specifications define implementation and acceptance.
 
-**November 5 Git delivery:** Frontend implementation commit `655587e6dc10ea467223c1b1c06c4984f86bba1b` and backend implementation commit `5086b6507f0c12e99a5e309ef6313429a7509c9f` were pushed to their existing working branches after user authorization. The [review remediation](specs/phase-one-review-remediation/spec.md) Git-evidence item F08 is complete. P1-14/P1-18 remain open at 28/30; the later property-form pre-hydration defect remains unresolved. No deployment occurred.
+**November 5 Git delivery:** Frontend implementation commit `655587e6dc10ea467223c1b1c06c4984f86bba1b` and backend implementation commit `5086b6507f0c12e99a5e309ef6313429a7509c9f` were pushed to their existing working branches after user authorization. The [review remediation](specs/phase-one-review-remediation/spec.md) Git-evidence item F08 is complete. P1-14/P1-18 remain open at 28/30; the later property-form pre-hydration defect was resolved on November 6 in the frontend property-management maintenance evidence. No deployment occurred.
 
 ---
 
@@ -205,7 +205,7 @@ The source requires dated tasks and overdue highlighting here; scheduled email o
 
 ### Phase 2 — Features that make it stand out
 
-**Selection rule:** Pick two or three initially. The initial selections are the verified opt-in public property chatbot, CRM property matching and CRM assignment notifications.
+**Selection rule:** Pick two or three initially. The initial selections are the verified opt-in public property chatbot, CRM property matching and CRM assignment notifications; P2-04 was subsequently verified as a data-tools delivery.
 
 #### Automation and matching
 
@@ -219,13 +219,20 @@ The source requires dated tasks and overdue highlighting here; scheduled email o
 
 #### Data tools
 
-**Proposed spec slugs:** `csv-import-export`, `lead-duplicate-detection`, `lead-temperature-tags`.
+**Specifications:** [CSV import/export](specs/csv-import-export/spec.md). Proposed remaining spec slugs: `lead-duplicate-detection`, `lead-temperature-tags`.
 
-- [ ] **P2-04** CSV import and export for leads and properties
+**P2-04 — Verified (2026-11-13):** The historical export slice gives all staff filtered lead/property downloads across pages within existing access, with fixed role-aware columns and bounded CSV responses. The verified [property import specification](specs/property-import/spec.md) and [lead import specification](specs/lead-import/spec.md) add Admin/Manager template, preview, all-or-nothing creation and receipt-backed retry/reload recovery. Import creates property drafts or New/unassigned/unlinked leads respectively; it does not implement duplicate detection.
+
+- [x] **P2-04** CSV import and export for leads and properties
+
+**Lead import — Verified (2026-11-13):** [Lead import specification](specs/lead-import/spec.md) verifies Admin/Manager import of New/unassigned/unlinked leads, whole-batch validation, atomic creation history/receipts and shared CSV components. The 500-row lead-plus-history batch completed in 294 ms within the 15-second transaction budget. Duplicate detection remains P2-05.
+
+**Property import — Verified (2026-11-12):** [Property import specification](specs/property-import/spec.md) and [contract](specs/property-import/contract.md) verify Admin/Manager preview and atomic draft creation, reject the whole batch on any invalid row, and use shared CSV parsing/review mechanics with the delivered lead importer. Full checks/builds, migration/database verification, browser acceptance and runtime inspection passed.
+
 - [ ] **P2-05** Duplicate detection by phone number
 - [ ] **P2-06** Hot, warm and cold lead tags
 
-If CSV export is delivered first, P2-04 stays unchecked until both import and export are verified for leads and properties.
+P2-05 remains unchecked: duplicate checks, matching and upsert behavior are not part of the import/export delivery.
 
 #### Reporting
 
@@ -356,3 +363,6 @@ Foundation smoke-test screenshots do not complete D-04: capture the delivered bu
 - **2026-10-27 — Shared-code naming maintenance verified:** [Shared-code naming and ownership](specs/shared-code-naming/spec.md) moves common transaction, HTTP and search helpers out of property-owned modules, separates LoadingState from skyline artwork and explicitly names PropertyInquiryCard. All imports and current documentation are reconciled. Frontend API drift, lint, formatting, TypeScript, 199 tests in 34 files and isolated production build passed; backend complete quality checks passed with 94 tests in 23 files, production build and disposable database verification. Isolated desktop/mobile smoke coverage passed 11 tests with one intentional mobile skip. Fresh scoped review found no actionable findings. No roadmap checklist state or real-business publication gate changed.
 
 - **2026-10-27 — Pipeline drag-stability correction verified:** The [sales-pipeline specification](specs/sales-pipeline/spec.md#drag-stability-correction--2026-10-27) records atomic stage refresh, removal of the conflicting drop animation, stable board/card status space and post-commit focus without scrolling. The 1480×807 forward/return regression stays within 2px for board height, viewport position and both scroll measurements; three consecutive final geometry/focus runs passed. Frontend API drift, lint, formatting, TypeScript, 199 unit tests and isolated production build passed. The complete pipeline suite passed 21 tests with three intentional mobile skips. Scoped review and active pipeline runtime diagnostics were clean. No API/schema/authorization, milestone checklist or real-business publication gate changed.
+- **2026-11-13 — CSV import/export verified:** P2-04 is complete through the historical export slice and the verified property/lead import specifications. Backend full checks passed (53 files / 263 tests); frontend full checks passed (56 files / 389 tests). Fresh/populated migrations and disposable database checks passed. Focused browser evidence covers 32 functional cases across lead import, property import, manual/public leads and export, plus active-page runtime inspection; settled lead-import visual captures at 1532px, 390px and 320px were reviewed. The additive lead-import migration was applied to the normal local database on November 13 after a consistent backup and passing database check; retained before/after evidence recorded unchanged existing counts. That dated local evidence is not current-database verification or a production-deployment claim; production remains unverified.
+
+- **2026-11-16 — Review recovery remediation verified:** The repository-local frontend review recovery remediation corrects malformed CRM record recovery, property-import preview guidance and unused lead receipt-option calls without changing API, persistence, permissions, configuration or checklist state. Backend `bun run check` passed with 53 files / 263 tests and build; frontend `bun run check` passed API parity, lint, formatting, route types, 57 files / 403 tests and webpack build. Fresh targeted browser suites passed 30/30 cases (record recovery 4, property import 8, lead import 10 and CSV export 8); isolated runtime diagnostics were clean and an independent scoped audit found no actionable finding. The full browser matrix and production conditions were not exercised; production secret/media-origin issues remain outside scope.
