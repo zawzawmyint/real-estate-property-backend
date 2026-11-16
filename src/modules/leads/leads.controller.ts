@@ -1,3 +1,5 @@
+import { sendExport } from '../../shared/csv/export.js';
+import { exportSchema } from './leads.schema.js';
 import type { Request, Response } from 'express';
 import { propertyMatchQuerySchema } from '../properties/properties.schema.js';
 import type { Actor } from './leads.repository.js';
@@ -24,6 +26,15 @@ export function createLeadController(
   listPropertyMatches: ListPropertyMatches,
 ) {
   return {
+    async exportCsv(req: Request, res: Response) {
+      const started = new Date();
+      const csv = await service.exportCsv(
+        parseQuery(exportSchema, req.originalUrl),
+        actor(res),
+      );
+      sendExport(res, 'leads', started, csv);
+    },
+
     async list(req: Request, res: Response) {
       res.json(
         await service.list(parseQuery(listSchema, req.originalUrl), actor(res)),

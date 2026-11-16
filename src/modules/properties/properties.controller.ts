@@ -1,3 +1,4 @@
+import { sendExport } from '../../shared/csv/export.js';
 import type { Request, Response } from 'express';
 import type { StaffRole } from '../auth/auth.js';
 import type { PropertyService } from './properties.service.js';
@@ -21,6 +22,16 @@ export function createPropertyController(service: PropertyService) {
 
     async publicDetail(req: Request, res: Response) {
       res.json(await service.detail(parseId(req.params.id)));
+    },
+
+    async exportCsv(req: Request, res: Response) {
+      const started = new Date();
+      const query = parseQuery(req.originalUrl, true, true);
+      const { page: _page, pageSize: _pageSize, ...filters } = query;
+      void _page;
+      void _pageSize;
+      const csv = await service.exportCsv(filters, res.locals.staff);
+      sendExport(res, 'properties', started, csv);
     },
 
     async staffList(req: Request, res: Response) {

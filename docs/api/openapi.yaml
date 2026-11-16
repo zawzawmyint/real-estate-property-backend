@@ -6,6 +6,360 @@ info:
 servers:
   - url: http://localhost:4311
 paths:
+  /api/v1/staff/leads/imports/template:
+    $ref: './leads.openapi.yaml#/paths/~1api~1v1~1staff~1leads~1imports~1template'
+  /api/v1/staff/leads/imports/preview:
+    $ref: './leads.openapi.yaml#/paths/~1api~1v1~1staff~1leads~1imports~1preview'
+  /api/v1/staff/leads/imports/commit:
+    $ref: './leads.openapi.yaml#/paths/~1api~1v1~1staff~1leads~1imports~1commit'
+  /api/v1/staff/properties/imports/template:
+    get:
+      operationId: getPropertyImportTemplate
+      summary: Download the draft property CSV import template
+      description: Current Admin/Manager only. UTF-8 BOM, CRLF, header only, filename property-import-template.csv. No-store and nosniff.
+      security:
+        - staffCookie: []
+      responses:
+        '200':
+          description: CSV template attachment
+          content:
+            text/csv:
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+  /api/v1/staff/properties/imports/preview:
+    post:
+      operationId: previewPropertyImport
+      summary: Validate new draft properties without writing
+      description: >-
+        Current Admin/Manager only, trusted Origin and JSON. The body limit is 6 MiB; CSV limit
+        1048576 UTF-8 bytes, 500 data records, 65536 raw bytes per record including quotes and
+        terminating newline. Reject malformed encoding, NUL, unknown/duplicate/empty headers,
+        malformed CSV and column-count differences. Header order is flexible; title and purpose
+        are required. All other template fields are optional. Quoted multiline fields count as
+        one record; blank lines are ignored. Phones remain strings. Money is positive decimal AED
+        with at most two fractional digits. No writes. Every row must be valid before confirmation.
+      security:
+        - staffCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [csv]
+              properties:
+                csv:
+                  type: string
+      responses:
+        '200':
+          description: Bounded validation preview, including domain-invalid rows
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropertyImportPreview'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '413':
+          $ref: '#/components/responses/Error'
+        '415':
+          $ref: '#/components/responses/Error'
+  /api/v1/staff/properties/imports/commit:
+    post:
+      operationId: commitPropertyImport
+      summary: Atomically create new draft properties after preview
+      description: >-
+        Current Admin/Manager only, trusted Origin, JSON and the same limits as preview. Revalidates
+        exact CSV and live session in a serialized atomic transaction. Draft, available, featured=false,
+        isDemo=false, no photos; never upserts. Digest is lowercase SHA-256 of UTF-8 property-import:v1
+        followed by a NUL byte and the exact CSV bytes (including BOM). Schema/version or digest
+        mismatch is 409 IMPORT_PREVIEW_STALE. UUID is durably bound to actor/content/version;
+        mismatched actor/content is generic 409 IMPORT_CONFLICT. A retry returns original IDs even
+        if properties were subsequently deleted. No CSV or owner fields are retained in receipts.
+        Database failure rolls back every property and receipt and returns a safe 5xx.
+      security:
+        - staffCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [submissionId, schemaVersion, digest, csv]
+              properties:
+                submissionId:
+                  type: string
+                  format: uuid
+                schemaVersion:
+                  type: integer
+                  description: Currently 1; another version returns IMPORT_PREVIEW_STALE.
+                digest:
+                  type: string
+                  pattern: '^[a-f0-9]{64}$'
+                csv:
+                  type: string
+      responses:
+        '201':
+          description: New batch created; replayed is false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropertyImportResult'
+        '200':
+          description: Original batch returned; replayed is true
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropertyImportResult'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '413':
+          $ref: '#/components/responses/Error'
+        '415':
+          $ref: '#/components/responses/Error'
+        '422':
+          description: IMPORT_VALIDATION_FAILED; the entire batch is rejected
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [error, issues, issueCount]
+                properties:
+                  error:
+                    type: object
+                    required: [code, message, requestId]
+                    properties:
+                      code:
+                        type: string
+                        const: IMPORT_VALIDATION_FAILED
+                      message:
+                        type: string
+                        const: Fix every invalid row before importing.
+                      requestId:
+                        type: string
+                  issues:
+                    type: array
+                    maxItems: 100
+                    items:
+                      $ref: '#/components/schemas/PropertyImportIssue'
+                  issueCount:
+                    type: integer
+                    minimum: 1
+  /api/v1/staff/leads/export:
+    $ref: './leads.openapi.yaml#/paths/~1api~1v1~1staff~1leads~1export'
+  /api/v1/staff/properties/export:
+    get:
+      operationId: exportPropertiesCsv
+      summary: Download filtered properties as CSV
+      description: >-
+        All staff; authorization and data are read in one bounded live-session transaction. Agent
+        files omit owner_name and owner_phone entirely; Admin/Manager append these columns. Exports
+        all matches across pages. Reject unknown, duplicate and pagination query keys. Maximum 5000
+        records and 10485760 UTF-8 bytes; overflow returns JSON before CSV headers. UTF-8 BOM,
+        comma-separated, CRLF records, formula escaping; nulls blank, booleans true/false, monetary
+        and area values fixed two decimal places, timestamps UTC ISO 8601.
+      security:
+        - staffCookie: []
+      parameters:
+        - in: query
+          name: purpose
+          required: false
+          schema:
+            type: string
+            enum:
+              - sale
+              - rent
+        - in: query
+          name: type
+          required: false
+          schema:
+            type: string
+            enum:
+              - apartment
+              - villa
+              - townhouse
+              - penthouse
+        - in: query
+          name: location
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 120
+            description: Trimmed case-insensitive city OR community substring.
+        - in: query
+          name: minPriceFils
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 1000000000000
+        - in: query
+          name: maxPriceFils
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 1000000000000
+        - in: query
+          name: minBedrooms
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 20
+        - in: query
+          name: featured
+          required: false
+          schema:
+            type: string
+            enum:
+              - 'true'
+              - 'false'
+        - in: query
+          name: sort
+          required: false
+          schema:
+            type: string
+            enum:
+              - newest
+              - price_asc
+              - price_desc
+              - updated_desc
+            default: updated_desc
+        - in: query
+          name: q
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 160
+        - in: query
+          name: publishingState
+          required: false
+          schema:
+            type: string
+            enum:
+              - draft
+              - published
+              - archived
+        - in: query
+          name: availability
+          required: false
+          schema:
+            type: string
+            enum:
+              - available
+              - sold
+              - rented
+      responses:
+        '200':
+          description: >-
+            CSV attachment (empty matches return BOM plus header). Fixed columns are defined in
+            specs/csv-import-export/contract.md.
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+                pattern: ^attachment; filename="properties-[0-9]{4}-[0-9]{2}-[0-9]{2}\.csv"$
+              description: Export-start calendar date in Asia/Dubai.
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+            X-Content-Type-Options:
+              schema:
+                type: string
+                const: nosniff
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            text/csv; charset=utf-8:
+              schema:
+                type: string
+        '400':
+          description: 'VALIDATION_ERROR: invalid query or contradictory ranges'
+          headers:
+            X-Request-Id:
+              schema:
+                type: string
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema: &ref_0
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: 'UNAUTHENTICATED: live staff session required'
+          headers:
+            X-Request-Id:
+              schema:
+                type: string
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema: *ref_0
+        '403':
+          description: 'FORBIDDEN: access denied'
+          headers:
+            X-Request-Id:
+              schema:
+                type: string
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema: *ref_0
+        '422':
+          description: 'EXPORT_LIMIT_EXCEEDED: Too many results to export. Narrow your filters and try again.'
+          headers:
+            X-Request-Id:
+              schema:
+                type: string
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema: *ref_0
+        '500':
+          description: Safe internal error
+          headers:
+            X-Request-Id:
+              schema:
+                type: string
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema: *ref_0
   /api/v1/staff/notifications:
     $ref: './notifications.openapi.yaml#/paths/~1api~1v1~1staff~1notifications'
   /api/v1/staff/notifications/{id}/read:
@@ -2827,6 +3181,102 @@ components:
           },
       }
   schemas:
+    PropertyImportIssue:
+      type: object
+      additionalProperties: false
+      required: [rowNumber, column, message]
+      properties:
+        rowNumber:
+          type: integer
+          minimum: 2
+          description: Logical CSV record number including header as record 1.
+        column:
+          type: string
+        message:
+          type: string
+    PropertyImportPreview:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          schemaVersion,
+          digest,
+          valid,
+          totalRows,
+          validRows,
+          issueCount,
+          issues,
+          columns,
+          previewRows,
+        ]
+      properties:
+        schemaVersion:
+          type: integer
+          const: 1
+        digest:
+          type: string
+          pattern: '^[a-f0-9]{64}$'
+        valid:
+          type: boolean
+        totalRows:
+          type: integer
+          minimum: 1
+          maximum: 500
+        validRows:
+          type: integer
+          minimum: 0
+          maximum: 500
+        issueCount:
+          type: integer
+          minimum: 0
+        issues:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/PropertyImportIssue'
+        columns:
+          type: array
+          items:
+            type: string
+          description: Template order title,purpose,type,description,price_aed,city,community,bedrooms,bathrooms,area_sqft,owner_name,owner_phone.
+        previewRows:
+          type: array
+          maxItems: 20
+          items:
+            type: object
+            additionalProperties: false
+            required: [rowNumber, values]
+            properties:
+              rowNumber:
+                type: integer
+                minimum: 2
+              values:
+                type: array
+                minItems: 12
+                maxItems: 12
+                items:
+                  type: string
+    PropertyImportResult:
+      type: object
+      additionalProperties: false
+      required: [submissionId, createdCount, propertyIds, replayed]
+      properties:
+        submissionId:
+          type: string
+          format: uuid
+        createdCount:
+          type: integer
+          minimum: 1
+          maximum: 500
+        propertyIds:
+          type: array
+          minItems: 1
+          maxItems: 500
+          items:
+            type: string
+            format: uuid
+        replayed:
+          type: boolean
     AgentPortrait:
       type: object
       additionalProperties: false

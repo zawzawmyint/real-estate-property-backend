@@ -1,3 +1,7 @@
+import { serializeExport, decimalHundredths } from '../../shared/csv/export.js';
+import { createPropertyImportService } from './property-import.service.js';
+import { requireCurrentStaff } from '../auth/staff-actor.js';
+import type { Actor } from '../leads/leads.repository.js';
 import {
   serializedTransaction,
   type Database,
@@ -100,6 +104,7 @@ export function createPropertyService(
   }
 
   return {
+    imports: createPropertyImportService(database),
     async listPropertyMatches(query: PropertyMatchQuery, tx: Transaction) {
       const result = await repository.list(
         { ...query, sort: 'newest', pageSize: 10 },
@@ -123,6 +128,51 @@ export function createPropertyService(
 
       return items.map((record) =>
         propertyDto(record as PropertyRecord, storage),
+      );
+    },
+
+    async exportCsv(
+      query: Omit<PropertyQuery, 'page' | 'pageSize'>,
+      identity: Actor,
+    ): Promise<string> {
+      const result = await serializedTransaction(database, async (tx) => {
+        const actor = await requireCurrentStaff(identity, tx);
+        const privateOwner = actor.role !== 'agent';
+        return {
+          privateOwner,
+          rows: await repository.exportRows(query, privateOwner, tx),
+        };
+      });
+      const columns = [
+        'property_id',
+        'title',
+        'purpose',
+        'type',
+        'price_aed',
+        'city',
+        'community',
+        'bedrooms',
+        'bathrooms',
+        'area_sqft',
+        'publishing_state',
+        'availability',
+        'featured',
+        'is_demo',
+        'created_at_utc',
+        'updated_at_utc',
+      ];
+      if (result.privateOwner) columns.push('owner_name', 'owner_phone');
+      return serializeExport(
+        columns,
+        result.rows.map((row) => ({
+          ...row,
+          price_aed: decimalHundredths(row.price_aed),
+          area_sqft: decimalHundredths(row.area_sqft),
+          featured: Boolean(row.featured),
+          is_demo: Boolean(row.is_demo),
+          created_at_utc: new Date(row.created_at_utc).toISOString(),
+          updated_at_utc: new Date(row.updated_at_utc).toISOString(),
+        })),
       );
     },
 

@@ -5,6 +5,12 @@ import { requireStaff } from '../auth/auth.middleware.js';
 import type { NotificationService } from '../notifications/notifications.service.js';
 import type { Database } from '../../infrastructure/database/transaction.js';
 import { createLeadController } from './leads.controller.js';
+import { createLeadImportController } from './lead-import.controller.js';
+import { createLeadImportService } from './lead-import.service.js';
+import {
+  parseImportJson,
+  requireImportUtf8,
+} from '../../shared/csv/import-middleware.js';
 import {
   noStore,
   requireJsonContentType,
@@ -38,10 +44,22 @@ export function mountLeads(
     managers = requireStaff(auth, ['admin', 'manager']);
   const write = [live, origin, requireJsonContentType, parseJson];
   const protectInquiry = inquiryProtection(env);
+  const imports = createLeadImportController(createLeadImportService(database));
+  const importWrite = [
+    managers,
+    origin,
+    requireJsonContentType,
+    requireImportUtf8,
+    parseImportJson,
+  ];
 
   staff.use(noStore);
   staff.get('/', live, controller.list);
   staff.get('/assignment-candidates', managers, controller.candidates);
+  staff.get('/export', live, controller.exportCsv);
+  staff.get('/imports/template', managers, imports.template);
+  staff.post('/imports/preview', ...importWrite, imports.preview);
+  staff.post('/imports/commit', ...importWrite, imports.commit);
   staff.get('/:id', live, controller.detail);
   staff.get('/:id/activity', live, controller.activity);
   staff.get('/:id/property-matches', live, controller.propertyMatches);

@@ -1,5 +1,17 @@
 # Feature specifications
 
+## Lead import — verified
+
+- [Lead CSV import](lead-import/spec.md) and [backend-owned contract](lead-import/contract.md): verified atomic creation of New/unassigned/unlinked leads, creation history and aggregate receipts using shared CSV mechanics. P2-04 is complete; duplicate detection remains P2-05.
+
+## Property import — verified
+
+- [Property CSV import](property-import/spec.md) and [backend-owned contract](property-import/contract.md): verified property-only atomic import with durable retry receipts and shared mechanics. P2-04 is complete.
+
+## Phase 2 data tools — export-only delivery
+
+- [CSV import/export](csv-import-export/spec.md): historical verified export-only downloads for all staff within existing access. The [backend-owned contract](csv-import-export/contract.md) defines routes, columns and bounds. The verified property and lead import specifications complete P2-04 without broadening this export scope.
+
 ## Software design diagrams
 
 | Feature                                                                                              | Flow                                                        |

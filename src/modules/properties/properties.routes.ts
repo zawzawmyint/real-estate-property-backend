@@ -3,6 +3,11 @@ import type { Env } from '../../config/env.js';
 import type { StaffAuth } from '../auth/auth.js';
 import { requireStaff } from '../auth/auth.middleware.js';
 import { createPropertyController } from './properties.controller.js';
+import { createPropertyImportController } from './property-import.controller.js';
+import {
+  parseImportJson,
+  requireImportUtf8,
+} from '../../shared/csv/import-middleware.js';
 import { requirePropertyPhotoUpload } from './properties.middleware.js';
 import {
   noStore,
@@ -18,6 +23,7 @@ export function mountProperties(
   service: PropertyService,
 ) {
   const controller = createPropertyController(service);
+  const imports = createPropertyImportController(service.imports);
 
   const router = express.Router();
   const staff = express.Router();
@@ -33,6 +39,20 @@ export function mountProperties(
 
   staff.use(noStore);
   staff.get('/', requireStaff(auth), controller.staffList);
+  staff.get('/export', requireStaff(auth), controller.exportCsv);
+  staff.get(
+    '/imports/template',
+    requireStaff(auth, ['admin', 'manager']),
+    imports.template,
+  );
+  const importWrite = [
+    ...write,
+    requireJsonContentType,
+    requireImportUtf8,
+    parseImportJson,
+  ];
+  staff.post('/imports/preview', ...importWrite, imports.preview);
+  staff.post('/imports/commit', ...importWrite, imports.commit);
   staff.get('/:id', requireStaff(auth), controller.staffDetail);
   staff.post('/', ...jsonWrite, controller.create);
   staff.patch('/:id', ...jsonWrite, controller.patch);

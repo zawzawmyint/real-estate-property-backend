@@ -124,7 +124,11 @@ export type ChatPropertyFilters = Pick<
   | 'maxPriceFils'
 > & { exactBedrooms?: number };
 
-export function parseQuery(url: string, staff: boolean): PropertyQuery {
+export function parseQuery(
+  url: string,
+  staff: boolean,
+  exporting = false,
+): PropertyQuery {
   const params = new URL(url, 'http://local').searchParams;
   const values: Record<string, string> = Object.create(null) as Record<
     string,
@@ -138,7 +142,9 @@ export function parseQuery(url: string, staff: boolean): PropertyQuery {
     values[key] = value;
   }
 
-  const result = parse(staff ? staffQuery : publicQuery, values);
+  const result = exporting
+    ? parse(staffQuery.omit({ page: true, pageSize: true }), values)
+    : parse(staff ? staffQuery : publicQuery, values);
 
   if (
     result.minPriceFils !== undefined &&
@@ -151,7 +157,7 @@ export function parseQuery(url: string, staff: boolean): PropertyQuery {
       'Minimum price exceeds maximum price',
     );
 
-  return result;
+  return { page: 1, pageSize: 12, ...result };
 }
 
 export function toData(input: PropertyInput) {

@@ -48,6 +48,21 @@ it('deploys auth migrations into a missing nested SQLite file and can be rerun',
     expect(second.status).toBe(0);
     expect(second.stdout).toContain('No pending migrations to apply.');
 
+    const checked = spawnSync(
+      process.execPath,
+      [
+        '--env-file-if-exists=.env',
+        '--import',
+        'tsx',
+        'scripts/check-database.ts',
+      ],
+      { cwd: resolve('.'), env, encoding: 'utf8', timeout: 30000 },
+    );
+    expect(checked.status, checked.stderr).toBe(0);
+    expect(checked.stdout).toContain(
+      'SQLite connection, agency tables, property and lead search verified.',
+    );
+
     const database = await createDatabase(databaseUrl);
 
     try {
@@ -62,7 +77,9 @@ it('deploys auth migrations into a missing nested SQLite file and can be rerun',
           'Account',
           'Property',
           'PropertyPhoto',
+          'PropertyImportReceipt',
           'Lead',
+          'LeadImportReceipt',
           'LeadNote',
           'LeadActivity',
           'LeadSubmissionReceipt',
