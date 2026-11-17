@@ -5,6 +5,7 @@ import { propertyMatchQuerySchema } from '../properties/properties.schema.js';
 import type { Actor } from './leads.repository.js';
 import type { LeadService, ListPropertyMatches } from './leads.service.js';
 import {
+  duplicateCheckSchema,
   agencyInquirySchema,
   assignmentSchema,
   candidatesSchema,
@@ -26,6 +27,14 @@ export function createLeadController(
   listPropertyMatches: ListPropertyMatches,
 ) {
   return {
+    async duplicateCheck(req: Request, res: Response) {
+      res.json(
+        await service.duplicateCheck(
+          parse(duplicateCheckSchema, req.body),
+          actor(res),
+        ),
+      );
+    },
     async exportCsv(req: Request, res: Response) {
       const started = new Date();
       const csv = await service.exportCsv(

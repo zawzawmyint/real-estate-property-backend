@@ -1,5 +1,9 @@
 # Feature specifications
 
+## Lead duplicate detection — verified
+
+- [Lead duplicate detection](lead-duplicate-detection/spec.md), [backend-owned contract](lead-duplicate-detection/contract.md) and [implementation plan](../docs/superpowers/plans/2026-11-16-lead-duplicate-detection.md): P2-05 phone warnings, explicit acknowledgement, scoped review and CSV integration are verified. Deployment and normal-database migration remain separate operations.
+
 ## Lead import — verified
 
 - [Lead CSV import](lead-import/spec.md) and [backend-owned contract](lead-import/contract.md): verified atomic creation of New/unassigned/unlinked leads, creation history and aggregate receipts using shared CSV mechanics. P2-04 is complete; duplicate detection remains P2-05.

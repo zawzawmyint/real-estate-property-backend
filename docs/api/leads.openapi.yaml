@@ -101,7 +101,7 @@
             {
               'operationId': 'previewLeadImport',
               'summary': 'Validate new leads without writing',
-              'description': 'No-store. Current Admin/Manager authorization runs before POST body consumption, then trusted Origin, JSON type, UTF-8 charset and 6 MiB parser. CSV maximum 1048576 UTF-8 bytes, 500 data records, 65536 raw record bytes including quoting/newline. Reject malformed UTF-8, NUL and unpaired surrogates. Ignore empty lines; quoted multiline values stay one logical record. Trim headers, allow reorder, reject unknown/duplicate/empty or inconsistent columns and empty batches. Require name,purpose,source and at least one phone/email header. Columns name,phone,email,purpose,budget_aed,source. Existing trimmed name (1-120), valid phone (3-40, digits/plus/parentheses/spaces/hyphens, at least one digit), valid lowercase email (max 254); every row needs a contact and any supplied invalid contact rejects. Preserve phone leading zeroes. Lowercase purpose sale/rent and manual source call/walk_in only. Optional positive plain decimal AED budget with <=2 fractional digits maps exactly to 1..1000000000000 fils. Null fields are blank. Validates every row; accurate total counts with at most 20 preview rows and 100 issues. Domain-invalid rows return valid=false. No leads, activities, receipts or notifications are written. Digest is lowercase SHA256 of UTF-8 lead-import:v1 followed by a NUL byte and the exact CSV UTF-8 bytes including BOM.',
+              'description': 'No-store. Current Admin/Manager authorization runs before POST body consumption, then trusted Origin, JSON type, UTF-8 charset and 6 MiB parser. CSV maximum 1048576 UTF-8 bytes, 500 data records, 65536 raw record bytes including quoting/newline. Reject malformed UTF-8, NUL and unpaired surrogates. Ignore empty lines; quoted multiline values stay one logical record. Trim headers, allow reorder, reject unknown/duplicate/empty or inconsistent columns and empty batches. Require name,purpose,source and at least one phone/email header. Columns name,phone,email,purpose,budget_aed,source. Existing trimmed name (1-120), valid phone (3-40, digits/plus/parentheses/spaces/hyphens, at least one digit), valid lowercase email (max 254); every row needs a contact and any supplied invalid contact rejects. Preserve phone leading zeroes. Lowercase purpose sale/rent and manual source call/walk_in only. Optional positive plain decimal AED budget with <=2 fractional digits maps exactly to 1..1000000000000 fils. Null fields are blank. Validates every row; accurate total counts with at most 20 preview rows and 100 issues. Domain-invalid rows return valid=false. No leads, activities, receipts or notifications are written. Digest is lowercase SHA256 of UTF-8 lead-import:v2 followed by a NUL byte and the exact CSV UTF-8 bytes including BOM. Schema v2 adds scoped existing and same-file duplicateReview across all valid rows. Commit requires current explicit duplicateAcknowledgement when affectedRows>0, recomputes under write reservation, and writes nothing on IMPORT_DUPLICATE_REVIEW_REQUIRED. Compatible committed v1/v2 receipts replay before new semantic phone validation; uncommitted v1 is IMPORT_PREVIEW_STALE.',
               'security': [{ 'StaffCookie': [] }],
               'requestBody':
                 {
@@ -280,7 +280,7 @@
             {
               'operationId': 'commitLeadImport',
               'summary': 'Atomically create reviewed new unassigned leads',
-              'description': 'No-store. Current Admin/Manager authorization runs before POST body consumption, then trusted Origin, JSON type, UTF-8 charset and 6 MiB parser. CSV maximum 1048576 UTF-8 bytes, 500 data records, 65536 raw record bytes including quoting/newline. Reject malformed UTF-8, NUL and unpaired surrogates. Ignore empty lines; quoted multiline values stay one logical record. Trim headers, allow reorder, reject unknown/duplicate/empty or inconsistent columns and empty batches. Require name,purpose,source and at least one phone/email header. Columns name,phone,email,purpose,budget_aed,source. Existing trimmed name (1-120), valid phone (3-40, digits/plus/parentheses/spaces/hyphens, at least one digit), valid lowercase email (max 254); every row needs a contact and any supplied invalid contact rejects. Preserve phone leading zeroes. Lowercase purpose sale/rent and manual source call/walk_in only. Optional positive plain decimal AED budget with <=2 fractional digits maps exactly to 1..1000000000000 fils. Null fields are blank. Revalidates live staff, CSV, digest and version. Acquire SQLite write reservation before live actor/receipt reads; all leads, normalized search fields, one actor-attributed created activity per row and aggregate LeadImportReceipt commit atomically. New stage, version 1, unassigned/unlinked, actor creator; no original messages, notifications or single-lead submission receipts. Never deduplicate/upsert. Same actor/UUID/content/version returns original IDs/count and preserves later edits/assignments. Another actor/content/version gives generic IMPORT_CONFLICT before stale-preview details. Unsupported positive schemaVersion or mismatched digest gives IMPORT_PREVIEW_STALE. Digest namespace lead-import:v1 then NUL and exact CSV bytes including BOM. Receipt retains no raw CSV/contact snapshots.',
+              'description': 'No-store. Current Admin/Manager authorization runs before POST body consumption, then trusted Origin, JSON type, UTF-8 charset and 6 MiB parser. CSV maximum 1048576 UTF-8 bytes, 500 data records, 65536 raw record bytes including quoting/newline. Reject malformed UTF-8, NUL and unpaired surrogates. Ignore empty lines; quoted multiline values stay one logical record. Trim headers, allow reorder, reject unknown/duplicate/empty or inconsistent columns and empty batches. Require name,purpose,source and at least one phone/email header. Columns name,phone,email,purpose,budget_aed,source. Existing trimmed name (1-120), valid phone (3-40, digits/plus/parentheses/spaces/hyphens, at least one digit), valid lowercase email (max 254); every row needs a contact and any supplied invalid contact rejects. Preserve phone leading zeroes. Lowercase purpose sale/rent and manual source call/walk_in only. Optional positive plain decimal AED budget with <=2 fractional digits maps exactly to 1..1000000000000 fils. Null fields are blank. Revalidates live staff, CSV, digest and version. Acquire SQLite write reservation before live actor/receipt reads; all leads, normalized search fields, one actor-attributed created activity per row and aggregate LeadImportReceipt commit atomically. New stage, version 1, unassigned/unlinked, actor creator; no original messages, notifications or single-lead submission receipts. Never deduplicate/upsert. Same actor/UUID/content/version returns original IDs/count and preserves later edits/assignments. Another actor/content/version gives generic IMPORT_CONFLICT before stale-preview details. Unsupported positive schemaVersion or mismatched digest gives IMPORT_PREVIEW_STALE. Digest namespace lead-import:v2 then NUL and exact CSV bytes including BOM. Receipt retains no raw CSV/contact snapshots. Schema v2 adds scoped existing and same-file duplicateReview across all valid rows. Commit requires current explicit duplicateAcknowledgement when affectedRows>0, recomputes under write reservation, and writes nothing on IMPORT_DUPLICATE_REVIEW_REQUIRED. Compatible committed v1/v2 receipts replay before new semantic phone validation; uncommitted v1 is IMPORT_PREVIEW_STALE.',
               'security': [{ 'StaffCookie': [] }],
               'requestBody':
                 {
@@ -316,6 +316,10 @@
                                       'pattern': '^[a-f0-9]{64}$',
                                     },
                                   'csv': { 'type': 'string' },
+                                  'duplicateAcknowledgement':
+                                    {
+                                      '$ref': '#/components/schemas/DuplicateAcknowledgement',
+                                    },
                                 },
                             },
                         },
@@ -449,7 +453,17 @@
                           'application/json':
                             {
                               'schema':
-                                { '$ref': '#/components/schemas/LeadApiError' },
+                                {
+                                  'oneOf':
+                                    [
+                                      {
+                                        '$ref': '#/components/schemas/LeadApiError',
+                                      },
+                                      {
+                                        '$ref': '#/components/schemas/ImportDuplicateError',
+                                      },
+                                    ],
+                                },
                             },
                         },
                     },
@@ -613,6 +627,13 @@
                         'default': 'newest',
                       },
                   },
+                  {
+                    'name': 'duplicates',
+                    'in': 'query',
+                    'required': false,
+                    'schema': { 'type': 'string', 'enum': ['only'] },
+                    'description': 'Only leads with other accessible canonical phone matches; combines with filters before pagination.',
+                  },
                 ],
               'responses':
                 {
@@ -626,7 +647,7 @@
                               'schema':
                                 {
                                   'type': 'string',
-                                  'pattern': "^attachment; filename=\"leads-[0-9]{4}-[0-9]{2}-[0-9]{2}\\.csv\"$",
+                                  'pattern': '^attachment; filename="leads-[0-9]{4}-[0-9]{2}-[0-9]{2}\.csv"$',
                                 },
                               'description': 'Export-start calendar date in Asia/Dubai.',
                             },
@@ -1471,6 +1492,13 @@
                         'default': 1,
                       },
                   },
+                  {
+                    'name': 'duplicates',
+                    'in': 'query',
+                    'required': false,
+                    'schema': { 'type': 'string', 'enum': ['only'] },
+                    'description': 'Only leads with other accessible canonical phone matches; combines with filters before pagination.',
+                  },
                 ],
             },
           'post':
@@ -1576,7 +1604,17 @@
                           'application/json':
                             {
                               'schema':
-                                { '$ref': '#/components/schemas/LeadApiError' },
+                                {
+                                  'oneOf':
+                                    [
+                                      {
+                                        '$ref': '#/components/schemas/LeadApiError',
+                                      },
+                                      {
+                                        '$ref': '#/components/schemas/LeadDuplicateError',
+                                      },
+                                    ],
+                                },
                             },
                         },
                     },
@@ -2001,7 +2039,17 @@
                           'application/json':
                             {
                               'schema':
-                                { '$ref': '#/components/schemas/LeadApiError' },
+                                {
+                                  'oneOf':
+                                    [
+                                      {
+                                        '$ref': '#/components/schemas/LeadApiError',
+                                      },
+                                      {
+                                        '$ref': '#/components/schemas/LeadDuplicateError',
+                                      },
+                                    ],
+                                },
                             },
                         },
                     },
@@ -2671,6 +2719,116 @@
                 ],
             },
         },
+      '/api/v1/staff/leads/duplicate-check':
+        {
+          'post':
+            {
+              'operationId': 'checkLeadDuplicates',
+              'summary': 'Review accessible phone matches',
+              'description': 'Live staff, trusted Origin, bounded JSON. Authorize excludeLeadId before disclosure. Max 20 summaries; token covers all accessible matching IDs. No receipt or writes.',
+              'security': [{ 'StaffCookie': [] }],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'additionalProperties': false,
+                              'required': ['phone'],
+                              'properties':
+                                {
+                                  'phone':
+                                    { 'type': 'string', 'maxLength': 40 },
+                                  'excludeLeadId':
+                                    { 'type': 'string', 'format': 'uuid' },
+                                },
+                            },
+                        },
+                    },
+                },
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': 'Scoped current review; no writes.',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                {
+                                  '$ref': '#/components/schemas/DuplicateReview',
+                                },
+                            },
+                        },
+                    },
+                  '400':
+                    {
+                      'description': 'Scoped current review; no writes.',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/LeadApiError' },
+                            },
+                        },
+                    },
+                  '401':
+                    {
+                      'description': 'Scoped current review; no writes.',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/LeadApiError' },
+                            },
+                        },
+                    },
+                  '403':
+                    {
+                      'description': 'Scoped current review; no writes.',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/LeadApiError' },
+                            },
+                        },
+                    },
+                  '404':
+                    {
+                      'description': 'Scoped current review; no writes.',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/LeadApiError' },
+                            },
+                        },
+                    },
+                  '500':
+                    {
+                      'description': 'Scoped current review; no writes.',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/LeadApiError' },
+                            },
+                        },
+                    },
+                },
+            },
+        },
     },
   'components':
     {
@@ -2700,8 +2858,8 @@
                     {
                       'type': ['string', 'null'],
                       'minLength': 3,
-                      'pattern': "^[+\\d\\s()-]*\\d[+\\d\\s()-]*$",
-                      'description': 'Every JavaScript whitespace character is replaced with ASCII space, then trimmed before validation. The canonical phone must be 3-40 characters, contain a digit, and use only plus, digits, ASCII spaces, parentheses or hyphens. Repeated internal spaces are preserved. At least one phone or email is required.',
+                      'pattern': '^[+\d\s()-]*\d[+\d\s()-]*$',
+                      'description': 'Every JavaScript whitespace character is replaced with ASCII space, then trimmed; repeated internal spaces preserved. Phone contains a digit and only plus, digits, ASCII spaces, parentheses or hyphens, max 40 characters. Trim and preserve display phone, maximum 40 characters. New/changed supplied phone must be a valid UAE mobile/fixed-line number starting with 0, or explicit +/00 international number; strict libphonenumber-js/max isValid(). Compatible successful receipt replays precede semantic phone validation.',
                     },
                   'email':
                     {
@@ -2783,6 +2941,7 @@
                   'createdAt',
                   'updatedAt',
                   'version',
+                  'duplicateCount',
                 ],
               'properties':
                 {
@@ -2794,7 +2953,7 @@
                       'type': ['string', 'null'],
                       'minLength': 3,
                       'maxLength': 40,
-                      'pattern': "^[+\\d ()-]*\\d[+\\d ()-]*$",
+                      'pattern': '^[+\d ()-]*\d[+\d ()-]*$',
                       'description': 'Canonical phone: ASCII spaces only, trimmed, 3-40 characters and at least one digit. Repeated internal spaces are preserved.',
                     },
                   'email':
@@ -2850,6 +3009,7 @@
                   'createdAt': { 'type': 'string', 'format': 'date-time' },
                   'updatedAt': { 'type': 'string', 'format': 'date-time' },
                   'version': { 'type': 'integer', 'minimum': 1 },
+                  'duplicateCount': { 'type': 'integer', 'minimum': 0 },
                 },
             },
           'LeadActor':
@@ -2877,8 +3037,8 @@
                     {
                       'type': ['string', 'null'],
                       'minLength': 3,
-                      'pattern': "^[+\\d\\s()-]*\\d[+\\d\\s()-]*$",
-                      'description': 'Every JavaScript whitespace character is replaced with ASCII space, then trimmed before validation. The canonical phone must be 3-40 characters, contain a digit, and use only plus, digits, ASCII spaces, parentheses or hyphens. Repeated internal spaces are preserved. At least one phone or email is required.',
+                      'pattern': '^[+\d\s()-]*\d[+\d\s()-]*$',
+                      'description': 'Every JavaScript whitespace character is replaced with ASCII space, then trimmed; repeated internal spaces preserved. Phone contains a digit and only plus, digits, ASCII spaces, parentheses or hyphens, max 40 characters. Every JavaScript whitespace character is replaced with ASCII space, then trimmed before validation. The canonical phone must be 3-40 characters, contain a digit, and use only plus, digits, ASCII spaces, parentheses or hyphens. Repeated internal spaces are preserved. At least one phone or email is required.',
                     },
                   'email':
                     {
@@ -2908,8 +3068,8 @@
                     {
                       'type': ['string', 'null'],
                       'minLength': 3,
-                      'pattern': "^[+\\d\\s()-]*\\d[+\\d\\s()-]*$",
-                      'description': 'Every JavaScript whitespace character is replaced with ASCII space, then trimmed before validation. The canonical phone must be 3-40 characters, contain a digit, and use only plus, digits, ASCII spaces, parentheses or hyphens. Repeated internal spaces are preserved. At least one phone or email is required.',
+                      'pattern': '^[+\d\s()-]*\d[+\d\s()-]*$',
+                      'description': 'Every JavaScript whitespace character is replaced with ASCII space, then trimmed; repeated internal spaces preserved. Phone contains a digit and only plus, digits, ASCII spaces, parentheses or hyphens, max 40 characters. Trim and preserve display phone, maximum 40 characters. New/changed supplied phone must be a valid UAE mobile/fixed-line number starting with 0, or explicit +/00 international number; strict libphonenumber-js/max isValid(). Compatible successful receipt replays precede semantic phone validation.',
                     },
                   'email':
                     {
@@ -2934,6 +3094,8 @@
                     },
                   'source': { 'type': 'string', 'enum': ['call', 'walk_in'] },
                   'assignedAgentId': { 'type': ['string', 'null'] },
+                  'duplicateAcknowledgement':
+                    { '$ref': '#/components/schemas/DuplicateAcknowledgement' },
                 },
             },
           'LeadPatchInput':
@@ -2949,8 +3111,8 @@
                     {
                       'type': ['string', 'null'],
                       'minLength': 3,
-                      'pattern': "^[+\\d\\s()-]*\\d[+\\d\\s()-]*$",
-                      'description': 'Every JavaScript whitespace character is replaced with ASCII space, then trimmed before validation. The canonical phone must be 3-40 characters, contain a digit, and use only plus, digits, ASCII spaces, parentheses or hyphens. Repeated internal spaces are preserved. At least one phone or email is required.',
+                      'pattern': '^[+\d\s()-]*\d[+\d\s()-]*$',
+                      'description': 'Every JavaScript whitespace character is replaced with ASCII space, then trimmed; repeated internal spaces preserved. Phone contains a digit and only plus, digits, ASCII spaces, parentheses or hyphens, max 40 characters. Trim and preserve display phone, maximum 40 characters. New/changed supplied phone must be a valid UAE mobile/fixed-line number starting with 0, or explicit +/00 international number; strict libphonenumber-js/max isValid(). Compatible successful receipt replays precede semantic phone validation.',
                     },
                   'email':
                     {
@@ -2974,8 +3136,11 @@
                         ],
                     },
                   'expectedVersion': { 'type': 'integer', 'minimum': 1 },
+                  'duplicateAcknowledgement':
+                    { '$ref': '#/components/schemas/DuplicateAcknowledgement' },
                 },
               'minProperties': 2,
+              'description': 'At least one business field besides expectedVersion and duplicateAcknowledgement is required. Unchanged legacy phone text remains editable; changed supplied phone must normalize.',
             },
           'LeadAssignmentInput':
             {
@@ -3065,10 +3230,11 @@
                   'issues',
                   'columns',
                   'previewRows',
+                  'duplicateReview',
                 ],
               'properties':
                 {
-                  'schemaVersion': { 'type': 'integer', 'const': 1 },
+                  'schemaVersion': { 'type': 'integer', 'const': 2 },
                   'digest': { 'type': 'string', 'pattern': '^[a-f0-9]{64}$' },
                   'valid': { 'type': 'boolean' },
                   'totalRows':
@@ -3113,6 +3279,8 @@
                             },
                         },
                     },
+                  'duplicateReview':
+                    { '$ref': '#/components/schemas/ImportDuplicateReview' },
                 },
             },
           'LeadImportResult':
@@ -3192,6 +3360,12 @@
                           'requestId': { 'type': 'string', 'format': 'uuid' },
                         },
                     },
+                  'fieldErrors':
+                    {
+                      'type': 'object',
+                      'additionalProperties':
+                        { 'type': 'array', 'items': { 'type': 'string' } },
+                    },
                 },
             },
           'LeadDetail':
@@ -3215,6 +3389,7 @@
                   'updatedAt',
                   'version',
                   'originalMessage',
+                  'duplicateCount',
                 ],
               'properties':
                 {
@@ -3226,7 +3401,7 @@
                       'type': ['string', 'null'],
                       'minLength': 3,
                       'maxLength': 40,
-                      'pattern': "^[+\\d ()-]*\\d[+\\d ()-]*$",
+                      'pattern': '^[+\d ()-]*\d[+\d ()-]*$',
                       'description': 'Canonical phone: ASCII spaces only, trimmed, 3-40 characters and at least one digit. Repeated internal spaces are preserved.',
                     },
                   'email':
@@ -3283,6 +3458,7 @@
                   'updatedAt': { 'type': 'string', 'format': 'date-time' },
                   'version': { 'type': 'integer', 'minimum': 1 },
                   'originalMessage': { 'type': ['string', 'null'] },
+                  'duplicateCount': { 'type': 'integer', 'minimum': 0 },
                 },
             },
           'LeadActivity':
@@ -3513,6 +3689,192 @@
                 {
                   'note': { '$ref': '#/components/schemas/LeadActivity' },
                   'leadVersion': { 'type': 'integer', 'minimum': 1 },
+                },
+            },
+          'DuplicateAcknowledgement':
+            {
+              'type': 'object',
+              'additionalProperties': false,
+              'required': ['reviewToken'],
+              'properties':
+                {
+                  'reviewToken':
+                    { 'type': 'string', 'pattern': '^[a-f0-9]{64}$' },
+                },
+            },
+          'DuplicateLeadSummary':
+            {
+              'type': 'object',
+              'additionalProperties': false,
+              'required': ['id', 'name', 'phone', 'stage', 'assignedAgent'],
+              'properties':
+                {
+                  'id': { 'type': 'string', 'format': 'uuid' },
+                  'name': { 'type': 'string' },
+                  'phone': { 'type': 'string' },
+                  'stage':
+                    {
+                      'type': 'string',
+                      'enum':
+                        [
+                          'new',
+                          'contacted',
+                          'viewing_scheduled',
+                          'offer',
+                          'won',
+                          'lost',
+                        ],
+                    },
+                  'assignedAgent':
+                    {
+                      'anyOf':
+                        [
+                          { '$ref': '#/components/schemas/LeadStaffSummary' },
+                          { 'type': 'null' },
+                        ],
+                    },
+                },
+            },
+          'DuplicateReview':
+            {
+              'type': 'object',
+              'additionalProperties': false,
+              'required':
+                [
+                  'canonicalPhone',
+                  'totalMatches',
+                  'matches',
+                  'truncated',
+                  'reviewToken',
+                ],
+              'properties':
+                {
+                  'canonicalPhone': { 'type': 'string' },
+                  'totalMatches': { 'type': 'integer', 'minimum': 0 },
+                  'matches':
+                    {
+                      'type': 'array',
+                      'maxItems': 20,
+                      'items':
+                        { '$ref': '#/components/schemas/DuplicateLeadSummary' },
+                    },
+                  'truncated': { 'type': 'boolean' },
+                  'reviewToken':
+                    { 'type': 'string', 'pattern': '^[a-f0-9]{64}$' },
+                },
+            },
+          'ImportDuplicateWarning':
+            {
+              'type': 'object',
+              'additionalProperties': false,
+              'required':
+                [
+                  'rowNumber',
+                  'canonicalPhone',
+                  'existingMatchCount',
+                  'matches',
+                  'sameFileRowNumbers',
+                  'sameFileRowCount',
+                ],
+              'properties':
+                {
+                  'rowNumber': { 'type': 'integer', 'minimum': 2 },
+                  'canonicalPhone': { 'type': 'string' },
+                  'existingMatchCount': { 'type': 'integer', 'minimum': 0 },
+                  'matches':
+                    {
+                      'type': 'array',
+                      'maxItems': 5,
+                      'items':
+                        { '$ref': '#/components/schemas/DuplicateLeadSummary' },
+                    },
+                  'sameFileRowNumbers':
+                    {
+                      'type': 'array',
+                      'maxItems': 20,
+                      'items': { 'type': 'integer', 'minimum': 2 },
+                    },
+                  'sameFileRowCount': { 'type': 'integer', 'minimum': 0 },
+                },
+            },
+          'ImportDuplicateReview':
+            {
+              'type': 'object',
+              'additionalProperties': false,
+              'required':
+                [
+                  'affectedRows',
+                  'existingMatchRows',
+                  'withinFileRows',
+                  'warningCount',
+                  'warnings',
+                  'truncated',
+                  'reviewToken',
+                ],
+              'properties':
+                {
+                  'affectedRows': { 'type': 'integer', 'minimum': 0 },
+                  'existingMatchRows': { 'type': 'integer', 'minimum': 0 },
+                  'withinFileRows': { 'type': 'integer', 'minimum': 0 },
+                  'warningCount': { 'type': 'integer', 'minimum': 0 },
+                  'warnings':
+                    {
+                      'type': 'array',
+                      'maxItems': 100,
+                      'items':
+                        {
+                          '$ref': '#/components/schemas/ImportDuplicateWarning',
+                        },
+                    },
+                  'truncated': { 'type': 'boolean' },
+                  'reviewToken':
+                    { 'type': 'string', 'pattern': '^[a-f0-9]{64}$' },
+                },
+            },
+          'LeadDuplicateError':
+            {
+              'type': 'object',
+              'additionalProperties': false,
+              'required': ['error', 'duplicateReview'],
+              'properties':
+                {
+                  'error':
+                    {
+                      'type': 'object',
+                      'additionalProperties': false,
+                      'required': ['code', 'message', 'requestId'],
+                      'properties':
+                        {
+                          'code': { 'type': 'string' },
+                          'message': { 'type': 'string' },
+                          'requestId': { 'type': 'string', 'format': 'uuid' },
+                        },
+                    },
+                  'duplicateReview':
+                    { '$ref': '#/components/schemas/DuplicateReview' },
+                },
+            },
+          'ImportDuplicateError':
+            {
+              'type': 'object',
+              'additionalProperties': false,
+              'required': ['error', 'duplicateReview'],
+              'properties':
+                {
+                  'error':
+                    {
+                      'type': 'object',
+                      'additionalProperties': false,
+                      'required': ['code', 'message', 'requestId'],
+                      'properties':
+                        {
+                          'code': { 'type': 'string' },
+                          'message': { 'type': 'string' },
+                          'requestId': { 'type': 'string', 'format': 'uuid' },
+                        },
+                    },
+                  'duplicateReview':
+                    { '$ref': '#/components/schemas/ImportDuplicateReview' },
                 },
             },
         },

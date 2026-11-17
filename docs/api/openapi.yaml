@@ -6,6 +6,8 @@ info:
 servers:
   - url: http://localhost:4311
 paths:
+  /api/v1/staff/leads/duplicate-check:
+    $ref: './leads.openapi.yaml#/paths/~1api~1v1~1staff~1leads~1duplicate-check'
   /api/v1/staff/leads/imports/template:
     $ref: './leads.openapi.yaml#/paths/~1api~1v1~1staff~1leads~1imports~1template'
   /api/v1/staff/leads/imports/preview:
@@ -4209,88 +4211,7 @@ components:
           },
       }
     LeadSummary:
-      {
-        'type': 'object',
-        'additionalProperties': false,
-        'required':
-          [
-            'id',
-            'name',
-            'phone',
-            'email',
-            'purpose',
-            'budgetFils',
-            'source',
-            'stage',
-            'assignedAgent',
-            'previousAgentName',
-            'property',
-            'createdAt',
-            'updatedAt',
-            'version',
-          ],
-        'properties':
-          {
-            'id': { 'type': 'string', 'format': 'uuid' },
-            'name': { 'type': 'string', 'minLength': 1, 'maxLength': 120 },
-            'phone':
-              {
-                'type': ['string', 'null'],
-                'minLength': 3,
-                'maxLength': 40,
-                'pattern': "^[+\\d ()-]*\\d[+\\d ()-]*$",
-                'description': 'Canonical phone: ASCII spaces only, trimmed, 3-40 characters and at least one digit. Repeated internal spaces are preserved.',
-              },
-            'email':
-              {
-                'type': ['string', 'null'],
-                'format': 'email',
-                'maxLength': 254,
-              },
-            'purpose': { 'type': 'string', 'enum': ['sale', 'rent'] },
-            'budgetFils':
-              {
-                'type': ['integer', 'null'],
-                'minimum': 1,
-                'maximum': 1000000000000,
-              },
-            'source':
-              { 'type': 'string', 'enum': ['website', 'call', 'walk_in'] },
-            'stage':
-              {
-                'type': 'string',
-                'enum':
-                  [
-                    'new',
-                    'contacted',
-                    'viewing_scheduled',
-                    'offer',
-                    'won',
-                    'lost',
-                  ],
-              },
-            'assignedAgent':
-              {
-                'anyOf':
-                  [
-                    { '$ref': '#/components/schemas/LeadStaffSummary' },
-                    { 'type': 'null' },
-                  ],
-              },
-            'previousAgentName': { 'type': ['string', 'null'] },
-            'property':
-              {
-                'anyOf':
-                  [
-                    { '$ref': '#/components/schemas/LeadPropertyContext' },
-                    { 'type': 'null' },
-                  ],
-              },
-            'createdAt': { 'type': 'string', 'format': 'date-time' },
-            'updatedAt': { 'type': 'string', 'format': 'date-time' },
-            'version': { 'type': 'integer', 'minimum': 1 },
-          },
-      }
+      $ref: './leads.openapi.yaml#/components/schemas/LeadSummary'
     LeadActor:
       {
         'type': 'object',
@@ -4329,80 +4250,9 @@ components:
           },
       }
     LeadCreateInput:
-      {
-        'type': 'object',
-        'additionalProperties': false,
-        'required': ['submissionId', 'name', 'purpose', 'source'],
-        'properties':
-          {
-            'submissionId': { 'type': 'string', 'format': 'uuid' },
-            'name': { 'type': 'string', 'minLength': 1, 'maxLength': 120 },
-            'phone':
-              {
-                'type': ['string', 'null'],
-                'minLength': 3,
-                'pattern': "^[+\\d\\s()-]*\\d[+\\d\\s()-]*$",
-                'description': 'Every JavaScript whitespace character is replaced with ASCII space, then trimmed before validation. The canonical phone must be 3-40 characters, contain a digit, and use only plus, digits, ASCII spaces, parentheses or hyphens. Repeated internal spaces are preserved. At least one phone or email is required.',
-              },
-            'email':
-              {
-                'type': ['string', 'null'],
-                'format': 'email',
-                'maxLength': 254,
-              },
-            'purpose': { 'type': 'string', 'enum': ['sale', 'rent'] },
-            'budgetFils':
-              {
-                'type': ['integer', 'null'],
-                'minimum': 1,
-                'maximum': 1000000000000,
-              },
-            'propertyId':
-              {
-                'anyOf':
-                  [{ 'type': 'string', 'format': 'uuid' }, { 'type': 'null' }],
-              },
-            'source': { 'type': 'string', 'enum': ['call', 'walk_in'] },
-            'assignedAgentId': { 'type': ['string', 'null'] },
-          },
-      }
+      $ref: './leads.openapi.yaml#/components/schemas/LeadCreateInput'
     LeadPatchInput:
-      {
-        'type': 'object',
-        'additionalProperties': false,
-        'required': ['expectedVersion'],
-        'properties':
-          {
-            'name': { 'type': 'string', 'minLength': 1, 'maxLength': 120 },
-            'phone':
-              {
-                'type': ['string', 'null'],
-                'minLength': 3,
-                'pattern': "^[+\\d\\s()-]*\\d[+\\d\\s()-]*$",
-                'description': 'Every JavaScript whitespace character is replaced with ASCII space, then trimmed before validation. The canonical phone must be 3-40 characters, contain a digit, and use only plus, digits, ASCII spaces, parentheses or hyphens. Repeated internal spaces are preserved. At least one phone or email is required.',
-              },
-            'email':
-              {
-                'type': ['string', 'null'],
-                'format': 'email',
-                'maxLength': 254,
-              },
-            'purpose': { 'type': 'string', 'enum': ['sale', 'rent'] },
-            'budgetFils':
-              {
-                'type': ['integer', 'null'],
-                'minimum': 1,
-                'maximum': 1000000000000,
-              },
-            'propertyId':
-              {
-                'anyOf':
-                  [{ 'type': 'string', 'format': 'uuid' }, { 'type': 'null' }],
-              },
-            'expectedVersion': { 'type': 'integer', 'minimum': 1 },
-          },
-        'minProperties': 2,
-      }
+      $ref: './leads.openapi.yaml#/components/schemas/LeadPatchInput'
     LeadAssignmentInput:
       {
         'type': 'object',
@@ -4458,111 +4308,9 @@ components:
         'properties': { 'received': { 'const': true, 'type': 'boolean' } },
       }
     LeadApiError:
-      {
-        'type': 'object',
-        'additionalProperties': false,
-        'required': ['error'],
-        'properties':
-          {
-            'error':
-              {
-                'type': 'object',
-                'additionalProperties': false,
-                'required': ['code', 'message', 'requestId'],
-                'properties':
-                  {
-                    'code': { 'type': 'string' },
-                    'message': { 'type': 'string' },
-                    'requestId': { 'type': 'string', 'format': 'uuid' },
-                  },
-              },
-          },
-      }
+      $ref: './leads.openapi.yaml#/components/schemas/LeadApiError'
     LeadDetail:
-      {
-        'type': 'object',
-        'additionalProperties': false,
-        'required':
-          [
-            'id',
-            'name',
-            'phone',
-            'email',
-            'purpose',
-            'budgetFils',
-            'source',
-            'stage',
-            'assignedAgent',
-            'previousAgentName',
-            'property',
-            'createdAt',
-            'updatedAt',
-            'version',
-            'originalMessage',
-          ],
-        'properties':
-          {
-            'id': { 'type': 'string', 'format': 'uuid' },
-            'name': { 'type': 'string', 'minLength': 1, 'maxLength': 120 },
-            'phone':
-              {
-                'type': ['string', 'null'],
-                'minLength': 3,
-                'maxLength': 40,
-                'pattern': "^[+\\d ()-]*\\d[+\\d ()-]*$",
-                'description': 'Canonical phone: ASCII spaces only, trimmed, 3-40 characters and at least one digit. Repeated internal spaces are preserved.',
-              },
-            'email':
-              {
-                'type': ['string', 'null'],
-                'format': 'email',
-                'maxLength': 254,
-              },
-            'purpose': { 'type': 'string', 'enum': ['sale', 'rent'] },
-            'budgetFils':
-              {
-                'type': ['integer', 'null'],
-                'minimum': 1,
-                'maximum': 1000000000000,
-              },
-            'source':
-              { 'type': 'string', 'enum': ['website', 'call', 'walk_in'] },
-            'stage':
-              {
-                'type': 'string',
-                'enum':
-                  [
-                    'new',
-                    'contacted',
-                    'viewing_scheduled',
-                    'offer',
-                    'won',
-                    'lost',
-                  ],
-              },
-            'assignedAgent':
-              {
-                'anyOf':
-                  [
-                    { '$ref': '#/components/schemas/LeadStaffSummary' },
-                    { 'type': 'null' },
-                  ],
-              },
-            'previousAgentName': { 'type': ['string', 'null'] },
-            'property':
-              {
-                'anyOf':
-                  [
-                    { '$ref': '#/components/schemas/LeadPropertyContext' },
-                    { 'type': 'null' },
-                  ],
-              },
-            'createdAt': { 'type': 'string', 'format': 'date-time' },
-            'updatedAt': { 'type': 'string', 'format': 'date-time' },
-            'version': { 'type': 'integer', 'minimum': 1 },
-            'originalMessage': { 'type': ['string', 'null'] },
-          },
-      }
+      $ref: './leads.openapi.yaml#/components/schemas/LeadDetail'
     LeadActivity:
       {
         'type': 'object',

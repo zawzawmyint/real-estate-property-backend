@@ -1,3 +1,8 @@
+import {
+  importDuplicateReview,
+  DuplicateReviewRequired,
+} from './lead-duplicates.service.js';
+import { parseImport } from '../../shared/csv/parse-import.js';
 import { serializeExport } from '../../shared/csv/export.js';
 import { AppError } from '../../shared/errors/app-error.js';
 import {
@@ -39,11 +44,22 @@ export function createLeadImportService(database: Database) {
       return serializeExport(importColumns, []);
     },
     async preview(csv: string, identity: Actor) {
-      await serializedTransaction(database, (tx) => authorize(identity, tx));
-      return validateImport(csv).preview;
+      return serializedTransaction(database, async (tx) => {
+        const actor = await authorize(identity, tx),
+          result = validateImport(csv);
+        return {
+          ...result.preview,
+          duplicateReview: await importDuplicateReview(
+            result.duplicateRows,
+            result.preview.digest,
+            actor,
+            tx,
+          ),
+        };
+      });
     },
     async commit(input: ImportCommit, identity: Actor) {
-      const digest = importDigest(input.csv);
+      const digest = importDigest(input.csv, input.schemaVersion);
       return serializedTransaction(database, async (tx) => {
         await repository.lock(input.submissionId, tx);
         const actor = await authorize(identity, tx);
@@ -52,6 +68,7 @@ export function createLeadImportService(database: Database) {
           receipt &&
           (receipt.actorId !== actor.id ||
             receipt.contentDigest !== digest ||
+            input.digest !== digest ||
             receipt.schemaVersion !== input.schemaVersion)
         )
           throw new AppError(
@@ -59,7 +76,23 @@ export function createLeadImportService(database: Database) {
             'IMPORT_CONFLICT',
             'This submission cannot be reused.',
           );
-        if (input.schemaVersion !== 1 || input.digest !== digest)
+        // Preserve UTF-8/CSV transport validation before replay without applying new domain rules.
+        if (receipt) {
+          parseImport(input.csv, {
+            allowedHeaders: importColumns,
+            requiredHeaders: ['name', 'purpose', 'source'],
+            maxBytes: 1048576,
+            maxRows: 500,
+            maxRecordBytes: 65536,
+          });
+          return {
+            submissionId: receipt.id,
+            createdCount: receipt.createdCount,
+            leadIds: JSON.parse(receipt.leadIdsJson) as string[],
+            replayed: true,
+          };
+        }
+        if (input.schemaVersion !== 2 || input.digest !== digest)
           throw new AppError(
             409,
             'IMPORT_PREVIEW_STALE',
@@ -71,14 +104,18 @@ export function createLeadImportService(database: Database) {
             result.preview.issues,
             result.preview.issueCount,
           );
-        if (receipt)
-          return {
-            submissionId: receipt.id,
-            createdCount: receipt.createdCount,
-            leadIds: JSON.parse(receipt.leadIdsJson) as string[],
-            replayed: true,
-          };
 
+        const review = await importDuplicateReview(
+          result.duplicateRows,
+          digest,
+          actor,
+          tx,
+        );
+        if (
+          review.affectedRows &&
+          input.duplicateAcknowledgement?.reviewToken !== review.reviewToken
+        )
+          throw new DuplicateReviewRequired(review, true);
         const leadIds: string[] = [];
         for (const row of result.inputs) {
           const lead = await repository.create(row, actor, tx);

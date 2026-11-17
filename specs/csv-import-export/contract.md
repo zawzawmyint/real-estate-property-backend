@@ -4,7 +4,7 @@ Status: Implemented on 2026-11-11 — backend-owned contract for the delivered e
 
 ## Endpoints and inputs
 
-- `GET /api/v1/staff/leads/export`: accepts `view`, `q`, `stage`, `source`, `agentId`, `sort`, with the exact values, length limits, defaults and access rules of the current lead list, excluding `page`.
+- `GET /api/v1/staff/leads/export`: accepts `view`, `q`, `stage`, `source`, `agentId`, `sort` and optional `duplicates=only`, with the exact values, length limits, defaults and access rules of the current lead list, excluding `page`. `duplicates=only` selects rows with other currently accessible canonical-phone matches before export; it does not add duplicate columns.
 - `GET /api/v1/staff/properties/export`: accepts `purpose`, `type`, `location`, `minPriceFils`, `maxPriceFils`, `minBedrooms`, `featured`, `q`, `publishingState`, `availability`, `sort`, matching current staff property list validation/defaults, excluding `page` and `pageSize`.
 - Parameters are optional; existing role-dependent defaults apply. Empty/invalid values follow current list validation. Unknown or repeated keys, including pagination keys, return 400. Query values never choose an export role or columns.
 - Authentication uses the existing staff session cookie. Agent lead requests for disallowed views/other agents return 403. Admin/Manager `agentId` without `view=all` returns 400. Missing/invalid live sessions return 401.

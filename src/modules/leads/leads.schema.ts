@@ -1,3 +1,4 @@
+import { LeadPhoneValidationError } from './lead-phone.js';
 import { z } from 'zod';
 import { phoneSchema } from '../../shared/validation/phone.js';
 import { AppError } from '../../shared/errors/app-error.js';
@@ -56,10 +57,19 @@ export const agencyInquirySchema = z
   })
   .refine(hasContact);
 
+export const duplicateAcknowledgementSchema = z.strictObject({
+  reviewToken: z.string().regex(/^[a-f0-9]{64}$/),
+});
+export const duplicateCheckSchema = z.strictObject({
+  phone: phoneSchema,
+  excludeLeadId: z.uuid().optional(),
+});
+
 export const createSchema = z
   .strictObject({
     ...details,
     submissionId: z.uuid(),
+    duplicateAcknowledgement: duplicateAcknowledgementSchema.optional(),
     source: z.enum(['call', 'walk_in']),
     assignedAgentId: text(200).nullable().optional(),
   })
@@ -68,8 +78,15 @@ export const createSchema = z
 export const patchSchema = z
   .strictObject({ ...details })
   .partial()
-  .extend({ expectedVersion: z.number().int().positive() })
-  .refine((value) => Object.keys(value).length > 1);
+  .extend({
+    expectedVersion: z.number().int().positive(),
+    duplicateAcknowledgement: duplicateAcknowledgementSchema.optional(),
+  })
+  .refine((value) =>
+    Object.keys(value).some(
+      (key) => !['expectedVersion', 'duplicateAcknowledgement'].includes(key),
+    ),
+  );
 
 export const assignmentSchema = z.strictObject({
   expectedVersion: z.number().int().positive(),
@@ -95,6 +112,7 @@ const page = z
   .default(1);
 
 export const listSchema = z.strictObject({
+  duplicates: z.literal('only').optional(),
   view: z.enum(['unassigned', 'all', 'mine']).optional(),
   q: z.string().trim().max(120).optional(),
   stage: z.enum(stages).optional(),
@@ -113,8 +131,11 @@ export const candidatesSchema = z.strictObject({
 
 export function parse<T>(schema: z.ZodType<T>, input: unknown): T {
   const result = schema.safeParse(input);
-  if (!result.success)
+  if (!result.success) {
+    if (result.error.issues.some((issue) => issue.path[0] === 'phone'))
+      throw new LeadPhoneValidationError();
     throw new AppError(400, 'VALIDATION_ERROR', 'Invalid lead input');
+  }
   return result.data;
 }
 export const parseId = (id: unknown) => parse(z.uuid(), id);

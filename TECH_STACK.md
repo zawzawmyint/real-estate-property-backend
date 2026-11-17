@@ -26,7 +26,7 @@ The following lists every direct frontend package declared in [package.json](pac
 
 | Package                    | Pinned version | Purpose and current use                                                                                 |
 | -------------------------- | -------------- | ------------------------------------------------------------------------------------------------------- |
-| `next`                     | 16.4.2         | App Router, server rendering, route layouts, loading/error states and API proxy                         |
+| `next`                     | 16.4.6         | App Router, server rendering, route layouts, loading/error states and API proxy                         |
 | `react`                    | 19.3.1         | Component rendering and React Server Components                                                         |
 | `react-dom`                | 19.3.1         | React DOM rendering                                                                                     |
 | `recharts`                 | 3.8.0          | Dashboard source/stage bar charts through the locally owned Base Nova Chart primitive                   |
@@ -54,12 +54,14 @@ The following lists every direct frontend package declared in [package.json](pac
 | `@playwright/test`     | 1.64.1         | Desktop/mobile browser integration tests; Chromium installed for verification |
 | `vitest`               | 5.0.5          | API transport and configuration tests                                         |
 | `eslint`               | 9.39.5         | Linting                                                                       |
-| `eslint-config-next`   | 16.4.2         | Next.js lint rules                                                            |
+| `eslint-config-next`   | 16.4.6         | Next.js lint rules                                                            |
 | `prettier`             | 3.9.10         | Source and documentation formatting                                           |
 | `@types/node`          | 24.19.2        | Node.js TypeScript definitions                                                |
 | `@types/react`         | 19.3.0         | React TypeScript definitions                                                  |
 | `@types/react-dom`     | 19.3.0         | React DOM TypeScript definitions                                              |
 | `openapi-typescript`   | 7.13.0         | Generates checked property API declarations from the OpenAPI snapshot         |
+
+**Security remediation (2026-11-17):** A root engineering remediation updated frontend `next` and `eslint-config-next` from affected 16.4.2 to exact 16.4.6; React remains 19.3.1. The official post-upgrade assessment reports `affected: false` and `upgrade.status: unaffected`; see the workspace delivery evidence. Final frontend `bun run check` passed API drift, lint, formatting, typecheck, 414 tests across 60 files and a production Webpack build with 20 static pages; final browser acceptance passed.
 
 ### Frontend patterns discussed
 
@@ -88,6 +90,7 @@ The following lists every direct backend package declared in package.json (compa
 | `sharp`                          | 0.35.5         | Decode, validate and normalise public property-photo uploads to WebP             |
 | `csv-stringify`                  | 6.9.0          | Bounded CRM lead/property CSV serialization; backend-only export dependency      |
 | `csv-parse`                      | 7.0.3          | Bounded property/lead-import CSV syntax/header parsing; backend-only dependency  |
+| `libphonenumber-js`              | 1.13.16        | Full-metadata backend-only UAE/international canonical phone matching for P2-05  |
 
 ### Backend development dependencies
 

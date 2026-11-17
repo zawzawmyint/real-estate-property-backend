@@ -9,7 +9,7 @@ Let all staff download leads and properties within their existing access for spr
 ## Scope and exclusions
 
 - In scope: authenticated filtered lead/property CSV downloads, stable columns, role-aware field selection, bounded database reads and file size, safe serialization, and browser download integration.
-- Out of scope: import, updates through spreadsheets, duplicate detection, XLSX/PDF, column selection, selected-row export, photo files/URLs, property descriptions, inquiry messages, notes/activity, background jobs, saved export files, notifications and deployment.
+- Out of scope: import, updates through spreadsheets, XLSX/PDF, column selection, selected-row export, photo files/URLs, property descriptions, inquiry messages, notes/activity, background jobs, saved export files, notifications and deployment. Duplicate review is implemented separately in [lead duplicate detection](../lead-duplicate-detection/spec.md); this historical export slice only forwards the `duplicates=only` lead filter and does not add duplicate columns.
 - Dependency: backend-only `csv-stringify` 6.9.0. No persistence migration or new environment variable was added.
 
 ## Behavior and contracts

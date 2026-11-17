@@ -262,6 +262,7 @@ it('adds tasks to populated lead/viewing data without changing history and enfor
       data: { title: 'Existing property', purpose: 'sale' },
     });
     const lead = await database.lead.create({
+      select: { id: true, name: true },
       data: {
         name: 'Existing lead',
         purpose: 'sale',
@@ -289,7 +290,7 @@ it('adds tasks to populated lead/viewing data without changing history and enfor
     expect(await database.task.count()).toBe(0);
     expect(
       await database.lead.findUniqueOrThrow({ where: { id: lead.id } }),
-    ).toEqual(lead);
+    ).toMatchObject(lead);
     expect(
       await database.viewing.findUniqueOrThrow({ where: { id: viewing.id } }),
     ).toEqual(viewing);

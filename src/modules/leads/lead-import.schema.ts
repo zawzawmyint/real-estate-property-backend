@@ -1,3 +1,5 @@
+import { normalizeLeadPhone } from './lead-phone.js';
+import { duplicateAcknowledgementSchema } from './leads.schema.js';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import { parseImport } from '../../shared/csv/parse-import.js';
@@ -23,7 +25,15 @@ const fields = [
 const rowSchema = z
   .strictObject({
     name: createSchema.shape.name,
-    phone: createSchema.shape.phone,
+    phone: createSchema.shape.phone.pipe(
+      createSchema.shape.phone.refine(
+        (value) => !value || normalizeLeadPhone(value) !== null,
+        {
+          message:
+            'Enter a valid UAE number starting with 0, or an international number starting with + or 00.',
+        },
+      ),
+    ),
     email: createSchema.shape.email,
     purpose: createSchema.shape.purpose,
     budgetFils: createSchema.shape.budgetFils,
@@ -42,14 +52,15 @@ export interface ImportIssue {
 export type ImportLead = z.infer<typeof rowSchema>;
 export const previewSchema = z.strictObject({ csv: z.string() });
 export const commitSchema = previewSchema.extend({
+  duplicateAcknowledgement: duplicateAcknowledgementSchema.optional(),
   submissionId: z.uuid(),
   schemaVersion: z.number().int().positive(),
   digest: z.string().regex(/^[a-f0-9]{64}$/),
 });
 export type ImportCommit = z.infer<typeof commitSchema>;
-export const importDigest = (csv: string) =>
+export const importDigest = (csv: string, version = 2) =>
   createHash('sha256')
-    .update('lead-import:v1\0')
+    .update(`lead-import:v${version}\0`)
     .update(csv, 'utf8')
     .digest('hex');
 
@@ -70,6 +81,8 @@ export function validateImport(csv: string) {
 
   const issues: ImportIssue[] = [];
   const inputs: ImportLead[] = [];
+  const duplicateRows: { rowNumber: number; phoneCanonical: string | null }[] =
+    [];
   const previewRows: { rowNumber: number; values: string[] }[] = [];
   let issueCount = 0;
   for (const row of parsed.rows) {
@@ -99,6 +112,12 @@ export function validateImport(csv: string) {
     });
     if (result.success) {
       inputs.push(result.data);
+      duplicateRows.push({
+        rowNumber: row.rowNumber,
+        phoneCanonical: result.data.phone
+          ? normalizeLeadPhone(result.data.phone)
+          : null,
+      });
       values[1] = result.data.phone ?? '';
       values[2] = result.data.email ?? '';
       if (result.data.budgetFils != null)
@@ -123,8 +142,9 @@ export function validateImport(csv: string) {
   }
   return {
     inputs,
+    duplicateRows,
     preview: {
-      schemaVersion: 1 as const,
+      schemaVersion: 2 as const,
       digest: importDigest(csv),
       valid: issueCount === 0,
       totalRows: parsed.rows.length,

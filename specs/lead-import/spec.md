@@ -11,7 +11,7 @@ Create new leads from reviewed CSV batches, rejecting the whole batch if any row
 - Included: Admin/Manager template/preview/commit; strict bounded CSV parsing; lead contact/budget validation; atomic lead/activity/receipt creation; durable actor/content-bound replay.
 - Columns: `name,phone,email,purpose,budget_aed,source`. Required name/purpose/source; at least one contact. Existing manual sources `call`/`walk_in`; no inferred source or new source value.
 - Forced defaults: stage `new`, version 1, no assignee/property/snapshots/original message; `createdById` is the live importing actor. Each row gets an existing `created` activity with current actor ID/name, without an assignment transition.
-- Excluded: Agent bulk import, updates, duplicate detection, assignment/property/history columns, website-source backfills, notes, notifications/auto-replies, new infrastructure or dependencies. Existing manual lead, public inquiry, assignment, notification and property-import contracts remain compatible.
+- Excluded: Agent bulk import, updates, assignment/property/history columns, website-source backfills, notes, notifications/auto-replies and new infrastructure. Duplicate review is governed by the implemented [duplicate-detection specification](../lead-duplicate-detection/spec.md); existing manual lead, public inquiry, assignment, notification and property-import contracts remain compatible.
 
 ## Behavior and contracts
 
@@ -45,7 +45,13 @@ Tests first: parser/header/lead mapping and contacts, exact money/BigInt/search 
 
 ## Risks and rollout
 
-Migration precedes use or deployment; no configuration/package changes are expected. Reusing syntax/UI does not make property draft rules apply to leads. Duplicate matching stays P2-05; fresh IDs and identical rows create new leads. The 500-row measurement completed in 294 ms within the existing 15-second budget. Rollback disables import routes/UI and retains receipts/business records. P2-04 is verified across both entities' complete import/export acceptance.
+Migration precedes use or deployment. Reusing syntax/UI does not make property draft rules apply to leads. Duplicate matching is now implemented by P2-05: fresh IDs and identical rows still create separate leads after explicit acknowledgement where warnings apply. The 500-row measurement completed in 294 ms within the existing 15-second budget. Rollback disables import routes/UI and retains receipts/business records. P2-04 is verified across both entities' complete import/export acceptance.
+
+## Duplicate-detection addendum — implemented, final P2-05 acceptance pending
+
+New previews use schema version 2 and the `lead-import:v2` digest namespace. They add bounded, permission-scoped existing-phone and within-file warning data without changing template columns, validation-error semantics, batch bounds or all-or-nothing creation. A batch with warnings requires a current explicit acknowledgement; stale/missing acknowledgement returns a definite zero-write duplicate-review conflict. Acknowledged rows are all created separately: there is no merge, update, unique constraint or silent skip.
+
+Committed v1 receipts remain replayable using the original v1 digest/content/actor/submission identity before new semantic phone validation. Fresh v1 batches are stale and must use v2; a pending v1 reload first retries the stored v1 identity after the operator reselects the exact file. The complete behavior and error/recovery contract is in the [duplicate-detection contract](../lead-duplicate-detection/contract.md). Final browser/runtime evidence for P2-05 remains pending.
 
 ## Implementation evidence
 

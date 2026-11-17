@@ -2,6 +2,10 @@
 
 Status: Project overview. Foundation, staff authentication/roles, property management, public discovery APIs and demo data are verified.
 
+## Verified P2-05
+
+The [lead duplicate detection specification](specs/lead-duplicate-detection/spec.md), [backend-owned contract](specs/lead-duplicate-detection/contract.md) and [implementation plan](docs/superpowers/plans/2026-11-16-lead-duplicate-detection.md) verify permission-scoped phone matching, explicit acknowledgement, historical backfill and CSV v2 compatibility. Patched frontend/backend checks, disposable migration verification, runtime inspection, responsive/native-zoom review and the final clean serial browser run passed. No deployment or normal-database migration is claimed.
+
 ## Purpose and scope
 
 Provide the agency's independently versioned Express API, owning business rules, authorization, persistence and file storage for the public website and internal CRM. Deliver one verified feature slice at a time. Client portal and private-document capabilities remain later, optional work.

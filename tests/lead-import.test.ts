@@ -20,7 +20,7 @@ it('revalidates malformed Unicode on replay even when UTF-8 replacement bytes sh
   const payload = {
     csv,
     submissionId: randomUUID(),
-    schemaVersion: 1,
+    schemaVersion: 2,
     digest: preview.body.digest,
   };
   expect((await post('commit', payload)).status).toBe(201);
@@ -34,7 +34,7 @@ it('revalidates malformed Unicode on replay even when UTF-8 replacement bytes sh
 
 it('previews without writes and atomically commits/replays unassigned leads with creation history', async () => {
   const csv =
-    '\ufeffname,phone,email,purpose,budget_aed,source\r\nÁgent,0012345,A@EXAMPLE.TEST,SALE,1.01,CALL\r\nOther,,other@example.test,rent,,walk_in\r\n';
+    '\ufeffname,phone,email,purpose,budget_aed,source\r\nÁgent,00971501238888,A@EXAMPLE.TEST,SALE,1.01,CALL\r\nOther,,other@example.test,rent,,walk_in\r\n';
   const before = await fixture.database.lead.count();
   const activities = await fixture.database.leadActivity.count();
   const receipts = await fixture.database.leadSubmissionReceipt.count();
@@ -51,7 +51,7 @@ it('previews without writes and atomically commits/replays unassigned leads with
   const payload = {
     csv,
     submissionId: randomUUID(),
-    schemaVersion: 1,
+    schemaVersion: 2,
     digest: preview.body.digest,
   };
   const [first, second] = await Promise.all([
@@ -67,11 +67,11 @@ it('previews without writes and atomically commits/replays unassigned leads with
   });
   expect(leads[0]).toMatchObject({
     name: 'Ágent',
-    phone: '0012345',
+    phone: '00971501238888',
     email: 'a@example.test',
     budgetFils: 101n,
     searchName: 'ágent',
-    searchPhone: '0012345',
+    searchPhone: '00971501238888',
     searchEmail: 'a@example.test',
   });
   for (const lead of leads)
@@ -155,7 +155,7 @@ it('rejects invalid final rows atomically and requires fresh previews and strict
   const payload = {
     csv,
     submissionId: randomUUID(),
-    schemaVersion: 1,
+    schemaVersion: 2,
     digest: preview.body.digest,
   };
   const response = await post('commit', payload);
@@ -173,7 +173,7 @@ it('rejects invalid final rows atomically and requires fresh previews and strict
   });
   expect(await fixture.database.lead.count()).toBe(before);
   expect(
-    (await post('commit', { ...payload, schemaVersion: 2 })).body.error.code,
+    (await post('commit', { ...payload, schemaVersion: 1 })).body.error.code,
   ).toBe('IMPORT_PREVIEW_STALE');
   expect(
     (await post('commit', { ...payload, digest: '0'.repeat(64) })).body.error
@@ -202,7 +202,7 @@ it('commits 500 leads plus creation history within the existing 15-second budget
   const response = await post('commit', {
     csv,
     submissionId: randomUUID(),
-    schemaVersion: 1,
+    schemaVersion: 2,
     digest: preview.body.digest,
   });
   const elapsed = performance.now() - started;
@@ -257,7 +257,7 @@ it.each(['lead', 'activity', 'receipt'] as const)(
       const payload = {
         csv,
         submissionId: randomUUID(),
-        schemaVersion: 1,
+        schemaVersion: 2,
         digest: preview.body.digest,
       };
       const response = await post('commit', payload);

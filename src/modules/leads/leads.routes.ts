@@ -60,6 +60,7 @@ export function mountLeads(
   staff.get('/imports/template', managers, imports.template);
   staff.post('/imports/preview', ...importWrite, imports.preview);
   staff.post('/imports/commit', ...importWrite, imports.commit);
+  staff.post('/duplicate-check', ...write, controller.duplicateCheck);
   staff.get('/:id', live, controller.detail);
   staff.get('/:id/activity', live, controller.activity);
   staff.get('/:id/property-matches', live, controller.propertyMatches);
