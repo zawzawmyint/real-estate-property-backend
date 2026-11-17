@@ -31,11 +31,13 @@ flowchart TD
 
 - In scope: website inquiries, manual creation, scoped list/detail/edit, active-agent assignment, stage changes, append-only notes/call logs, paginated activity, concurrency/idempotency and safe account/property lifecycle behavior.
 - Roadmap coverage: P1-03–P1-09, P1-20–P1-22 and P1-16 are verified by this document.
-- Out of scope: Kanban, automated routing/notifications, duplicate-person matching, lead merge/delete, calendar/viewings, tasks, analytics, imports/exports, private documents and general audit-log infrastructure.
+- Out of scope: Kanban, automated routing/notifications, duplicate-person merging, lead merge/delete, calendar/viewings, tasks, analytics, imports/exports, private documents and general audit-log infrastructure. Phone duplicate review is implemented separately in [lead duplicate detection](../lead-duplicate-detection/spec.md); it does not merge people.
 
 ## Behavior and contracts
 
 The [backend-owned contract](contract.md) defines every endpoint, DTO, validation rule and error. The delivered routes are included in `docs/api/openapi.yaml`; repository-local frontend Markdown/OpenAPI snapshots and generated types are synchronized without companion-source imports.
+
+The duplicate-detection extension adds canonical-phone persistence, a body-based scoped review, acknowledgement enforcement for matching new/changed phones, `duplicateCount` and `duplicates=only` filtering/export. Public inquiries never disclose matches and repeated inquiries remain separate. See the [feature specification](../lead-duplicate-detection/spec.md) and [authoritative contract](../lead-duplicate-detection/contract.md); final P2-05 browser/runtime acceptance remains pending.
 
 ### Persistence model
 

@@ -149,6 +149,7 @@ model PropertyPhoto {
 model Lead {
   id                        String                  @id @default(uuid())
   name                      String
+  phoneCanonical            String?
   phone                     String?
   email                     String?
   searchName                String
@@ -179,6 +180,7 @@ model Lead {
   viewings                  Viewing[]
   notifications             Notification[]
 
+  @@index([phoneCanonical])
   @@index([assignedAgentId, createdAt, id])
   @@index([assignedAgentId, stage, createdAt])
   @@index([source, createdAt])

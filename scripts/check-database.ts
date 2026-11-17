@@ -1,3 +1,4 @@
+import { verifyLeadPhoneCanonical } from '../src/modules/leads/lead-phone-backfill.js';
 import { verifyLeadSearch } from '../src/modules/leads/lead-search.js';
 import { parseEnv } from '../src/config/env.js';
 import { createDatabase } from '../src/infrastructure/database/client.js';
@@ -34,6 +35,7 @@ try {
   ]);
   await verifyPropertySearch(db);
   await verifyLeadSearch(db);
+  await verifyLeadPhoneCanonical(db);
   console.info(
     'SQLite connection, agency tables, property and lead search verified.',
   );

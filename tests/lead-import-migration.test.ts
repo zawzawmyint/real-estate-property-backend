@@ -29,6 +29,7 @@ it('adds batch receipts to a populated database and passes disposable db:check w
     expect(index).toBeGreaterThan(0);
     for (const name of names.slice(0, index)) await apply(name);
     const lead = await database.lead.create({
+      select: { id: true, name: true },
       data: {
         name: 'Existing',
         email: 'existing@example.test',
@@ -56,7 +57,7 @@ it('adds batch receipts to a populated database and passes disposable db:check w
     for (const name of names.slice(index)) await apply(name);
     expect(
       await database.lead.findUniqueOrThrow({ where: { id: lead.id } }),
-    ).toEqual(lead);
+    ).toMatchObject(lead);
     expect(
       await database.leadActivity.findUniqueOrThrow({
         where: { id: activity.id },

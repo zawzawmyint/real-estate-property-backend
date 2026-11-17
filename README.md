@@ -2,7 +2,7 @@
 
 Start with the [project specification](spec.md) for scope, boundaries and current status, then read the relevant feature spec before implementation. Keep the root spec synchronized after verified feature delivery.
 
-Express 5 + strict TypeScript + Prisma 7 with SQLite. This repository is independent of the sibling frontend. It provides foundation infrastructure, public image delivery, staff authentication, property-management/public-discovery APIs, public inquiries, role-scoped lead management, bounded CRM CSV exports, and Admin/Manager property-draft and New/unassigned lead CSV imports. See the [lead import specification](specs/lead-import/spec.md), its [contract](specs/lead-import/contract.md), the [property import specification](specs/property-import/spec.md), and the historical [CSV export slice](specs/csv-import-export/spec.md).
+Express 5 + strict TypeScript + Prisma 7 with SQLite. This repository is independent of the sibling frontend. It provides foundation infrastructure, public image delivery, staff authentication, property-management/public-discovery APIs, public inquiries, role-scoped lead management, bounded CRM CSV exports, Admin/Manager property-draft and New/unassigned lead CSV imports, and implemented phone-based duplicate review. See the [duplicate-detection specification](specs/lead-duplicate-detection/spec.md) and [backend contract](specs/lead-duplicate-detection/contract.md), the [lead import specification](specs/lead-import/spec.md), its [contract](specs/lead-import/contract.md), the [property import specification](specs/property-import/spec.md), and the historical [CSV export slice](specs/csv-import-export/spec.md).
 
 ## Local development
 
@@ -34,15 +34,15 @@ API: `http://localhost:4311/api/v1/health`. Frontend development origin: `http:/
 - `bun run test`: HTTP, configuration and filesystem regression tests.
 - `bun run check`: lint, formatting, type checking, tests and build.
 - `bun run db:generate`: generate the ignored Prisma client.
-- `bun run db:migrate`: initialize a missing SQLite file when needed, run the committed Prisma migrations, and backfill normalized property and lead/staff search fields. Stop application writes and back up existing data first.
-- `bun run db:check`: verify the SQLite connection, delivered auth/property/lead tables, and normalized search data. Run generation and migration first on a clean checkout.
+- `bun run db:migrate`: initialize a missing SQLite file when needed, run the committed Prisma migrations, and backfill normalized property, lead/staff search and recognizable lead-phone identity fields. Stop application writes and back up existing data first.
+- `bun run db:check`: verify the SQLite connection, delivered auth/property/lead tables, normalized search data and canonical lead-phone backfill. Run generation and migration first on a clean checkout.
 - `bun run demo:seed -- --confirm-demo`: add any missing fictional demo properties and generated illustrative images to a non-production database. It refuses production and any argument other than the explicit confirmation; it never resets or overwrites records.
 - `bun run chat:index`: embed the approved public-chat FAQ fixture and atomically write the configured JSON index. Run after changing FAQ content or embedding settings, then restart Express before enabling chat.
 - `bun run staff -- bootstrap-admin|create|reset-password|deactivate`: trusted, interactive staff lifecycle commands; password prompts are masked. Deactivation reports the assigned-lead count and does not redistribute leads. This is not an HTTP management API.
 
 SQLite files and uploaded files live under ignored `var/`. The committed migrations create Better Auth identity/session, property/photo and lead/activity/receipt tables. Generate a fresh `BETTER_AUTH_SECRET` and `INQUIRY_RELAY_SECRET`, each at least 32 characters and with independent values, before startup, then bootstrap the first Admin locally. Read the [development guide](docs/development.md#media-reconciliation) before manually reconciling media after a logged cleanup failure.
 
-Before deployment or using either CSV import against a database that has not been migrated, run `bun run db:migrate` so the additive property- and lead-import receipt migrations are present. Its operational workflow and rollback boundary are documented in the [development guide](docs/development.md#crm-csv-import-use).
+Before deployment or using either CSV import against a database that has not been migrated, follow the backup, `bun run db:migrate`, `bun run db:check` and startup-verification workflow in the [development guide](docs/development.md#database-maintenance-and-browser-fixtures). This applies the additive property/lead-import receipt migrations and nullable lead-phone canonical index/backfill. Deploy matching frontend/backend versions together because new lead writes/imports can require duplicate acknowledgement.
 
 `INQUIRY_RELAY_SECRET` is required at startup and must be an independent server-only value of at least 32 characters matching the trusted frontend relay; do not expose it. Real-customer collection additionally requires ingress that overwrites the configured identity header and blocks direct Next access, plus operator-approved privacy/retention wording.
 

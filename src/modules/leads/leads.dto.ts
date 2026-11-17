@@ -4,9 +4,10 @@ export const eligibleAgent = (
   user: { role: string; disabled: boolean; banned: boolean | null } | null,
 ) => Boolean(user && user.role === 'agent' && !user.disabled && !user.banned);
 
-export function leadDto(lead: LeadRecord, detail = false) {
+export function leadDto(lead: LeadRecord, detail = false, duplicateCount = 0) {
   return {
     id: lead.id,
+    duplicateCount,
     name: lead.name,
     phone: lead.phone,
     email: lead.email,

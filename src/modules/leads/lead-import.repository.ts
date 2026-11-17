@@ -1,3 +1,4 @@
+import { requireLeadPhone } from './lead-phone.js';
 import type { Transaction } from '../../infrastructure/database/transaction.js';
 import type { Actor } from './leads.repository.js';
 import { leadSearch } from './leads.repository.js';
@@ -14,6 +15,7 @@ export const leadImportRepository = {
     const data = {
       name: row.name,
       phone: row.phone ?? null,
+      phoneCanonical: requireLeadPhone(row.phone),
       email: row.email ?? null,
       purpose: row.purpose,
       source: row.source,
@@ -58,7 +60,7 @@ export const leadImportRepository = {
         id: input.id,
         actorId: input.actorId,
         contentDigest: input.contentDigest,
-        schemaVersion: 1,
+        schemaVersion: 2,
         createdCount: input.leadIds.length,
         leadIdsJson: JSON.stringify(input.leadIds),
       },

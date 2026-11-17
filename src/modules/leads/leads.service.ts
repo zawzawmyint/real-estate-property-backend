@@ -1,3 +1,6 @@
+import { duplicateReview, guardDuplicate } from './lead-duplicates.service.js';
+import { duplicateCounts } from './lead-duplicates.repository.js';
+import { requireLeadPhone } from './lead-phone.js';
 import { serializeExport, decimalHundredths } from '../../shared/csv/export.js';
 import type { ExportQuery } from './leads.schema.js';
 import { createHash } from 'node:crypto';
@@ -52,6 +55,22 @@ export function createLeadService(
     const lead = await repository.find(id, actor, tx);
     if (!lead) throw missing();
     return lead;
+  }
+
+  async function dto(
+    lead: LeadRecord,
+    actor: Actor,
+    tx: Transaction,
+    detail = true,
+  ) {
+    const counts = lead.phoneCanonical
+      ? await duplicateCounts([lead.phoneCanonical], actor, tx)
+      : [];
+    return leadDto(
+      lead,
+      detail,
+      Math.max(0, (counts[0]?._count._all ?? 1) - 1),
+    );
   }
 
   function version(lead: LeadRecord, expected: number) {
@@ -147,7 +166,14 @@ export function createLeadService(
     tx: Transaction,
     recipientIds: (string | null)[],
   ) {
-    const lead = await repository.create({ ...data, ...leadSearch(data) }, tx);
+    const lead = await repository.create(
+      {
+        ...data,
+        phoneCanonical: requireLeadPhone(data.phone),
+        ...leadSearch(data),
+      },
+      tx,
+    );
     await event(lead.id, 'created', null, {}, tx);
     await repository.saveReceipt(
       {
@@ -205,6 +231,21 @@ export function createLeadService(
     return await owned(lead.id, actor, tx);
   }
   return {
+    async duplicateCheck(
+      input: { phone: string; excludeLeadId?: string | undefined },
+      identity: Actor,
+    ) {
+      return serializedTransaction(database, async (tx) => {
+        const actor = await requireCurrentStaff(identity, tx);
+        if (input.excludeLeadId) await owned(input.excludeLeadId, actor, tx);
+        return duplicateReview(
+          requireLeadPhone(input.phone)!,
+          actor,
+          input.excludeLeadId ?? null,
+          tx,
+        );
+      });
+    },
     async exportCsv(query: ExportQuery, identity: Actor): Promise<string> {
       const rows = await serializedTransaction(database, async (tx) => {
         const actor = await requireCurrentStaff(identity, tx);
@@ -260,17 +301,40 @@ export function createLeadService(
         if (query.agentId && actor.role !== 'agent' && view !== 'all')
           throw invalid();
         const result = await repository.list({ ...query, view }, actor, tx);
-        return { ...result, items: result.items.map((lead) => leadDto(lead)) };
+        const counts = await duplicateCounts(
+          [
+            ...new Set(
+              result.items.flatMap((lead) =>
+                lead.phoneCanonical ? [lead.phoneCanonical] : [],
+              ),
+            ),
+          ],
+          actor,
+          tx,
+        );
+        const byPhone = new Map(
+          counts.map((row) => [row.phoneCanonical, row._count._all]),
+        );
+        return {
+          ...result,
+          items: result.items.map((lead) =>
+            leadDto(
+              lead,
+              false,
+              lead.phoneCanonical
+                ? Math.max(0, (byPhone.get(lead.phoneCanonical) ?? 1) - 1)
+                : 0,
+            ),
+          ),
+        };
       });
     },
 
     async detail(id: string, identity: Actor) {
-      return serializedTransaction(database, async (tx) =>
-        leadDto(
-          await owned(id, await requireCurrentStaff(identity, tx), tx),
-          true,
-        ),
-      );
+      return serializedTransaction(database, async (tx) => {
+        const actor = await requireCurrentStaff(identity, tx);
+        return dto(await owned(id, actor, tx), actor, tx);
+      });
     },
 
     async activity(id: string, page: number, identity: Actor) {
@@ -432,7 +496,7 @@ export function createLeadService(
         if (replay)
           return {
             replay: true,
-            lead: leadDto(await owned(replay.leadId, actor, tx), true),
+            lead: await dto(await owned(replay.leadId, actor, tx), actor, tx),
           };
         if (
           actor.role === 'agent' &&
@@ -448,7 +512,16 @@ export function createLeadService(
           input.purpose,
           tx,
         );
+        const phoneCanonical = requireLeadPhone(input.phone);
+        await guardDuplicate(
+          phoneCanonical,
+          actor,
+          null,
+          input.duplicateAcknowledgement,
+          tx,
+        );
         const data = {
+          phoneCanonical,
           name: input.name,
           phone: input.phone ?? null,
           email: input.email ?? null,
@@ -489,7 +562,7 @@ export function createLeadService(
         );
         if (assigned && actor.role !== 'agent')
           recipientIds.push(await notifyAssignment(lead, assigned.id, tx));
-        return { replay: false, lead: leadDto(lead, true) };
+        return { replay: false, lead: await dto(lead, actor, tx) };
       });
     },
 
@@ -516,6 +589,18 @@ export function createLeadService(
               : input.propertyId,
         };
         if (!merged.phone && !merged.email) throw invalid();
+        const phoneCanonical =
+          merged.phone === before.phone
+            ? before.phoneCanonical
+            : requireLeadPhone(merged.phone);
+        if (phoneCanonical !== before.phoneCanonical)
+          await guardDuplicate(
+            phoneCanonical,
+            actor,
+            id,
+            input.duplicateAcknowledgement,
+            tx,
+          );
         let context = {
           propertyId: before.propertyId,
           propertyTitleSnapshot: before.propertyTitleSnapshot,
@@ -548,10 +633,11 @@ export function createLeadService(
           !changedFields.includes('propertyId')
         )
           changedFields.push('propertyId');
-        if (!changedFields.length) return leadDto(before, true);
+        if (!changedFields.length) return dto(before, actor, tx);
         const data = {
           name: merged.name,
           phone: merged.phone,
+          phoneCanonical,
           email: merged.email,
           purpose: merged.purpose,
           budgetFils: merged.budgetFils,
@@ -570,7 +656,7 @@ export function createLeadService(
           { changedFields: JSON.stringify(changedFields) },
           tx,
         );
-        return leadDto(lead, true);
+        return dto(lead, actor, tx);
       });
     },
 
@@ -595,7 +681,7 @@ export function createLeadService(
             before.assignedAgentNameSnapshot !== null
           )
         )
-          return leadDto(before, true);
+          return dto(before, actor, tx);
         const lead = await update(
           before,
           actor,
@@ -643,7 +729,7 @@ export function createLeadService(
           );
           recipientIds.push(await notifyAssignment(lead, target.id, tx));
         }
-        return leadDto(lead, true);
+        return dto(lead, actor, tx);
       });
     },
 
@@ -657,7 +743,7 @@ export function createLeadService(
         const actor = await requireCurrentStaff(identity, tx),
           before = await owned(id, actor, tx);
         version(before, input.expectedVersion);
-        if (input.stage === before.stage) return leadDto(before, true);
+        if (input.stage === before.stage) return dto(before, actor, tx);
         const lead = await update(before, actor, { stage: input.stage }, tx);
         await event(
           id,
@@ -666,7 +752,7 @@ export function createLeadService(
           { previousStage: before.stage, nextStage: input.stage },
           tx,
         );
-        return leadDto(lead, true);
+        return dto(lead, actor, tx);
       });
     },
 

@@ -401,9 +401,12 @@ it('rolls back the lead and activity when the receipt write fails and never ackn
 });
 
 it('replays agency enquiries across equivalent whitespace and stores the canonical phone once', async () => {
-  const payload = body({ email: null, phone: '\t+971\u00a0\u202f50-123\n' });
+  const payload = body({
+    email: null,
+    phone: '\t+971\u00a0\u202f50-1234567\n',
+  });
   expect((await submit(payload)).status).toBe(201);
-  expect((await submit({ ...payload, phone: '+971  50-123' })).status).toBe(
+  expect((await submit({ ...payload, phone: '+971  50-1234567' })).status).toBe(
     200,
   );
   const receipt =
@@ -413,10 +416,10 @@ it('replays agency enquiries across equivalent whitespace and stores the canonic
   const lead = await fixture.database.lead.findUniqueOrThrow({
     where: { id: receipt.leadId },
   });
-  expect(lead.phone).toBe('+971  50-123');
-  expect(lead.searchPhone).toBe('97150123');
+  expect(lead.phone).toBe('+971  50-1234567');
+  expect(lead.searchPhone).toBe('971501234567');
   expect(
-    await fixture.database.lead.count({ where: { phone: '+971  50-123' } }),
+    await fixture.database.lead.count({ where: { phone: '+971  50-1234567' } }),
   ).toBe(1);
   expect(
     await fixture.database.leadActivity.count({ where: { leadId: lead.id } }),

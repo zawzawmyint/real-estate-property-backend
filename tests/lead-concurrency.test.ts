@@ -96,7 +96,7 @@ it('deduplicates identical submissions from two real SQLite clients', async () =
   const payload = {
     submissionId: randomUUID(),
     name: 'Two clients',
-    phone: '12345',
+    phone: '0507778899',
     purpose: 'sale',
     source: 'call',
   };

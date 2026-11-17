@@ -1,3 +1,4 @@
+import { verifyLeadPhoneCanonical } from './modules/leads/lead-phone-backfill.js';
 import { createDatabase } from './infrastructure/database/client.js';
 import { createStaffAuth } from './modules/auth/auth.js';
 import { createApp } from './app.js';
@@ -8,6 +9,15 @@ import { scanDueTaskReminders } from './modules/tasks/tasks.reminders.js';
 const env = parseEnv(process.env);
 const logger = createLogger(env.LOG_LEVEL);
 const database = await createDatabase(env.DATABASE_URL);
+try {
+  await verifyLeadPhoneCanonical(database);
+} catch {
+  await database.$disconnect();
+  logger.fatal(
+    'Lead phone identity verification failed; stop writes and run bun run db:migrate',
+  );
+  process.exit(1);
+}
 const auth = createStaffAuth(env, database);
 const app = createApp(env, auth, database);
 let reminderScan: Promise<void> | undefined;

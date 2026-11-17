@@ -1,3 +1,4 @@
+import { backfillLeadPhoneCanonical } from '../src/modules/leads/lead-phone-backfill.js';
 import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -58,6 +59,7 @@ export async function authFixture(options: { publicChat?: boolean } = {}) {
       await database.$executeRawUnsafe(statement);
   }
 
+  await backfillLeadPhoneCanonical(database);
   const auth = createStaffAuth(env, database);
 
   return {

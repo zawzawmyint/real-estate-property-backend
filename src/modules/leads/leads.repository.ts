@@ -24,6 +24,7 @@ export const leadSelect = {
   id: true,
   name: true,
   phone: true,
+  phoneCanonical: true,
   email: true,
   purpose: true,
   budgetFils: true,
@@ -94,6 +95,10 @@ function leadPredicate(query: Omit<ListQuery, 'page'>, actor: Actor) {
   const view = query.view ?? (actor.role === 'agent' ? 'mine' : 'unassigned');
   if (view === 'mine') clauses.push(Prisma.sql`assignedAgentId=${actor.id}`);
   if (view === 'unassigned') clauses.push(Prisma.sql`assignedAgentId IS NULL`);
+  if (query.duplicates)
+    clauses.push(
+      Prisma.sql`phoneCanonical IS NOT NULL AND EXISTS (SELECT 1 FROM Lead duplicate WHERE duplicate.phoneCanonical=Lead.phoneCanonical AND duplicate.id<>Lead.id ${actor.role === 'agent' ? Prisma.sql`AND duplicate.assignedAgentId=${actor.id}` : Prisma.empty})`,
+    );
   if (query.agentId) clauses.push(Prisma.sql`assignedAgentId=${query.agentId}`);
   if (query.stage) clauses.push(Prisma.sql`stage=${query.stage}`);
   if (query.source) clauses.push(Prisma.sql`source=${query.source}`);

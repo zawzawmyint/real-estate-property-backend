@@ -1,3 +1,4 @@
+import { backfillLeadPhoneCanonical } from '../src/modules/leads/lead-phone-backfill.js';
 import { backfillLeadSearch } from '../src/modules/leads/lead-search.js';
 import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
@@ -41,6 +42,7 @@ if (process.exitCode === 0) {
   try {
     await backfillPropertySearch(migrated);
     await backfillLeadSearch(migrated);
+    await backfillLeadPhoneCanonical(migrated);
     console.info('Property search data verified and backfilled.');
   } finally {
     await migrated.$disconnect();

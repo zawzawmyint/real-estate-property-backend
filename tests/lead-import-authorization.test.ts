@@ -175,7 +175,7 @@ it('validates live service identity on replay after demotion', async () => {
   const payload = {
     csv,
     submissionId: randomUUID(),
-    schemaVersion: 1,
+    schemaVersion: 2,
     digest: preview.digest,
   };
   await service.commit(payload, actor);
@@ -226,7 +226,7 @@ it.each([
   const payload = {
     csv,
     submissionId: randomUUID(),
-    schemaVersion: 1,
+    schemaVersion: 2,
     digest: preview.digest,
   };
   await service.commit(payload, actor);

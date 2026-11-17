@@ -1,3 +1,4 @@
+import { backfillLeadPhoneCanonical } from '../src/modules/leads/lead-phone-backfill.js';
 // Standalone fixture process: temporary SQLite, no production accounts or HTTP backdoors.
 import { authFixture } from '../tests/auth-fixture.js';
 import { writeFile } from 'node:fs/promises';
@@ -48,6 +49,17 @@ for (const project of ['desktop', 'mobile'])
       password,
       role,
     });
+
+// Data-tool suites keep real sign-in quotas independent of property workflows.
+for (const namespace of ['csv-export', 'lead-import', 'property-import'])
+  for (const project of ['desktop', 'mobile'])
+    for (const role of ['admin', 'manager', 'agent'] as const)
+      await fixture.operator.create({
+        name: `ZZ Data tools ${namespace} ${project} ${role}`,
+        email: `e2e-${namespace}-${project}-${role}@example.com`,
+        password,
+        role,
+      });
 
 // The gallery test signs in independently of the property worker's session cache.
 await fixture.operator.create({
@@ -319,6 +331,7 @@ if (process.env.STAFF_E2E_DASHBOARD_ONLY === '1') {
 }
 
 const port = Number(process.env.PORT ?? 4311);
+await backfillLeadPhoneCanonical(fixture.database);
 const server = fixture.app.listen(port, '127.0.0.1');
 server.once('listening', () => console.info('AUTH_E2E_READY'));
 

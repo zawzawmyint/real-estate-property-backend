@@ -8,7 +8,7 @@
 
 Track every Phase 1, 2 and 3 feature from the original **Real Estate CRM Checklist**, without treating project setup as completed business functionality.
 
-**Current baseline:** Foundation is complete; 28 Phase 1 and four Phase 2 checklist items are verified; 11 Phase 1–3 checklist items remain pending. The original five portfolio delivery items are retained separately. This roadmap is the workspace-wide source of truth for feature progress; repository-local specifications define implementation and acceptance.
+**Current baseline:** Foundation is complete; 28 Phase 1 and five Phase 2 checklist items are verified; 10 Phase 1–3 checklist items remain pending. The original five portfolio delivery items are retained separately. This roadmap is the workspace-wide source of truth for feature progress; repository-local specifications define implementation and acceptance.
 
 **November 5 Git delivery:** Frontend implementation commit `655587e6dc10ea467223c1b1c06c4984f86bba1b` and backend implementation commit `5086b6507f0c12e99a5e309ef6313429a7509c9f` were pushed to their existing working branches after user authorization. The [review remediation](specs/phase-one-review-remediation/spec.md) Git-evidence item F08 is complete. P1-14/P1-18 remain open at 28/30; the later property-form pre-hydration defect was resolved on November 6 in the frontend property-management maintenance evidence. No deployment occurred.
 
@@ -219,7 +219,7 @@ The source requires dated tasks and overdue highlighting here; scheduled email o
 
 #### Data tools
 
-**Specifications:** [CSV import/export](specs/csv-import-export/spec.md). Proposed remaining spec slugs: `lead-duplicate-detection`, `lead-temperature-tags`.
+**Specifications:** [CSV import/export](specs/csv-import-export/spec.md), [lead duplicate detection](specs/lead-duplicate-detection/spec.md). Proposed remaining spec slug: `lead-temperature-tags`.
 
 **P2-04 — Verified (2026-11-13):** The historical export slice gives all staff filtered lead/property downloads across pages within existing access, with fixed role-aware columns and bounded CSV responses. The verified [property import specification](specs/property-import/spec.md) and [lead import specification](specs/lead-import/spec.md) add Admin/Manager template, preview, all-or-nothing creation and receipt-backed retry/reload recovery. Import creates property drafts or New/unassigned/unlinked leads respectively; it does not implement duplicate detection.
 
@@ -229,10 +229,10 @@ The source requires dated tasks and overdue highlighting here; scheduled email o
 
 **Property import — Verified (2026-11-12):** [Property import specification](specs/property-import/spec.md) and [contract](specs/property-import/contract.md) verify Admin/Manager preview and atomic draft creation, reject the whole batch on any invalid row, and use shared CSV parsing/review mechanics with the delivered lead importer. Full checks/builds, migration/database verification, browser acceptance and runtime inspection passed.
 
-- [ ] **P2-05** Duplicate detection by phone number
+- [x] **P2-05** [Duplicate detection by phone number](specs/lead-duplicate-detection/spec.md) — Verified (2026-11-17): warn and allow after acknowledgement; backend canonical matching, permission-scoped CRM review and CSV v2 warnings. [Implementation plan](docs/superpowers/plans/2026-11-16-lead-duplicate-detection.md). Backend/frontend checks, migration verification, benchmark, runtime, responsive/native-200% zoom and final clean serial browser evidence passed.
 - [ ] **P2-06** Hot, warm and cold lead tags
 
-P2-05 remains unchecked: duplicate checks, matching and upsert behavior are not part of the import/export delivery.
+P2-05 adds duplicate checks and matching while preserving separate-lead creation: no merge, upsert, unique-phone constraint or silent skip. Deployment and normal-database migration remain separate operational work.
 
 #### Reporting
 

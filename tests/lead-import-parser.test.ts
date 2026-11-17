@@ -8,12 +8,12 @@ import {
 
 it('normalizes existing lead contacts, enums and exact money in template order', () => {
   const result = validateImport(
-    '\ufeffsource,email,name,budget_aed,purpose,phone\r\n CALL , A@EXAMPLE.TEST , Ágent ,10000000000.00, SALE , 001\t234 \r\n',
+    '\ufeffsource,email,name,budget_aed,purpose,phone\r\n CALL , A@EXAMPLE.TEST , Ágent ,10000000000.00, SALE , 050\t1234567 \r\n',
   );
   expect(result.preview.valid).toBe(true);
   expect(result.inputs[0]).toEqual({
     name: 'Ágent',
-    phone: '001 234',
+    phone: '050 1234567',
     email: 'a@example.test',
     purpose: 'sale',
     source: 'call',
@@ -23,7 +23,7 @@ it('normalizes existing lead contacts, enums and exact money in template order',
     rowNumber: 2,
     values: [
       'Ágent',
-      '001 234',
+      '050 1234567',
       'a@example.test',
       'sale',
       '10000000000.00',
@@ -31,7 +31,7 @@ it('normalizes existing lead contacts, enums and exact money in template order',
     ],
   });
   expect(importDigest('x')).toBe(
-    createHash('sha256').update('lead-import:v1\0x').digest('hex'),
+    createHash('sha256').update('lead-import:v2\0x').digest('hex'),
   );
   expect(importDigest('x')).not.toBe(importDigest('\ufeffx'));
 });
@@ -49,14 +49,14 @@ it('permits either contact header and represents omitted optional fields as null
     budgetFils: null,
   });
   expect(
-    validateImport('name,phone,purpose,source\nOne,00123,sale,call').preview
-      .valid,
+    validateImport('name,phone,purpose,source\nOne,0501234567,sale,call')
+      .preview.valid,
   ).toBe(true);
 });
 
 it('requires contact per row and rejects a supplied invalid contact even with a valid other contact', () => {
   const result = validateImport(
-    'name,phone,email,purpose,source\nOne,,,sale,call\nTwo,00123,bad,rent,call\nThree,letters1,a@example.test,rent,call',
+    'name,phone,email,purpose,source\nOne,,,sale,call\nTwo,0501234567,bad,rent,call\nThree,letters1,a@example.test,rent,call',
   );
   expect(result.preview.validRows).toBe(0);
   expect(result.preview.issues).toEqual([

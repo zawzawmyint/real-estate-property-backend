@@ -1,3 +1,5 @@
+import { DuplicateReviewRequired } from '../modules/leads/lead-duplicates.service.js';
+import { LeadPhoneValidationError } from '../modules/leads/lead-phone.js';
 import type { ErrorRequestHandler } from 'express';
 import type { Logger } from 'pino';
 import { AppError } from '../shared/errors/app-error.js';
@@ -40,6 +42,12 @@ export function errorHandler(logger: Logger): ErrorRequestHandler {
       );
 
     res.status(known?.status ?? 500).json({
+      ...(error instanceof DuplicateReviewRequired
+        ? { duplicateReview: error.duplicateReview }
+        : {}),
+      ...(error instanceof LeadPhoneValidationError
+        ? { fieldErrors: error.fieldErrors }
+        : {}),
       error: {
         code: known?.code ?? 'INTERNAL_ERROR',
         message: known?.message ?? 'An unexpected error occurred',
