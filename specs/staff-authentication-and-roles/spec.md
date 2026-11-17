@@ -101,6 +101,7 @@ flowchart TD
 - [x] Native handler is mounted before body parsing with the exact route allowlist; frontend proxy/server rendering preserve cookies and authorization, and health/media remain public and unchanged.
 - [x] Migration, provisioning and all database integration tests use SQLite only; no PostgreSQL artifacts are introduced.
 - [x] Quality checks and real cross-repository smoke tests pass; API contract and operational docs describe delivered behavior.
+- [x] Auth body-limit raw-HTTP test reliability is verified: ordinary requests use non-pooled connections, handle response/JSON-parse failures, and deterministically destroy their owned request/server connections. The deliberately owned keep-alive probe covers a chunked oversized body rejected with 413 before the upload is terminated, then destroys that agent. The 100 KiB boundary, native headers, exact-boundary assertions and five-second test timeout remain unchanged.
 
 ## Validation
 
@@ -109,7 +110,9 @@ flowchart TD
 - Controlled clock tests: eight-hour absolute expiry, expired limiter windows and bounded limiter state. Test sign-out with a missing session and wrong origin, cookie tampering, password reset/deactivation revocation and backend restart with persisted sessions.
 - Authorization tests use the real guard in a test-only restricted route; do not add a production endpoint merely to test Admin permissions.
 - Integration/browser checks: direct API calls cannot bypass guards; real proxy login sets host cookie, server CRM validation forwards it, logout prevents reuse, backend outage renders a recoverable error rather than a redirect loop.
+- Raw HTTP auth-body-limit coverage uses non-pooled connections for ordinary requests, handles response and JSON-parse failure paths, and deterministically destroys the request/server connections it owns. Its deliberate owned keep-alive probe sends an unfinished 102,401-byte chunked upload, verifies the existing 413 before EOF, then destroys the agent; this exception is necessary to exercise server teardown. It changes no production auth handler, API contract or frontend behavior, and retains the 100 KiB limit, native headers, exact-boundary coverage and five-second timeout.
 - Verification completed: `bun run check` passed (34 tests across 11 files), `bun run db:migrate` applied the additive credential-version migration to a real SQLite database, `bun run db:check` verified SQLite and the auth tables, and the frontend's real browser suite passed 26 desktop/mobile tests. Six live browser lifecycle checks passed for deleted, expired and disabled sessions, password reset, current role changes, and backend outage/recovery.
+- Test-reliability verification (2026-11-17): the regression timed out at five seconds before deterministic connection teardown and completed in 320 ms after it. Five further focused runs passed all three auth body-limit tests (15 passes); the full `bun run check` passed lint, format, typecheck, build and 276 tests across 58 files. A later successful pull-request workflow on the unchanged commit corroborated that the earlier CI timeout was intermittent rather than a production contract change.
 
 ## Risks and rollout
 
