@@ -1,4 +1,5 @@
 import type { ActivityRecord, LeadRecord } from './leads.repository.js';
+import type { TemperatureInput } from './leads.schema.js';
 
 export const eligibleAgent = (
   user: { role: string; disabled: boolean; banned: boolean | null } | null,
@@ -14,6 +15,7 @@ export function leadDto(lead: LeadRecord, detail = false, duplicateCount = 0) {
     purpose: lead.purpose as 'sale' | 'rent',
     budgetFils: lead.budgetFils === null ? null : Number(lead.budgetFils),
     source: lead.source as 'website' | 'call' | 'walk_in',
+    temperature: lead.temperature as TemperatureInput['temperature'],
     stage: lead.stage as
       'new' | 'contacted' | 'viewing_scheduled' | 'offer' | 'won' | 'lost',
     assignedAgent: lead.assignedAgent
@@ -56,6 +58,7 @@ export function activityDto(event: ActivityRecord) {
       | 'assigned'
       | 'unassigned'
       | 'stage_changed'
+      | 'temperature_changed'
       | 'details_updated'
       | 'note_added'
       | 'call_logged',
@@ -88,5 +91,12 @@ export function activityDto(event: ActivityRecord) {
         ? { from: event.previousStage, to: event.nextStage }
         : null,
     changedFields: JSON.parse(event.changedFields) as string[],
+    temperatureChange:
+      event.type === 'temperature_changed'
+        ? {
+            from: event.previousTemperature as TemperatureInput['temperature'],
+            to: event.nextTemperature as TemperatureInput['temperature'],
+          }
+        : null,
   };
 }

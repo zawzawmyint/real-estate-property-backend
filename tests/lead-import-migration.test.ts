@@ -28,23 +28,13 @@ it('adds batch receipts to a populated database and passes disposable db:check w
     const index = names.findIndex((name) => name.endsWith('_lead_import'));
     expect(index).toBeGreaterThan(0);
     for (const name of names.slice(0, index)) await apply(name);
-    const lead = await database.lead.create({
-      select: { id: true, name: true },
-      data: {
-        name: 'Existing',
-        email: 'existing@example.test',
-        searchName: 'existing',
-        searchPhone: '',
-        searchEmail: 'existing@example.test',
-        searchPropertyTitle: '',
-        purpose: 'sale',
-        source: 'call',
-        budgetFils: 1000000000000n,
-      },
-    });
-    const activity = await database.leadActivity.create({
-      data: { leadId: lead.id, type: 'created' },
-    });
+    // Seed the historical schema without newer Prisma defaults/columns.
+    const lead = { id: 'historical-import-lead', name: 'Existing' };
+    await database.$executeRaw`INSERT INTO Lead (id,name,email,searchName,searchPhone,searchEmail,searchPropertyTitle,purpose,source,budgetFils,updatedAt) VALUES (${lead.id},${lead.name},'existing@example.test','existing','','existing@example.test','','sale','call',1000000000000,${Date.now()})`;
+    await database.$executeRaw`INSERT INTO LeadActivity (id,leadId,type) VALUES ('historical-import-activity',${lead.id},'created')`;
+    const [activity] = await database.$queryRaw<
+      Array<{ id: string }>
+    >`SELECT * FROM LeadActivity WHERE id='historical-import-activity'`;
     const singleReceipt = await database.leadSubmissionReceipt.create({
       data: {
         id: 'single',
@@ -59,10 +49,10 @@ it('adds batch receipts to a populated database and passes disposable db:check w
       await database.lead.findUniqueOrThrow({ where: { id: lead.id } }),
     ).toMatchObject(lead);
     expect(
-      await database.leadActivity.findUniqueOrThrow({
-        where: { id: activity.id },
-      }),
-    ).toEqual(activity);
+      await database.$queryRaw`SELECT * FROM LeadActivity WHERE id=${activity!.id}`,
+    ).toEqual([
+      { ...activity, previousTemperature: null, nextTemperature: null },
+    ]);
     expect(
       await database.leadSubmissionReceipt.findUniqueOrThrow({
         where: { id: 'single' },

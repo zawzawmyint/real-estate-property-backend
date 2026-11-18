@@ -76,6 +76,7 @@ export function mountLeads(
     controller.assignment,
   );
   staff.patch('/:id/stage', ...write, controller.stage);
+  staff.patch('/:id/temperature', ...write, controller.temperature);
   staff.post('/:id/notes', ...write, controller.note);
 
   inquiries.use(noStore);

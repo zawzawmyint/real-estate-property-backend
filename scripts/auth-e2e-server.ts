@@ -51,7 +51,12 @@ for (const project of ['desktop', 'mobile'])
     });
 
 // Data-tool suites keep real sign-in quotas independent of property workflows.
-for (const namespace of ['csv-export', 'lead-import', 'property-import'])
+for (const namespace of [
+  'csv-export',
+  'lead-import',
+  'property-import',
+  'lead-temperature',
+])
   for (const project of ['desktop', 'mobile'])
     for (const role of ['admin', 'manager', 'agent'] as const)
       await fixture.operator.create({

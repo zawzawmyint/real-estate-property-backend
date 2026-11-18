@@ -1,5 +1,9 @@
 # Feature specifications
 
+## Lead temperature tags — verified
+
+- [Lead temperature tags](lead-temperature-tags/spec.md), [backend-owned contract](lead-temperature-tags/contract.md) and [implementation plan](../docs/superpowers/plans/2026-11-17-lead-temperature-tags.md): verified P2-06 manual temperatures, Not assessed default, scoped filters and activity history. Backend/frontend final checks, disposable database check, focused/browser-matrix coverage, responsive/native-zoom/keyboard review and runtime inspection passed. Browser coverage is split across an interrupted and resumed run, not represented as one uninterrupted run.
+
 ## Lead duplicate detection — verified
 
 - [Lead duplicate detection](lead-duplicate-detection/spec.md), [backend-owned contract](lead-duplicate-detection/contract.md) and [implementation plan](../docs/superpowers/plans/2026-11-16-lead-duplicate-detection.md): P2-05 phone warnings, explicit acknowledgement, scoped review and CSV integration are verified. Deployment and normal-database migration remain separate operations.

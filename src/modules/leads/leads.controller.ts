@@ -19,6 +19,7 @@ import {
   parseQuery,
   patchSchema,
   stageSchema,
+  temperatureSchema,
 } from './leads.schema.js';
 const actor = (res: Response) => res.locals.staff as Actor;
 
@@ -132,6 +133,16 @@ export function createLeadController(
         await service.stage(
           parseId(req.params.id),
           parse(stageSchema, req.body),
+          actor(res),
+        ),
+      );
+    },
+
+    async temperature(req: Request, res: Response) {
+      res.json(
+        await service.temperature(
+          parseId(req.params.id),
+          parse(temperatureSchema, req.body),
           actor(res),
         ),
       );

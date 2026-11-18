@@ -59,6 +59,10 @@ After applying the lead receipt and phone-canonical migration with `bun run db:m
 
 Preview now uses schema version 2 and reports scoped existing-phone matches and within-file repeats. When warnings exist, review them and explicitly acknowledge before commit; acknowledgement allows every valid row to be created as a separate lead. It never merges, skips, updates or makes phone unique. Preview and commit require the same file/version. For an uncertain outcome, use **Retry confirmation** with the same file. After a reload, reselect the exact file: pending version-2 work re-previews it, while pending version-1 recovery first retries its stored original identity and file digest. Do not replace an uncertain identity with a fresh batch. Changed staff sessions require a reload. Receipts retain retry metadata and created IDs, never raw CSV/contact values. The migration is additive: for an existing database, stop writes, make a consistent database/media backup, deploy matching frontend/backend source, then run `bun run db:generate`, `bun run db:migrate`, `bun run db:check`, and verify clean startup before restarting operator writes. Rollback disables matching UI/routes but retains leads, activities, receipts and the nullable non-unique index; assess newer writes before restoring a backup. See the [lead import contract](../specs/lead-import/contract.md) and [duplicate-detection contract](../specs/lead-duplicate-detection/contract.md) for exact endpoints, recovery and errors.
 
+## Lead temperature rollout
+
+The additive lead-temperature migration follows the same maintenance sequence. It supplies `unassessed` for existing and new leads and adds nullable transition fields to activity history. Deploy matching frontend/backend source together so staff consumers understand the additive lead/activity fields and temperature route. Repository validation never migrates a normal database or deploys the feature; use the backup and offline procedure above.
+
 ## Feature development
 
 1. Create `specs/<feature-name>/spec.md` before code changes.

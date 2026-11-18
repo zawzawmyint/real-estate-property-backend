@@ -160,6 +160,7 @@ model Lead {
   budgetFils                BigInt?
   source                    String
   stage                     String                  @default("new")
+  temperature               String                  @default("unassessed")
   propertyId                String?
   property                  Property?               @relation(fields: [propertyId], references: [id], onDelete: SetNull)
   propertyTitleSnapshot     String?
@@ -181,6 +182,7 @@ model Lead {
   notifications             Notification[]
 
   @@index([phoneCanonical])
+  @@index([temperature, createdAt, id])
   @@index([assignedAgentId, createdAt, id])
   @@index([assignedAgentId, stage, createdAt])
   @@index([source, createdAt])
@@ -216,6 +218,8 @@ model LeadActivity {
   note              LeadNote? @relation(fields: [noteId], references: [id], onDelete: Restrict)
   previousStage     String?
   nextStage         String?
+  previousTemperature String?
+  nextTemperature     String?
   previousAgentId   String?
   previousAgentName String?
   nextAgentId       String?

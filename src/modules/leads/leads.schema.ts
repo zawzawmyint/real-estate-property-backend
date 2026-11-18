@@ -98,6 +98,13 @@ export const stageSchema = z.strictObject({
   stage: z.enum(stages),
 });
 
+export const temperatures = ['hot', 'warm', 'cold', 'unassessed'] as const;
+export const temperatureSchema = z.strictObject({
+  expectedVersion: z.number().int().positive(),
+  temperature: z.enum(temperatures),
+});
+export type TemperatureInput = z.infer<typeof temperatureSchema>;
+
 export const noteSchema = z.strictObject({
   submissionId: z.uuid(),
   expectedVersion: z.number().int().positive(),
@@ -116,6 +123,7 @@ export const listSchema = z.strictObject({
   view: z.enum(['unassigned', 'all', 'mine']).optional(),
   q: z.string().trim().max(120).optional(),
   stage: z.enum(stages).optional(),
+  temperature: z.enum(temperatures).optional(),
   source: z.enum(['website', 'call', 'walk_in']).optional(),
   agentId: text(200).optional(),
   sort: z.enum(['newest', 'oldest', 'updated']).default('newest'),

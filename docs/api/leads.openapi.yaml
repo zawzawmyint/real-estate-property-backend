@@ -634,6 +634,13 @@
                     'schema': { 'type': 'string', 'enum': ['only'] },
                     'description': 'Only leads with other accessible canonical phone matches; combines with filters before pagination.',
                   },
+                  {
+                    'in': 'query',
+                    'name': 'temperature',
+                    'schema':
+                      { '$ref': '#/components/schemas/LeadTemperature' },
+                    'description': 'Single temperature filter before pagination/count/export bounds. Repeated or invalid values are rejected.',
+                  },
                 ],
               'responses':
                 {
@@ -647,7 +654,7 @@
                               'schema':
                                 {
                                   'type': 'string',
-                                  'pattern': '^attachment; filename="leads-[0-9]{4}-[0-9]{2}-[0-9]{2}\.csv"$',
+                                  'pattern': "^attachment; filename=\"leads-[0-9]{4}-[0-9]{2}-[0-9]{2}\\.csv\"$",
                                 },
                               'description': 'Export-start calendar date in Asia/Dubai.',
                             },
@@ -1499,6 +1506,13 @@
                     'schema': { 'type': 'string', 'enum': ['only'] },
                     'description': 'Only leads with other accessible canonical phone matches; combines with filters before pagination.',
                   },
+                  {
+                    'in': 'query',
+                    'name': 'temperature',
+                    'schema':
+                      { '$ref': '#/components/schemas/LeadTemperature' },
+                    'description': 'Single temperature filter before pagination/count/export bounds. Repeated or invalid values are rejected.',
+                  },
                 ],
             },
           'post':
@@ -2243,6 +2257,158 @@
                 },
             },
         },
+      '/api/v1/staff/leads/{id}/temperature':
+        {
+          'parameters':
+            [
+              {
+                'in': 'path',
+                'name': 'id',
+                'required': true,
+                'schema': { 'type': 'string', 'format': 'uuid' },
+              },
+            ],
+          'patch':
+            {
+              'operationId': 'changeLeadTemperature',
+              'description': 'Live native staff session required. Admin/Manager access all; Agent only current assigned leads. Inaccessible resource IDs return 404. All mutation access/session/eligibility/version checks occur inside SQLite transactions. Writes require exact APP_ORIGIN, application/json and <=16KiB body.',
+              'security': [{ 'StaffCookie': [] }],
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              '$ref': '#/components/schemas/LeadTemperatureInput',
+                            },
+                        },
+                    },
+                },
+              'responses':
+                {
+                  '200':
+                    {
+                      'description': 'Current lead detail; same-value current-version requests are no-ops. No submissionId or receipt replay.',
+                      'headers':
+                        {
+                          'Cache-Control':
+                            {
+                              'schema':
+                                { 'type': 'string', 'const': 'no-store' },
+                            },
+                        },
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/LeadDetail' },
+                            },
+                        },
+                    },
+                  '400':
+                    {
+                      'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/LeadApiError' },
+                            },
+                        },
+                    },
+                  '401':
+                    {
+                      'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/LeadApiError' },
+                            },
+                        },
+                    },
+                  '403':
+                    {
+                      'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/LeadApiError' },
+                            },
+                        },
+                    },
+                  '404':
+                    {
+                      'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/LeadApiError' },
+                            },
+                        },
+                    },
+                  '409':
+                    {
+                      'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/LeadApiError' },
+                            },
+                        },
+                    },
+                  '413':
+                    {
+                      'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/LeadApiError' },
+                            },
+                        },
+                    },
+                  '415':
+                    {
+                      'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/LeadApiError' },
+                            },
+                        },
+                    },
+                  '500':
+                    {
+                      'description': 'Safe error envelope; no submitted contact or internal exception details.',
+                      'content':
+                        {
+                          'application/json':
+                            {
+                              'schema':
+                                { '$ref': '#/components/schemas/LeadApiError' },
+                            },
+                        },
+                    },
+                },
+              'summary': 'Manually assess lead temperature independently of stage',
+            },
+        },
       '/api/v1/staff/leads/{id}/stage':
         {
           'parameters':
@@ -2921,6 +3087,20 @@
                   'available': { 'type': 'boolean' },
                 },
             },
+          'LeadTemperature':
+            { 'type': 'string', 'enum': ['hot', 'warm', 'cold', 'unassessed'] },
+          'LeadTemperatureInput':
+            {
+              'type': 'object',
+              'additionalProperties': false,
+              'required': ['expectedVersion', 'temperature'],
+              'properties':
+                {
+                  'expectedVersion': { 'type': 'integer', 'minimum': 1 },
+                  'temperature':
+                    { '$ref': '#/components/schemas/LeadTemperature' },
+                },
+            },
           'LeadSummary':
             {
               'type': 'object',
@@ -2942,6 +3122,7 @@
                   'updatedAt',
                   'version',
                   'duplicateCount',
+                  'temperature',
                 ],
               'properties':
                 {
@@ -2953,7 +3134,7 @@
                       'type': ['string', 'null'],
                       'minLength': 3,
                       'maxLength': 40,
-                      'pattern': '^[+\d ()-]*\d[+\d ()-]*$',
+                      'pattern': "^[+\\d ()-]*\\d[+\\d ()-]*$",
                       'description': 'Canonical phone: ASCII spaces only, trimmed, 3-40 characters and at least one digit. Repeated internal spaces are preserved.',
                     },
                   'email':
@@ -3010,6 +3191,8 @@
                   'updatedAt': { 'type': 'string', 'format': 'date-time' },
                   'version': { 'type': 'integer', 'minimum': 1 },
                   'duplicateCount': { 'type': 'integer', 'minimum': 0 },
+                  'temperature':
+                    { '$ref': '#/components/schemas/LeadTemperature' },
                 },
             },
           'LeadActor':
@@ -3390,6 +3573,7 @@
                   'version',
                   'originalMessage',
                   'duplicateCount',
+                  'temperature',
                 ],
               'properties':
                 {
@@ -3401,7 +3585,7 @@
                       'type': ['string', 'null'],
                       'minLength': 3,
                       'maxLength': 40,
-                      'pattern': '^[+\d ()-]*\d[+\d ()-]*$',
+                      'pattern': "^[+\\d ()-]*\\d[+\\d ()-]*$",
                       'description': 'Canonical phone: ASCII spaces only, trimmed, 3-40 characters and at least one digit. Repeated internal spaces are preserved.',
                     },
                   'email':
@@ -3459,6 +3643,8 @@
                   'version': { 'type': 'integer', 'minimum': 1 },
                   'originalMessage': { 'type': ['string', 'null'] },
                   'duplicateCount': { 'type': 'integer', 'minimum': 0 },
+                  'temperature':
+                    { '$ref': '#/components/schemas/LeadTemperature' },
                 },
             },
           'LeadActivity':
@@ -3475,6 +3661,7 @@
                   'assignment',
                   'stageChange',
                   'changedFields',
+                  'temperatureChange',
                 ],
               'properties':
                 {
@@ -3491,6 +3678,7 @@
                           'details_updated',
                           'note_added',
                           'call_logged',
+                          'temperature_changed',
                         ],
                     },
                   'actor':
@@ -3616,6 +3804,29 @@
                               'propertyId',
                             ],
                         },
+                    },
+                  'temperatureChange':
+                    {
+                      'anyOf':
+                        [
+                          {
+                            'type': 'object',
+                            'additionalProperties': false,
+                            'required': ['from', 'to'],
+                            'properties':
+                              {
+                                'from':
+                                  {
+                                    '$ref': '#/components/schemas/LeadTemperature',
+                                  },
+                                'to':
+                                  {
+                                    '$ref': '#/components/schemas/LeadTemperature',
+                                  },
+                              },
+                          },
+                          { 'type': 'null' },
+                        ],
                     },
                 },
             },

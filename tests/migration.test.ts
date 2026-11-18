@@ -261,19 +261,9 @@ it('adds tasks to populated lead/viewing data without changing history and enfor
     const property = await database.property.create({
       data: { title: 'Existing property', purpose: 'sale' },
     });
-    const lead = await database.lead.create({
-      select: { id: true, name: true },
-      data: {
-        name: 'Existing lead',
-        purpose: 'sale',
-        source: 'walk_in',
-        searchName: 'existing lead',
-        searchPhone: '',
-        searchEmail: '',
-        searchPropertyTitle: '',
-        assignedAgentId: user.id,
-      },
-    });
+    // The current Prisma client inserts temperature, absent before this upgrade.
+    const lead = { id: 'historical-task-lead', name: 'Existing lead' };
+    await database.$executeRaw`INSERT INTO Lead (id,name,purpose,source,searchName,searchPhone,searchEmail,searchPropertyTitle,assignedAgentId,updatedAt) VALUES (${lead.id},${lead.name},'sale','walk_in','existing lead','','','',${user.id},${Date.now()})`;
     const viewing = await database.viewing.create({
       data: {
         submissionId: 'legacy-viewing',

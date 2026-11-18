@@ -28,6 +28,10 @@ try {
     db.leadImportReceipt.count(),
     db.leadNote.count(),
     db.leadActivity.count(),
+    db.lead.findFirst({ select: { temperature: true } }),
+    db.leadActivity.findFirst({
+      select: { previousTemperature: true, nextTemperature: true },
+    }),
     db.leadSubmissionReceipt.count(),
     db.viewing.count(),
     db.task.count(),
