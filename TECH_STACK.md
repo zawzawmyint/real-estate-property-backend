@@ -61,7 +61,7 @@ The following lists every direct frontend package declared in [package.json](pac
 | `@types/react-dom`     | 19.3.0         | React DOM TypeScript definitions                                              |
 | `openapi-typescript`   | 7.13.0         | Generates checked property API declarations from the OpenAPI snapshot         |
 
-**Security remediation (2026-11-17):** A root engineering remediation updated frontend `next` and `eslint-config-next` from affected 16.4.2 to exact 16.4.6; React remains 19.3.1. The official post-upgrade assessment reports `affected: false` and `upgrade.status: unaffected`; see the workspace delivery evidence. Final frontend `bun run check` passed API drift, lint, formatting, typecheck, 414 tests across 60 files and a production Webpack build with 20 static pages; final browser acceptance passed.
+**Security remediation (2026-11-17):** A root engineering remediation updated `next` and `eslint-config-next` from affected 16.4.2 to exact 16.4.6; React remains 19.3.1. The official post-upgrade assessment reports `affected: false` and `upgrade.status: unaffected`; see `.delivery-work/lead-duplicates/next-advisory-assessment-after.json` in the workspace. Final frontend `bun run check` passed API drift, lint, formatting, typecheck, 414 tests across 60 files and a production Webpack build with 20 static pages; final browser acceptance passed.
 
 ### Frontend patterns discussed
 
@@ -94,20 +94,23 @@ The following lists every direct backend package declared in package.json (compa
 
 ### Backend development dependencies
 
-| Package             | Pinned version | Purpose                                                       |
-| ------------------- | -------------- | ------------------------------------------------------------- |
-| `prisma`            | 7.10.1         | Client generation and committed SQLite auth migration tooling |
-| `typescript`        | 5.9.3          | Strict static type checking and server compilation            |
-| `tsx`               | 4.23.15        | Run TypeScript during Node development and database checks    |
-| `vitest`            | 5.0.5          | Backend boundary and filesystem tests                         |
-| `supertest`         | 7.3.1          | Exercise the real Express application in HTTP tests           |
-| `eslint`            | 9.39.5         | Linting                                                       |
-| `@eslint/js`        | 9.39.5         | ESLint base rules                                             |
-| `typescript-eslint` | 8.72.0         | TypeScript-aware lint configuration                           |
-| `prettier`          | 3.9.10         | Source and documentation formatting                           |
-| `@types/express`    | 5.0.6          | Express TypeScript definitions                                |
-| `@types/node`       | 24.19.2        | Node.js TypeScript definitions                                |
-| `@types/supertest`  | 7.2.1          | Supertest TypeScript definitions                              |
+`@redocly/openapi-core` is a direct backend development dependency for semantic validation of resolved OpenAPI authentication requirements. It is not a backend runtime dependency or a direct frontend dependency; the frontend already uses it transitively through `openapi-typescript`.
+
+| Package                 | Pinned version | Purpose                                                       |
+| ----------------------- | -------------- | ------------------------------------------------------------- |
+| `prisma`                | 7.10.1         | Client generation and committed SQLite auth migration tooling |
+| `typescript`            | 5.9.3          | Strict static type checking and server compilation            |
+| `tsx`                   | 4.23.15        | Run TypeScript during Node development and database checks    |
+| `vitest`                | 5.0.5          | Backend boundary and filesystem tests                         |
+| `@redocly/openapi-core` | 1.34.21        | Dev-only resolved OpenAPI authentication contract validation  |
+| `supertest`             | 7.3.1          | Exercise the real Express application in HTTP tests           |
+| `eslint`                | 9.39.5         | Linting                                                       |
+| `@eslint/js`            | 9.39.5         | ESLint base rules                                             |
+| `typescript-eslint`     | 8.72.0         | TypeScript-aware lint configuration                           |
+| `prettier`              | 3.9.10         | Source and documentation formatting                           |
+| `@types/express`        | 5.0.6          | Express TypeScript definitions                                |
+| `@types/node`           | 24.19.2        | Node.js TypeScript definitions                                |
+| `@types/supertest`      | 7.2.1          | Supertest TypeScript definitions                              |
 
 ## Public chatbot runtime
 
@@ -117,16 +120,16 @@ The verified P2-08 demo uses OpenRouter over its HTTPS API, not a new applicatio
 
 **CSV imports (2026-11-13):** The backend uses exact `csv-parse` 7.0.3 for the verified property and lead import specifications. The frontend has no CSV parser dependency; its shared decoder/UI send bounded file text to backend-owned parsing.
 
-**None of the named deferred packages below are direct dependencies in either repository.** React Hook Form and Zod are installed for the staff login and property create/edit forms; their use does not imply delivery of later business forms such as inquiries or leads. Recharts is installed separately in the frontend for the verified dashboard delivery. No deferred tool below has a pinned version.
+**None of the named deferred packages below are direct dependencies in either repository.** React Hook Form and Zod are installed for the staff login and property create/edit forms; their use does not imply delivery of later business forms such as inquiries or leads. Recharts is installed separately for the verified dashboard delivery. No deferred tool below has a pinned version.
 
-| Tool or capability         | Intended responsibility                                              | Adoption point and decision status                                                                                                                                                                                                                    |
-| -------------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Zustand                    | Shared browser-side state when multiple components need it           | Discussed, conditional on a real feature need. Keep shareable search/filter state in URLs rather than defaulting to a global store.                                                                                                                   |
-| Localization library       | Translation management and locale-aware UI                           | Required capability for P3-05; specific library not selected. Arabic requires right-to-left behavior as well as translated strings.                                                                                                                   |
-| Nodemailer                 | Server-side email transport                                          | Planned when email is needed, such as authentication mail or P2-01. SMTP/email delivery provider is not selected or configured.                                                                                                                       |
-| Redis                      | Infrastructure for queue-backed work or other justified shared state | Discussed, deferred until a feature needs it. No Redis service is provisioned.                                                                                                                                                                        |
-| BullMQ                     | Background processing, retries and scheduled work                    | Planned option when reliable asynchronous delivery is required. Queue backend and worker deployment must be specified with the feature; no worker exists now.                                                                                         |
-| Calendar and chart tooling | Viewing calendar, dashboard and performance-report visuals           | The P1-24 calendar is delivered. The verified P1-29–P1-30 dashboard uses the frontend local shadcn/ui Base Nova Chart primitive and direct dependency `recharts` 3.8.0; it replaces no installed tool. Performance-report visuals remain future work. |
+| Tool or capability         | Intended responsibility                                              | Adoption point and decision status                                                                                                                                                                                                           |
+| -------------------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Zustand                    | Shared browser-side state when multiple components need it           | Discussed, conditional on a real feature need. Keep shareable search/filter state in URLs rather than defaulting to a global store.                                                                                                          |
+| Localization library       | Translation management and locale-aware UI                           | Required capability for P3-05; specific library not selected. Arabic requires right-to-left behavior as well as translated strings.                                                                                                          |
+| Nodemailer                 | Server-side email transport                                          | Planned when email is needed, such as authentication mail or P2-01. SMTP/email delivery provider is not selected or configured.                                                                                                              |
+| Redis                      | Infrastructure for queue-backed work or other justified shared state | Discussed, deferred until a feature needs it. No Redis service is provisioned.                                                                                                                                                               |
+| BullMQ                     | Background processing, retries and scheduled work                    | Planned option when reliable asynchronous delivery is required. Queue backend and worker deployment must be specified with the feature; no worker exists now.                                                                                |
+| Calendar and chart tooling | Viewing calendar, dashboard and performance-report visuals           | The P1-24 calendar is delivered. The verified P1-29–P1-30 dashboard uses the local shadcn/ui Base Nova Chart primitive and direct dependency `recharts` 3.8.0; it replaces no installed tool. Performance-report visuals remain future work. |
 
 Creating dated tasks and highlighting overdue tasks in P1-26–P1-27 does not by itself require Redis, BullMQ or automatic message delivery. Likewise, a WhatsApp link and automated WhatsApp messaging are different integrations; the roadmap leaves that decision open for P2-01.
 

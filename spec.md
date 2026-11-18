@@ -6,6 +6,10 @@ Status: Project overview. Foundation, staff authentication/roles, property manag
 
 The [lead duplicate detection specification](specs/lead-duplicate-detection/spec.md), [backend-owned contract](specs/lead-duplicate-detection/contract.md) and [implementation plan](docs/superpowers/plans/2026-11-16-lead-duplicate-detection.md) verify permission-scoped phone matching, explicit acknowledgement, historical backfill and CSV v2 compatibility. Patched frontend/backend checks, disposable migration verification, runtime inspection, responsive/native-zoom review and the final clean serial browser run passed. No deployment or normal-database migration is claimed.
 
+## Verified P2-06
+
+The [lead temperature tags specification](specs/lead-temperature-tags/spec.md), [backend-owned contract](specs/lead-temperature-tags/contract.md) and [implementation plan](docs/superpowers/plans/2026-11-17-lead-temperature-tags.md) verify manual staff temperature, default `unassessed`, scoped list/pipeline/export filtering and activity history. Backend final `bun run check` passed lint, formatting, typecheck, 285 tests in 61 files and production build; the resumed disposable `bun run db:check` passed. Frontend final checks/build passed. The browser matrix covers all 486 current tests exactly once: 419 passed and 67 expected skips, with no failures/missing/unexpected/duplicates. It combines a November 17 interrupted run and the November 18 resumed fresh-fixture run, and is not represented as one uninterrupted clean run. Responsive/native-zoom/keyboard review and the November 18 runtime inspection passed. No deployment or normal-database migration is claimed.
+
 ## Purpose and scope
 
 Provide the agency's independently versioned Express API, owning business rules, authorization, persistence and file storage for the public website and internal CRM. Deliver one verified feature slice at a time. Client portal and private-document capabilities remain later, optional work.

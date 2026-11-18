@@ -30,6 +30,7 @@ export const leadSelect = {
   budgetFils: true,
   source: true,
   stage: true,
+  temperature: true,
   propertyId: true,
   propertyTitleSnapshot: true,
   propertyLocationSnapshot: true,
@@ -62,6 +63,8 @@ export const activitySelect = {
   note: { select: { id: true, kind: true, body: true } },
   previousStage: true,
   nextStage: true,
+  previousTemperature: true,
+  nextTemperature: true,
   previousAgentId: true,
   previousAgentName: true,
   nextAgentId: true,
@@ -101,6 +104,8 @@ function leadPredicate(query: Omit<ListQuery, 'page'>, actor: Actor) {
     );
   if (query.agentId) clauses.push(Prisma.sql`assignedAgentId=${query.agentId}`);
   if (query.stage) clauses.push(Prisma.sql`stage=${query.stage}`);
+  if (query.temperature)
+    clauses.push(Prisma.sql`temperature=${query.temperature}`);
   if (query.source) clauses.push(Prisma.sql`source=${query.source}`);
   if (query.q) {
     const text = normalizeSearchText(query.q),

@@ -29,6 +29,7 @@ import type {
   ListQuery,
   NoteInput,
   PatchInput,
+  TemperatureInput,
 } from './leads.schema.js';
 const missing = () => new AppError(404, 'NOT_FOUND', 'Lead not found');
 const conflict = () =>
@@ -750,6 +751,34 @@ export function createLeadService(
           'stage_changed',
           actor,
           { previousStage: before.stage, nextStage: input.stage },
+          tx,
+        );
+        return dto(lead, actor, tx);
+      });
+    },
+
+    async temperature(id: string, input: TemperatureInput, identity: Actor) {
+      return serializedTransaction(database, async (tx) => {
+        await repository.lock(id, tx);
+        const actor = await requireCurrentStaff(identity, tx);
+        const before = await owned(id, actor, tx);
+        version(before, input.expectedVersion);
+        if (input.temperature === before.temperature)
+          return dto(before, actor, tx);
+        const lead = await update(
+          before,
+          actor,
+          { temperature: input.temperature },
+          tx,
+        );
+        await event(
+          id,
+          'temperature_changed',
+          actor,
+          {
+            previousTemperature: before.temperature,
+            nextTemperature: input.temperature,
+          },
           tx,
         );
         return dto(lead, actor, tx);
