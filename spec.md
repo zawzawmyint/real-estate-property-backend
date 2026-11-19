@@ -2,6 +2,10 @@
 
 Status: Project overview. Foundation, staff authentication/roles, property management, public discovery APIs and demo data are verified.
 
+## Verified P2-07
+
+The [agent performance reporting specification](specs/agent-performance-reporting/spec.md), [backend-owned contract](specs/agent-performance-reporting/contract.md) and [implementation plan](docs/superpowers/plans/2026-11-18-agent-performance-reporting.md) verify the read-only `GET /api/v1/staff/reports/agent-performance` report. It uses Dubai date windows, role-scoped historical aggregates, provable assignment attribution, first-ever Won credit, recorded follow-up cohorts and explicit coverage limits. Backend quality gates passed with 310 tests in 65 files; frontend quality gates passed API parity, lint, format, typecheck, 440 tests in 62 files and build. Separate clean serial desktop/mobile projects accounted for all 508 discovered browser cases with zero failures; a separate dashboard fixture passed 16/16. No deployment, normal-database migration or native Safari verification is claimed.
+
 ## Verified P2-05
 
 The [lead duplicate detection specification](specs/lead-duplicate-detection/spec.md), [backend-owned contract](specs/lead-duplicate-detection/contract.md) and [implementation plan](docs/superpowers/plans/2026-11-16-lead-duplicate-detection.md) verify permission-scoped phone matching, explicit acknowledgement, historical backfill and CSV v2 compatibility. Patched frontend/backend checks, disposable migration verification, runtime inspection, responsive/native-zoom review and the final clean serial browser run passed. No deployment or normal-database migration is claimed.

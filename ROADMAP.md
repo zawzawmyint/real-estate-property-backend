@@ -8,7 +8,7 @@
 
 Track every Phase 1, 2 and 3 feature from the original **Real Estate CRM Checklist**, without treating project setup as completed business functionality.
 
-**Current baseline:** Foundation is complete; 28 Phase 1 and six Phase 2 checklist items are verified; 9 Phase 1–3 checklist items remain pending. The original five portfolio delivery items are retained separately. This roadmap is the workspace-wide source of truth for feature progress; repository-local specifications define implementation and acceptance.
+**Current baseline:** Foundation is complete; 28 Phase 1 and seven Phase 2 checklist items are verified; 8 Phase 1–3 checklist items remain pending. P2-01 is the only remaining Phase 2 item. The original five portfolio delivery items are retained separately. This roadmap is the workspace-wide source of truth for feature progress; repository-local specifications define implementation and acceptance.
 
 **November 5 Git delivery:** Frontend implementation commit `655587e6dc10ea467223c1b1c06c4984f86bba1b` and backend implementation commit `5086b6507f0c12e99a5e309ef6313429a7509c9f` were pushed to their existing working branches after user authorization. The [review remediation](specs/phase-one-review-remediation/spec.md) Git-evidence item F08 is complete. P1-14/P1-18 remain open at 28/30; the later property-form pre-hydration defect was resolved on November 6 in the frontend property-management maintenance evidence. No deployment occurred.
 
@@ -236,9 +236,9 @@ P2-05 adds duplicate checks and matching while preserving separate-lead creation
 
 #### Reporting
 
-**Proposed spec slug:** `agent-performance-reporting`.
+**P2-07 — Verified (2026-11-18):** [Agent performance reporting specification](specs/agent-performance-reporting/spec.md), [backend-owned contract](specs/agent-performance-reporting/contract.md) and [implementation plan](docs/superpowers/plans/2026-11-18-agent-performance-reporting.md) record the delivered read-only report. It reconstructs provable historical attribution for leads handled, first-Won outcomes and first recorded follow-up with sample/coverage counts. Admin/Manager compare all or one agent; Agents receive only their own historical aggregates. No deployment or normal-database migration is claimed.
 
-- [ ] **P2-07** Agent performance report: leads handled, deals closed, response time
+- [x] **P2-07** [Agent performance report: leads handled, deals closed, response time](specs/agent-performance-reporting/spec.md)
 
 #### Public property chatbot
 

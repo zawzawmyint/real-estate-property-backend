@@ -1,4 +1,5 @@
 import { mountDashboard } from './modules/dashboard/dashboard.routes.js';
+import { mountAgentPerformance } from './modules/reports/agent-performance/agent-performance.routes.js';
 import { mountTasks } from './modules/tasks/tasks.routes.js';
 import { mountViewings } from './modules/viewings/viewings.routes.js';
 import { mountLeads } from './modules/leads/leads.routes.js';
@@ -97,6 +98,7 @@ export function createApp(
   mountTasks(app, auth, env, database, notifications);
   mountNotifications(app, auth, env, notifications, streams);
   mountDashboard(app, auth, database);
+  mountAgentPerformance(app, auth, database);
   mountAgency(app, readAgencyCatalog);
   mountProperties(app, auth, env, properties);
   const chatReply = env.PUBLIC_CHAT_ENABLED

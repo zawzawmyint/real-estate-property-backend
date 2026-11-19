@@ -7,6 +7,7 @@ import { LocalStorage } from '../src/infrastructure/storage/local-storage.js';
 import { seedDemoProperties } from '../src/modules/properties/demo-seed.js';
 import { leadSearch } from '../src/modules/leads/leads.repository.js';
 import { preparePublicChatListing } from '../tests/public-chat-fixture.js';
+import { seedAgentPerformanceBrowserFixture } from '../tests/agent-performance-browser-fixture.js';
 
 const password = process.env.STAFF_E2E_PASSWORD;
 
@@ -214,6 +215,9 @@ if (process.env.STAFF_E2E_DASHBOARD_ONLY === '1') {
     });
   }
 } else {
+  if (process.env.STAFF_E2E_AGENT_PERFORMANCE === '1')
+    await seedAgentPerformanceBrowserFixture(fixture, password);
+
   // A started appointment exercises feedback without weakening booking-time rules.
   const viewingProperty = await fixture.database.property.findFirst({
     where: { publishingState: 'published', availability: 'available' },
