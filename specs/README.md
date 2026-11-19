@@ -1,5 +1,9 @@
 # Feature specifications
 
+## Agent performance reporting — verified
+
+- [Agent performance reporting](agent-performance-reporting/spec.md), [backend-owned contract](agent-performance-reporting/contract.md) and [implementation plan](../docs/superpowers/plans/2026-11-18-agent-performance-reporting.md): verified P2-07 historical recorded-work metrics and scoped follow-up cohorts. Backend/frontend quality gates, complete isolated desktop/mobile browser projects, separate dashboard acceptance, responsive/native-zoom review and read-only runtime inspection passed; no deployment or normal-database migration is claimed.
+
 ## Lead temperature tags — verified
 
 - [Lead temperature tags](lead-temperature-tags/spec.md), [backend-owned contract](lead-temperature-tags/contract.md) and [implementation plan](../docs/superpowers/plans/2026-11-17-lead-temperature-tags.md): verified P2-06 manual temperatures, Not assessed default, scoped filters and activity history. Backend/frontend final checks, disposable database check, focused/browser-matrix coverage, responsive/native-zoom/keyboard review and runtime inspection passed. Browser coverage is split across an interrupted and resumed run, not represented as one uninterrupted run.
