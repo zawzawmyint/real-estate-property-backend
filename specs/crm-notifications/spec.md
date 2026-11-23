@@ -10,7 +10,7 @@ Alert staff to changes that need their attention, with a persistent inbox and li
 
 - First slice: lead assignment and reassignment (P2-02), notification persistence, unread state and server-sent events (SSE).
 - Subsequent slices: viewing reschedule/cancellation, follow-up task reminders and staff alerts for website inquiries. These extend the existing workflows and have separate acceptance criteria.
-- Email delivery is a separate follow-up. A staff inquiry alert does not satisfy P2-01, which is a reply to the prospective client. Future email can reuse the relevant trigger and recipient rules, with separate templates, durable delivery state and retries. Provider selection, preferences and sending policy belong in that follow-up spec.
+- Email delivery is implemented separately in [shared transactional emails](../transactional-emails/spec.md), reusing these trigger and recipient rules with its own durable ledger and worker. A staff inquiry alert does not satisfy P2-01, which is a reply to the prospective client. This specification continues to own the inbox/SSE contract; notification preferences remain outside this slice.
 
 ## Behavior and contracts
 
@@ -57,4 +57,4 @@ The backend passed 173 tests in 43 files with Node Vitest threads (`maxWorkers=2
 
 ## Risks and rollout
 
-Start with one long-running Express process. The first version uses an in-process signal fanout and a bounded scheduler; production ingress must preserve streaming. Revisit signal distribution before multi-instance deployment. Roll back application code while retaining the additive table. The lead assignment API and existing stored records remain compatible, with no notification backfill. Redis Pub/Sub and email delivery are not implemented.
+Start with one long-running Express process. The first version uses an in-process signal fanout and a bounded scheduler; production ingress must preserve streaming. Revisit signal distribution before multi-instance deployment. Roll back application code while retaining the additive table. The lead assignment API and existing stored records remain compatible, with no notification backfill. Redis Pub/Sub remains deferred; shared email delivery and its separate rollout are documented in the linked specification.

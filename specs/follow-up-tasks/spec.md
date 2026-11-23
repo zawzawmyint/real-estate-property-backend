@@ -2,6 +2,8 @@
 
 Status: Verified 2026-10-29 on `feat/follow-up-tasks`.
 
+Email extension: [shared transactional emails](../transactional-emails/spec.md) now owns a separate bounded due-task email scan, including ownership-period deduplication and send-time eligibility. This task API/lifecycle is unchanged; the original slice's exclusions below remain historical scope boundaries.
+
 ## Goal
 
 Give staff a dated next action for a lead and make missed follow-ups visible, using the existing lead ownership boundary.

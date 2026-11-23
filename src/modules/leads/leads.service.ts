@@ -1,3 +1,9 @@
+import {
+  type EnquiryEmailProducer,
+  type LeadStaffEmailProducer,
+  suppressReassignedEmails,
+  suppressCustomerContactEmails,
+} from './leads.emails.js';
 import { duplicateReview, guardDuplicate } from './lead-duplicates.service.js';
 import { duplicateCounts } from './lead-duplicates.repository.js';
 import { requireLeadPhone } from './lead-phone.js';
@@ -49,6 +55,8 @@ export type ListPropertyMatches = PropertyService['listPropertyMatches'];
 export function createLeadService(
   database: Database,
   notifications = createNotificationService(database),
+  recordEmail?: EnquiryEmailProducer,
+  recordStaffEmail?: LeadStaffEmailProducer,
 ) {
   const repository = createLeadRepository(database);
 
@@ -175,6 +183,17 @@ export function createLeadService(
       },
       tx,
     );
+    if (recordEmail && lead.email) {
+      await recordEmail(tx, {
+        leadId: lead.id,
+        to: lead.email,
+        name: lead.name,
+        property:
+          lead.propertyId && lead.propertyTitleSnapshot
+            ? { id: lead.propertyId, title: lead.propertyTitleSnapshot }
+            : null,
+      });
+    }
     await event(lead.id, 'created', null, {}, tx);
     await repository.saveReceipt(
       {
@@ -187,6 +206,7 @@ export function createLeadService(
       tx,
     );
     for (const { id } of await repository.activeManagers(tx)) {
+      await recordStaffEmail?.(tx, 'STAFF_WEBSITE_ENQUIRY_RECEIVED', lead, id);
       recipientIds.push(
         await notifications.createNotification(
           {
@@ -202,11 +222,12 @@ export function createLeadService(
     return { replay: false };
   }
 
-  function notifyAssignment(
+  async function notifyAssignment(
     lead: LeadRecord,
     recipientId: string,
     tx: Transaction,
   ) {
+    await recordStaffEmail?.(tx, 'LEAD_ASSIGNED', lead, recipientId);
     return notifications.createNotification(
       {
         recipientId,
@@ -650,6 +671,8 @@ export function createLeadService(
           { ...data, ...leadSearch(data) },
           tx,
         );
+        if (merged.email !== before.email)
+          await suppressCustomerContactEmails(tx, id, new Date());
         await event(
           id,
           'details_updated',
@@ -703,6 +726,12 @@ export function createLeadService(
             nextAgentName: target?.name ?? null,
           },
           tx,
+        );
+        await suppressReassignedEmails(
+          tx,
+          id,
+          before.assignedAgentId,
+          new Date(),
         );
         if (before.assignedAgentId) {
           recipientIds.push(

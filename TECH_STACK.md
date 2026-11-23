@@ -92,6 +92,10 @@ The following lists every direct backend package declared in package.json (compa
 | `csv-parse`                      | 7.0.3          | Bounded property/lead-import CSV syntax/header parsing; backend-only dependency  |
 | `libphonenumber-js`              | 1.13.16        | Full-metadata backend-only UAE/international canonical phone matching for P2-05  |
 
+| `nodemailer` | 10.6.0 | Independent SMTP worker; bundled TypeScript declarations and per-send cancellation |
+| `bullmq` | 6.7.8 | Redis queue execution, distributed rate limiting and delayed email work |
+| `ioredis` | 6.0.0 | Dedicated queue producer/consumer Redis connections |
+
 ### Backend development dependencies
 
 `@redocly/openapi-core` is a direct backend development dependency for semantic validation of resolved OpenAPI authentication requirements. It is not a backend runtime dependency or a direct frontend dependency; the frontend already uses it transitively through `openapi-typescript`.
@@ -120,18 +124,19 @@ The verified P2-08 demo uses OpenRouter over its HTTPS API, not a new applicatio
 
 **CSV imports (2026-11-13):** The backend uses exact `csv-parse` 7.0.3 for the verified property and lead import specifications. The frontend has no CSV parser dependency; its shared decoder/UI send bounded file text to backend-owned parsing.
 
-**None of the named deferred packages below are direct dependencies in either repository.** React Hook Form and Zod are installed for the staff login and property create/edit forms; their use does not imply delivery of later business forms such as inquiries or leads. Recharts is installed separately for the verified dashboard delivery. No deferred tool below has a pinned version.
+**Zustand and localization choices remain deferred.** Installed runtime packages, including the P2-01 email dependencies, are listed in the inventories above. Recharts supports the verified dashboard; capability rows below distinguish existing delivery from future work.
 
-| Tool or capability         | Intended responsibility                                              | Adoption point and decision status                                                                                                                                                                                                           |
-| -------------------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Zustand                    | Shared browser-side state when multiple components need it           | Discussed, conditional on a real feature need. Keep shareable search/filter state in URLs rather than defaulting to a global store.                                                                                                          |
-| Localization library       | Translation management and locale-aware UI                           | Required capability for P3-05; specific library not selected. Arabic requires right-to-left behavior as well as translated strings.                                                                                                          |
-| Nodemailer                 | Server-side email transport                                          | Planned when email is needed, such as authentication mail or P2-01. SMTP/email delivery provider is not selected or configured.                                                                                                              |
-| Redis                      | Infrastructure for queue-backed work or other justified shared state | Discussed, deferred until a feature needs it. No Redis service is provisioned.                                                                                                                                                               |
-| BullMQ                     | Background processing, retries and scheduled work                    | Planned option when reliable asynchronous delivery is required. Queue backend and worker deployment must be specified with the feature; no worker exists now.                                                                                |
-| Calendar and chart tooling | Viewing calendar, dashboard and performance-report visuals           | The P1-24 calendar is delivered. The verified P1-29–P1-30 dashboard uses the local shadcn/ui Base Nova Chart primitive and direct dependency `recharts` 3.8.0; it replaces no installed tool. Performance-report visuals remain future work. |
+| Tool or capability         | Intended responsibility                                    | Adoption point and decision status                                                                                                                                                                                                           |
+| -------------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Zustand                    | Shared browser-side state when multiple components need it | Discussed, conditional on a real feature need. Keep shareable search/filter state in URLs rather than defaulting to a global store.                                                                                                          |
+| Localization library       | Translation management and locale-aware UI                 | Required capability for P3-05; specific library not selected. Arabic requires right-to-left behavior as well as translated strings.                                                                                                          |
+| Calendar and chart tooling | Viewing calendar, dashboard and performance-report visuals | The P1-24 calendar is delivered. The verified P1-29–P1-30 dashboard uses the local shadcn/ui Base Nova Chart primitive and direct dependency `recharts` 3.8.0; it replaces no installed tool. Performance-report visuals remain future work. |
 
-Creating dated tasks and highlighting overdue tasks in P1-26–P1-27 does not by itself require Redis, BullMQ or automatic message delivery. Likewise, a WhatsApp link and automated WhatsApp messaging are different integrations; the roadmap leaves that decision open for P2-01.
+Creating dated tasks and highlighting overdue tasks in P1-26–P1-27 does not by itself require Redis, BullMQ or automatic message delivery. WhatsApp links and automated WhatsApp messaging remain excluded.
+
+## Shared transactional email delivery
+
+The [website enquiry email specification](specs/lead-auto-reply/spec.md) and [shared transactional email specification](specs/transactional-emails/spec.md) implement a database outbox, Redis/BullMQ, ioredis and Nodemailer SMTP in one separate backend worker. The `transactional-emails` queue handles the acknowledgement plus staff assignment, viewing, task and website-enquiry messages and customer viewing messages. It uses application-specific queue prefixes, AES-GCM payload keys and stable non-secret occurrence/recipient deduplication. Existing in-app notifications retain their transport. Isolated runtime tests used Redis 7.2.4; compose/CI pin Redis 8.2.10, whose Docker image was not run locally. Live SMTP, provider quota, sender authorization and production Redis/worker hosting are not configured or verified.
 
 ## Future database and storage options
 

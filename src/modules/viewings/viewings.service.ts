@@ -20,6 +20,10 @@ import type {
   StatusInput,
   ListQuery,
 } from './viewings.schema.js';
+import {
+  suppressViewingEmails,
+  type ViewingEmailProducer,
+} from './viewings.emails.js';
 const missing = () =>
   new AppError(404, 'NOT_FOUND', 'Viewing or lead not found');
 const conflict = () =>
@@ -28,6 +32,7 @@ export function createViewingService(
   database: Database,
   clock: () => Date = () => new Date(),
   notifications = createNotificationService(database),
+  recordEmail?: ViewingEmailProducer,
 ) {
   const repository = createViewingRepository(database),
     leads = createLeadRepository(database);
@@ -182,6 +187,7 @@ export function createViewingService(
 
           tx,
         );
+        await recordEmail?.(tx, row.id, 'confirmed', actor.id);
         return { replay: false, viewing: viewingDto(row) };
       });
     },
@@ -211,10 +217,13 @@ export function createViewingService(
         if (
           dates.startsAt.getTime() !== row.startsAt.getTime() ||
           dates.endsAt.getTime() !== row.endsAt.getTime()
-        )
+        ) {
+          await suppressViewingEmails(tx, viewing.id, clock());
+          await recordEmail?.(tx, viewing.id, 'rescheduled', actor.id);
           recipientIds.push(
             await notifyAssignee(viewing, actor, 'viewing_rescheduled', tx),
           );
+        }
         return viewingDto(viewing);
       });
     },
@@ -241,10 +250,13 @@ export function createViewingService(
 
           tx,
         );
-        if (input.status === 'cancelled')
+        await suppressViewingEmails(tx, viewing.id, clock());
+        if (input.status === 'cancelled') {
+          await recordEmail?.(tx, viewing.id, 'cancelled', actor.id);
           recipientIds.push(
             await notifyAssignee(viewing, actor, 'viewing_cancelled', tx),
           );
+        }
         return viewingDto(viewing);
       });
     },

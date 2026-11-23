@@ -36,6 +36,17 @@ try {
     db.viewing.count(),
     db.task.count(),
     db.notification.count(),
+    db.emailNotification.count(),
+    db.emailNotification.findFirst({
+      select: {
+        recipientUserId: true,
+        viewingId: true,
+        taskId: true,
+        sourceVersion: true,
+        scheduledStartsAt: true,
+        scheduledEndsAt: true,
+      },
+    }),
   ]);
   await verifyPropertySearch(db);
   await verifyLeadSearch(db);

@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { backfillLeadPhoneCanonical } from '../src/modules/leads/lead-phone-backfill.js';
 import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -11,7 +12,13 @@ import { preparePublicChatFixture } from './public-chat-fixture.js';
 
 export const testSecret = 'test-only-secret-for-authentication-integration';
 
-export async function authFixture(options: { publicChat?: boolean } = {}) {
+export async function authFixture(
+  options: {
+    publicChat?: boolean;
+    email?: boolean;
+    transactionalEmails?: boolean;
+  } = {},
+) {
   const port = process.env.E2E_BACKEND_PORT;
   if (
     port !== undefined &&
@@ -26,11 +33,31 @@ export async function authFixture(options: { publicChat?: boolean } = {}) {
     NODE_ENV: 'test',
     INQUIRY_RELAY_SECRET: process.env.INQUIRY_RELAY_SECRET,
     LOG_LEVEL: 'silent',
+    ...(options.email || options.transactionalEmails
+      ? {
+          EMAIL_ENQUIRY_NOTIFICATIONS_ENABLED: 'true',
+          EMAIL_PAYLOAD_KEYS: JSON.stringify({
+            fixture: randomBytes(32).toString('base64'),
+          }),
+          EMAIL_PAYLOAD_ACTIVE_KEY_ID: 'fixture',
+          SMTP_REPLY_TO: 'help@example.test',
+          ...(options.transactionalEmails
+            ? {
+                EMAIL_STAFF_NOTIFICATIONS_ENABLED: 'true',
+                EMAIL_CUSTOMER_VIEWING_NOTIFICATIONS_ENABLED: 'true',
+                EMAIL_CUSTOMER_VIEWING_ACTIVATED_AT: new Date(
+                  Date.now() - 60_000,
+                ).toISOString(),
+              }
+            : {}),
+        }
+      : {}),
     BETTER_AUTH_SECRET: testSecret,
     DATABASE_URL: `file:${join(directory, 'auth.db')}`,
     STORAGE_ROOT: join(directory, 'media'),
     ...chat?.env,
-    ...(chat && process.env.E2E_APP_ORIGIN
+    ...((chat || options.email || options.transactionalEmails) &&
+    process.env.E2E_APP_ORIGIN
       ? {
           APP_ORIGIN: process.env.E2E_APP_ORIGIN,
           BETTER_AUTH_URL: `${process.env.E2E_APP_ORIGIN}/api/v1/auth`,

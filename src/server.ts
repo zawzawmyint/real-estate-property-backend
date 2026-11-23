@@ -5,6 +5,8 @@ import { createApp } from './app.js';
 import { parseEnv } from './config/env.js';
 import { createLogger } from './shared/logger.js';
 import { scanDueTaskReminders } from './modules/tasks/tasks.reminders.js';
+import { readProducerConfig } from './modules/email/email.config.js';
+import { createTaskEmailReminderScanner } from './modules/tasks/tasks.emails.js';
 
 const env = parseEnv(process.env);
 const logger = createLogger(env.LOG_LEVEL);
@@ -20,6 +22,10 @@ try {
 }
 const auth = createStaffAuth(env, database);
 const app = createApp(env, auth, database);
+const scanTaskEmails = createTaskEmailReminderScanner(
+  database,
+  readProducerConfig(env),
+);
 let reminderScan: Promise<void> | undefined;
 let reminderTimer: ReturnType<typeof setInterval> | undefined;
 let stopping = false;
@@ -27,7 +33,14 @@ let stopping = false;
 function scanReminders() {
   if (stopping || reminderScan) return;
 
-  reminderScan = scanDueTaskReminders(app.notifications)
+  reminderScan = Promise.allSettled([
+    scanDueTaskReminders(app.notifications),
+    scanTaskEmails(),
+  ])
+    .then((results) => {
+      for (const result of results)
+        if (result.status === 'rejected') throw result.reason;
+    })
     .catch((error: unknown) => {
       logger.warn(
         { errorType: error instanceof Error ? error.name : typeof error },

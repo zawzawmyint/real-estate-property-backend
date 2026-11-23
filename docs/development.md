@@ -23,7 +23,7 @@ Follow README installation steps from the backend working directory. `.env.examp
 - `PUBLIC_CHAT_UPSTREAM_CALLS_PER_DAY`: provider-call limit per application instance in a rolling 24-hour period, defaulting to 45.
 - In production, public inquiry identity is accepted only from a complete valid signed relay. Missing, partial, malformed or invalid relay headers return the safe 403 response before limiter consumption or persistence. Outside production, absence of both headers uses the hashed socket fallback; supplied invalid headers never fall back. The backend does not trust arbitrary `X-Forwarded-For` values.
 
-No Redis, queue, email or S3 integration is installed. The inquiry limiter is in-process: five attempts per identity in 15 minutes, capped at 10,000 live identities; restart resets it and a multi-instance deployment requires a shared limiter decision. Staff auth, property/photo and lead models are implemented. Environment validation names invalid fields without printing input values.
+Redis, BullMQ and Nodemailer support the disabled-by-default website-enquiry email worker; see [Website enquiry email worker](#website-enquiry-email-worker). S3 integration is not installed. The inquiry limiter is in-process: five attempts per identity in 15 minutes, capped at 10,000 live identities; restart resets it and a multi-instance deployment requires a shared limiter decision. Staff auth, property/photo and lead models are implemented. Environment validation names invalid fields without printing input values.
 
 ## Public chatbot demo operations
 
@@ -108,11 +108,53 @@ Use this procedure only in a maintenance window after a property cleanup log rep
 5. For each logged key, query `PropertyPhoto` again immediately before retrying. If it is referenced, retain it: a failed attachment may have committed and an unknown database outcome must keep media. If it is absent and appears in the dry-run orphan set, remove that exact literal path from the copied/in-service storage only after the operator confirms the matched backup is restorable. Database deletion always precedes physical cleanup.
 6. Re-enumerate the copied storage and reference list after removal. Keep an operator log of each retained/removed key, request ID, timestamps, database query outcome and filesystem error. Escalate unresolved keys rather than broadening a deletion glob.
 
+## Website enquiry email worker
+
+This worker now serves shared transactional email delivery through the `transactional-emails` queue. See [transactional email operations](#transactional-email-operations) for group switches and migration from the old queue name. Existing acknowledgement v1 records remain compatible.
+
+P2-01 is implemented but disabled by default. After an additive migration, configure the backend-only email variables in ignored `.env`; the API needs only the enabled producer configuration, while the separate worker also needs Redis and SMTP configuration. Start it with `bun run email:worker` during development or `bun run email:worker:start` after `bun run build`. API and worker must use the same existing SQLite database file on one supported host; worker startup never creates or migrates it. Health endpoints bind to loopback: `GET /health` reports process liveness and `GET /ready` requires payload keys, Redis, an unpaused consumer and a successful dispatch tick within 30 seconds.
+
+Configure the full key list in [.env.example](../.env.example): a project-specific `EMAIL_QUEUE_PREFIX`, AES key map/active key ID, approved `SMTP_FROM` address and monitored `SMTP_REPLY_TO`, plus Redis/SMTP connection settings. Keep old encryption keys while records still need them; there is no separate deduplication secret. Nodemailer supplies its own TypeScript declarations. Redis needs persistence and `noeviction`; production requires authenticated verified TLS. The queue-wide `EMAIL_RATE_LIMIT_MAX`/duration budget is shared across workers of this queue, not across other applications. Allocate account-wide per-window/daily headroom before enabling; the reference credentials are copied locally, but current reference Redis availability is not verified.
+
+Backend `bun run check` includes real Redis integration tests. Start a disposable Redis service (the local compose file is `compose.email.yaml`) or set `EMAIL_TEST_REDIS_URL` to an isolated endpoint; tests otherwise use the ignored local `REDIS_URL`, then loopback port 6379. They use random prefixes and delete only those test keys, never flush Redis, and use captured/fake SMTP without provider credentials. CI supplies its own Redis service. Override `EMAIL_WORKER_HEALTH_PORT` if the default 4312 conflicts with a local fixture proxy.
+
+Use `bun run email:inspect -- --id <uuid>` for redacted metadata. `bun run email:replay -- --id <uuid>` is read-only; applying a replay requires both `--apply` and `--acknowledge-duplicate-risk`. Disable `EMAIL_ENQUIRY_NOTIFICATIONS_ENABLED` to stop creating new records; keep a compatible worker running to drain, or stop it to pause delivery. Never flush a shared Redis namespace or delete ledger rows to roll back.
+
+Before live activation, verify an authorized sender and monitored reply-to, provider limits and a conservative account-wide quota allocation, production Redis/worker hosting, and a controlled-recipient SMTP/inbox check. These are not completed by the local test suite. No live SMTP email, normal-database migration or deployment is recorded. For fixture browser runs, `STAFF_E2E_EMAIL=1` and an absolute `STAFF_E2E_EMAIL_CAPTURE_FILE` opt the disposable auth E2E server into local captured SMTP; it never uses live SMTP. Set `EMAIL_TEST_REDIS_URL` for an isolated Redis service. `E2E_APP_ORIGIN` and `E2E_BACKEND_PORT` may select isolated alternate origins/ports; they are test controls, not production configuration. The new frontend `tests/e2e/enquiry-emails.spec.ts` runs only with that capture fixture.
+
 ## Operation
+
+### Transactional email operations
+
+The API records encrypted intent in the business transaction; only the separate email worker connects to Redis/SMTP. Shared delivery owns schemas, templates, encryption, scheduling, retries and recovery. Producers in `leads.emails.ts`, `viewings.emails.ts` and `tasks.emails.ts` own eligibility and deduplication; no browser connection is required.
+
+`GET /ready` is intentionally stricter than `/health`: a failed queue publication makes readiness unavailable even if Redis connections are up. Idle or skipped passes cannot clear that publication failure; a successful publication can. If publication succeeds but its ledger acknowledgement is lost, that pass is unhealthy without forgetting publication success. A later healthy pass, including retained-job reconciliation or an idle pass, can restore readiness. On shutdown the worker stops new ticks and waits for the actual in-flight maintenance/dispatch pass within its drain budget before closing queue, Redis and SMTP dependencies.
+
+Configure identical group settings on API and worker:
+
+- `EMAIL_ENQUIRY_NOTIFICATIONS_ENABLED`: produces website enquiry acknowledgements. Switching it off stops new acknowledgements; existing v1 records still drain as before.
+- `EMAIL_STAFF_NOTIFICATIONS_ENABLED`: produces assignment/reassignment, staff enquiry alerts, viewing reschedule/cancellation and task due-soon emails. Default false.
+- `EMAIL_CUSTOMER_VIEWING_NOTIFICATIONS_ENABLED`: produces viewing confirmation, reschedule, cancellation and one reminder. Default false. Also requires `EMAIL_CUSTOMER_VIEWING_ACTIVATED_AT`, a fixed UTC ISO timestamp for the rollout, retained across restarts.
+
+New group switches are checked again by the worker. Disabling a group suppresses its pending work, including future reminders; re-enabling does not replay suppressed records. Customer reminders are recorded at booking/reschedule with a due time 24 hours before the viewing. Short-notice schedules receive confirmation/change only. No historical backfill is performed; pre-cutoff viewings never gain reminders. Task email production is an independent bounded startup/60-second scan, alongside the existing inbox scan, with database uniqueness and cursor progression.
+
+Before sending, live recipient, staff role/assignment, schedule and lifecycle checks can terminally mark a record `SUPPRESSED` without an SMTP attempt. Real viewing changes suppress obsolete pending work. Customer contact changes never retarget an existing encrypted snapshot. Database claims end before SMTP; a business change after the claim can still race with sending. `UNCERTAIN` outcomes are never retried automatically. Operator replay retains context and rechecks expiry/eligibility; suppressed records cannot be replayed.
+
+The queue name change from `enquiry-emails` requires a maintenance window:
+
+1. Pause business writes and reminder scans; gracefully stop all old API/worker processes. Preserve the existing queue prefix and encryption keys during this transition.
+2. Back up SQLite, apply the additive migration through `bun run db:migrate`, and run `bun run db:check`. Deploy matching multi-kind API/worker binaries with new groups disabled. Worker startup checks the new ledger columns; it never migrates automatically.
+3. Wait at least `EMAIL_RATE_LIMIT_DURATION_MS` since the last old send and confirm account-wide provider headroom. The new Redis queue has no old limiter history.
+4. Start the compatible worker: its dispatcher reconciles eligible nonterminal ledger IDs into `transactional-emails`, including IDs previously published only to the old queue. Future-due reminders remain in the ledger until due. Let existing send leases recover through normal maintenance; never reset terminal/uncertain states.
+5. Verify `/ready`, ledger outcomes and controlled-recipient delivery before resuming writes and enabling each new group. Retain old Redis jobs until ledger reconciliation is verified; never flush Redis.
+
+For rollback, disable the new groups and keep the additive schema plus a compatible multi-kind worker. An enquiry-only old binary cannot consume the new kinds. Any queue reversal also needs stopped workers, ledger reconciliation and limiter cooldown. Shared concurrency/rate settings cover all kinds; monitor backlog age and reminder lateness before changing provider allocation or adding queues.
+
+For captured browser verification, `STAFF_E2E_TRANSACTIONAL_EMAILS=1` enables both new groups in the disposable auth fixture and starts its captured-SMTP worker. Supply `STAFF_E2E_EMAIL_CAPTURE_FILE` and isolated `EMAIL_TEST_REDIS_URL`; it never contacts live SMTP. The fixture omits production periodic task scanning, which is covered by backend scan tests.
 
 The server logs safe startup failure codes, returns generic unexpected error responses and stops accepting requests on SIGINT/SIGTERM with a 10-second connection shutdown window. Windows process termination may not deliver Unix signals; exercise deployment shutdown on its actual process manager.
 
-The authenticated notification stream is `GET /api/v1/staff/notifications/stream`. It emits payload-free `notifications.changed` events, with a 15-second authorization heartbeat; clients reload the inbox after a change or reconnect. Its response explicitly sets `Cache-Control: no-store, no-transform` to prevent the current Next rewrite from buffering the stream, and `X-Accel-Buffering: no` for compatible reverse proxies. Verify the production ingress forwards the stream promptly before release. Redis Pub/Sub and email delivery are not configured.
+The authenticated notification stream is `GET /api/v1/staff/notifications/stream`. It emits payload-free `notifications.changed` events, with a 15-second authorization heartbeat; clients reload the inbox after a change or reconnect. Its response explicitly sets `Cache-Control: no-store, no-transform` to prevent the current Next rewrite from buffering the stream, and `X-Accel-Buffering: no` for compatible reverse proxies. Verify the production ingress forwards the stream promptly before release. Redis Pub/Sub is not configured. The separately implemented transactional-email worker remains disabled by default; follow the email activation and queue-transition procedures above before enabling it.
 
 Use persistent storage and database backups before deployment. There is no deployment automation yet. Remove disposable development data only when intentionally resetting local work; database files and public assets are not source code or reproducible migrations.
 

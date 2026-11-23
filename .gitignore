@@ -10,3 +10,5 @@ src/generated/
 *.db-*
 *.sqlite*
 *.log
+
+.delivery-work/

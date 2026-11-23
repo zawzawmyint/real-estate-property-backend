@@ -1,3 +1,4 @@
+import { startEmailBrowserFixture } from '../tests/email-browser-fixture.js';
 import { backfillLeadPhoneCanonical } from '../src/modules/leads/lead-phone-backfill.js';
 // Standalone fixture process: temporary SQLite, no production accounts or HTTP backdoors.
 import { authFixture } from '../tests/auth-fixture.js';
@@ -18,7 +19,16 @@ if (!password || password.length < 12 || password.length > 128)
   throw new Error('STAFF_E2E_PASSWORD must be 12-128 characters');
 
 const publicChat = process.env.STAFF_E2E_PUBLIC_CHAT === '1';
-const fixture = await authFixture({ publicChat });
+const transactionalEmails = process.env.STAFF_E2E_TRANSACTIONAL_EMAILS === '1';
+const fixture = await authFixture({
+  publicChat,
+  email: process.env.STAFF_E2E_EMAIL === '1',
+  transactionalEmails,
+});
+const closeEmailFixture =
+  process.env.STAFF_E2E_EMAIL === '1' || transactionalEmails
+    ? await startEmailBrowserFixture(fixture)
+    : undefined;
 
 if (publicChat || process.env.STAFF_E2E_SEED_PROPERTIES !== '0')
   await seedDemoProperties(
@@ -346,6 +356,7 @@ server.once('listening', () => console.info('AUTH_E2E_READY'));
 
 server.on('error', async (error: NodeJS.ErrnoException) => {
   console.error('AUTH_E2E_LISTEN_ERROR', error.code ?? 'UNKNOWN');
+  await closeEmailFixture?.();
   await fixture.close();
   process.exitCode = 1;
 });
@@ -358,6 +369,7 @@ function stop() {
   stopping = true;
   fixture.app.closeNotificationStreams();
   server.close(async () => {
+    await closeEmailFixture?.();
     await fixture.close();
   });
 }
