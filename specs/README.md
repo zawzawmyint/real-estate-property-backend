@@ -1,5 +1,13 @@
 # Feature specifications
 
+## Shared transactional emails — implemented locally
+
+- [Shared transactional email notifications](transactional-emails/spec.md) and [implementation plan](../docs/superpowers/plans/2026-11-20-transactional-emails.md): locally verified shared delivery for staff assignment, viewing changes, task reminders and website enquiries, plus customer viewing confirmation, reminder, reschedule and cancellation. Existing HTTP contracts remain unchanged; production migration, activation, live SMTP/inbox observation and deployment remain separate.
+
+## Website enquiry emails — implemented locally
+
+- [Website enquiry acknowledgement emails](lead-auto-reply/spec.md), [backend-owned contract](lead-auto-reply/contract.md) and [delivery record](../docs/superpowers/plans/2026-11-19-lead-auto-reply.md): verified local P2-01 implementation for new website enquiries only. Live SMTP, sender authorization, quota allocation, production Redis/worker hosting and deployment remain separate activation gates.
+
 ## Agent performance reporting — verified
 
 - [Agent performance reporting](agent-performance-reporting/spec.md), [backend-owned contract](agent-performance-reporting/contract.md) and [implementation plan](../docs/superpowers/plans/2026-11-18-agent-performance-reporting.md): verified P2-07 historical recorded-work metrics and scoped follow-up cohorts. Backend/frontend quality gates, complete isolated desktop/mobile browser projects, separate dashboard acceptance, responsive/native-zoom review and read-only runtime inspection passed; no deployment or normal-database migration is claimed.
@@ -41,7 +49,7 @@ Start with the [system design](../docs/shared/system-design.md) for the shared a
 
 ## Verified Phase 2 CRM enhancements
 
-- [CRM notifications](crm-notifications/spec.md): verified P2-02 assignment/reassignment notifications with a persistent inbox, unread/read state and SSE. Verified supplemental viewing, task-reminder and staff-inquiry alerts share the inbox. Email/WhatsApp delivery, Redis fanout and deployed-ingress verification remain follow-up work.
+- [CRM notifications](crm-notifications/spec.md): verified P2-02 assignment/reassignment notifications with a persistent inbox, unread/read state and SSE. Verified supplemental viewing, task-reminder and staff-inquiry alerts share the inbox. The [transactional email feature](transactional-emails/spec.md) now delivers the corresponding email extension locally; WhatsApp, Redis fanout and deployed-ingress verification remain follow-up work.
 - [CRM property matching](property-matching/spec.md): verified P2-03 backend-owned `listLeadPropertyMatches` route. It checks live staff and current lead access in the same SQLite transaction as the read-only, published-and-available public-listing search; it does not write data or call a provider. The operation is documented in [leads OpenAPI](../docs/api/leads.openapi.yaml) and represented by the companion frontend snapshot.
 
 ## Verified public property chatbot

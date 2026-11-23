@@ -1,3 +1,4 @@
+import { readProducerConfig } from '../modules/email/email.config.js';
 import { resolve } from 'node:path';
 import { z } from 'zod';
 
@@ -47,6 +48,14 @@ const schema = z
     BETTER_AUTH_URL: z.url().default('http://localhost:3100/api/v1/auth'),
     BETTER_AUTH_SECRET: z.string().min(32),
     INQUIRY_RELAY_SECRET: z.string().min(32).optional(),
+    EMAIL_ENQUIRY_NOTIFICATIONS_ENABLED: z.stringbool().default(false),
+    EMAIL_STAFF_NOTIFICATIONS_ENABLED: z.stringbool().default(false),
+    EMAIL_CUSTOMER_VIEWING_NOTIFICATIONS_ENABLED: z.stringbool().default(false),
+    EMAIL_CUSTOMER_VIEWING_ACTIVATED_AT: z.string().optional(),
+    EMAIL_PAYLOAD_KEYS: z.string().optional(),
+    EMAIL_PAYLOAD_ACTIVE_KEY_ID: z.string().optional(),
+    EMAIL_BRAND_NAME: z.string().optional(),
+    SMTP_REPLY_TO: z.string().optional(),
     PUBLIC_CHAT_ENABLED: z.stringbool().default(false),
     OPENROUTER_API_KEY: z.string().trim().optional(),
     OPENROUTER_CHAT_MODEL: z
@@ -101,6 +110,8 @@ export function parseEnv(input: Record<string, string | undefined>): Env {
     throw new Error(
       `Invalid environment configuration: ${result.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`).join('; ')}`,
     );
+
+  readProducerConfig(result.data);
 
   return {
     ...result.data,

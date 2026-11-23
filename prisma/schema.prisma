@@ -176,6 +176,7 @@ model Lead {
   updatedAt                 DateTime                @updatedAt
   notes                     LeadNote[]
   activities                LeadActivity[]
+  emails                    EmailNotification[]
   receipts                  LeadSubmissionReceipt[]
   tasks                     Task[]
   viewings                  Viewing[]
@@ -207,25 +208,25 @@ model LeadNote {
 }
 
 model LeadActivity {
-  id                String    @id @default(uuid())
-  leadId            String
-  lead              Lead      @relation(fields: [leadId], references: [id], onDelete: Restrict)
-  actorId           String?
-  actor             User?     @relation(fields: [actorId], references: [id], onDelete: SetNull)
-  actorNameSnapshot String?
-  type              String
-  noteId            String?   @unique
-  note              LeadNote? @relation(fields: [noteId], references: [id], onDelete: Restrict)
-  previousStage     String?
-  nextStage         String?
+  id                  String    @id @default(uuid())
+  leadId              String
+  lead                Lead      @relation(fields: [leadId], references: [id], onDelete: Restrict)
+  actorId             String?
+  actor               User?     @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  actorNameSnapshot   String?
+  type                String
+  noteId              String?   @unique
+  note                LeadNote? @relation(fields: [noteId], references: [id], onDelete: Restrict)
+  previousStage       String?
+  nextStage           String?
   previousTemperature String?
   nextTemperature     String?
-  previousAgentId   String?
-  previousAgentName String?
-  nextAgentId       String?
-  nextAgentName     String?
-  changedFields     String    @default("[]")
-  createdAt         DateTime  @default(now())
+  previousAgentId     String?
+  previousAgentName   String?
+  nextAgentId         String?
+  nextAgentName       String?
+  changedFields       String    @default("[]")
+  createdAt           DateTime  @default(now())
 
   @@index([leadId, createdAt, id])
 }
@@ -322,4 +323,43 @@ model Notification {
   @@index([recipientId, retiredAt, readAt])
   @@index([leadId, retiredAt])
   @@index([taskId, retiredAt])
+}
+
+model EmailNotification {
+  id                String    @id
+  dedupeKey         String    @unique
+  kind              String
+  templateVersion   Int       @default(1)
+  leadId            String?
+  lead              Lead?     @relation(fields: [leadId], references: [id], onDelete: Restrict)
+  recipientUserId   String?
+  viewingId         String?
+  taskId            String?
+  sourceVersion     Int?
+  scheduledStartsAt DateTime?
+  scheduledEndsAt   DateTime?
+  replayOfId        String?   @unique
+  status            String    @default("PENDING")
+  payloadCiphertext String?
+  payloadIv         String?
+  payloadTag        String?
+  payloadKeyId      String?
+  createdAt         DateTime  @default(now())
+  nextAttemptAt     DateTime
+  expiresAt         DateTime?
+  enqueuedAt        DateTime?
+  submittedAt       DateTime?
+  terminalAt        DateTime?
+  leaseToken        String?
+  leaseUntil        DateTime?
+  dispatchAttempts  Int       @default(0)
+  sendAttempts      Int       @default(0)
+  lastErrorCode     String?
+  providerMessageId String?
+
+  @@index([status, nextAttemptAt, createdAt, id])
+  @@index([status, leaseUntil])
+  @@index([terminalAt, id])
+  @@index([leadId])
+  @@index([viewingId, kind, scheduledStartsAt, scheduledEndsAt, status])
 }

@@ -2,6 +2,8 @@
 
 Status: Verified — 2026-10-29. Backend, frontend, browser and live-runtime evidence is recorded below.
 
+Email extension: [shared transactional emails](../transactional-emails/spec.md) now owns customer viewing confirmation/reminder/reschedule/cancellation and staff viewing-change emails. It preserves this original viewing API and lifecycle; the original slice's exclusions below remain historical scope boundaries.
+
 ## Goal
 
 Deliver P1-23–P1-25: arrange a property visit for an assigned lead, review appointments in a calendar and record feedback afterward.

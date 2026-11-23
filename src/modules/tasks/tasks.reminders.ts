@@ -3,8 +3,8 @@ import {
   findDueReminderCandidates,
   lockReminderScan,
 } from './tasks.repository.js';
+import { taskReminderWindowMs } from './tasks.rules.js';
 
-const reminderWindowMs = 30 * 60_000;
 const batchLimit = 100;
 
 export async function scanDueTaskReminders(
@@ -14,7 +14,7 @@ export async function scanDueTaskReminders(
   await notifications.transactionWithChanges(async (tx, recipientIds) => {
     await lockReminderScan(tx);
     const now = clock();
-    const until = new Date(now.getTime() + reminderWindowMs);
+    const until = new Date(now.getTime() + taskReminderWindowMs);
     const candidates = await findDueReminderCandidates(
       now,
       until,

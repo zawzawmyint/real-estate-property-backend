@@ -8,7 +8,7 @@
 
 Track every Phase 1, 2 and 3 feature from the original **Real Estate CRM Checklist**, without treating project setup as completed business functionality.
 
-**Current baseline:** Foundation is complete; 28 Phase 1 and seven Phase 2 checklist items are verified; 8 Phase 1–3 checklist items remain pending. P2-01 is the only remaining Phase 2 item. The original five portfolio delivery items are retained separately. This roadmap is the workspace-wide source of truth for feature progress; repository-local specifications define implementation and acceptance.
+**Current baseline:** Foundation is complete; 28 Phase 1 and eight Phase 2 checklist items are verified; 7 Phase 1–3 checklist items remain pending. The original five portfolio delivery items are retained separately. This roadmap is the workspace-wide source of truth for feature progress; repository-local specifications define implementation and acceptance.
 
 **November 5 Git delivery:** Frontend implementation commit `655587e6dc10ea467223c1b1c06c4984f86bba1b` and backend implementation commit `5086b6507f0c12e99a5e309ef6313429a7509c9f` were pushed to their existing working branches after user authorization. The [review remediation](specs/phase-one-review-remediation/spec.md) Git-evidence item F08 is complete. P1-14/P1-18 remain open at 28/30; the later property-form pre-hydration defect was resolved on November 6 in the frontend property-management maintenance evidence. No deployment occurred.
 
@@ -19,7 +19,7 @@ Track every Phase 1, 2 and 3 feature from the original **Real Estate CRM Checkli
 **In scope**
 
 - **Phase 1:** All core public website and staff CRM features: 30 checklist items.
-- **Phase 2:** Eight enhancement items, including the public property chatbot. Select two or three initially and retain the rest in the backlog.
+- **Phase 2:** All eight enhancement items are locally verified; production activation and deployment remain release work.
 - **Phase 3:** Five optional stretch items, including the client portal, after earlier releases are live.
 - **Delivery:** Five original portfolio/demo items, tracked separately from product features.
 
@@ -103,7 +103,7 @@ Foundation evidence: [workspace specification](docs/shared/foundation-spec.md), 
 3. **Capture and follow up on interest** — _(role: fullstack)_ — inquiry creates a CRM lead, staff assign it, agent records notes and changes its stage. This completes the first business flow.
 4. **Arrange viewings and follow-ups** — _(role: fullstack)_ — scheduling, calendar, feedback and dated tasks.
 5. **Complete Phase 1** — _(role: fullstack)_ — remaining public pages/search/demo data, activity, drag-and-drop and validated dashboard metrics; deploy the complete core release.
-6. **Select Phase 2 enhancements** — _(role: fullstack)_ — specify and deliver two or three chosen features, then reassess the remaining backlog.
+6. **Select Phase 2 activation slices** — _(role: fullstack)_ — complete production migration, activation and deployment gates for the chosen locally verified enhancements, then stage the remainder.
 7. **Evaluate Phase 3** — _(role: fullstack)_ — specify optional features only after earlier releases are live; client portal remains later work.
 
 ### Phase 1 — Core features (MVP)
@@ -205,15 +205,19 @@ The source requires dated tasks and overdue highlighting here; scheduled email o
 
 ### Phase 2 — Features that make it stand out
 
-**Selection rule:** Pick two or three initially. The initial selections are the verified opt-in public property chatbot, CRM property matching and CRM assignment notifications; P2-04 was subsequently verified as a data-tools delivery.
+**Selection history:** The initial opt-in selections were the public property chatbot, CRM property matching and CRM assignment notifications. All eight original Phase 2 checklist items are now locally verified; this does not claim that a Phase 2 production release is live.
 
 #### Automation and matching
 
-**Specifications:** [CRM notifications](specs/crm-notifications/spec.md), [property matching](specs/property-matching/spec.md). Proposed P2-01 spec slug: `lead-auto-reply`.
+**Specifications:** [website enquiry emails](specs/lead-auto-reply/spec.md), [shared transactional emails](specs/transactional-emails/spec.md), [CRM notifications](specs/crm-notifications/spec.md), and [property matching](specs/property-matching/spec.md).
 
-- [ ] **P2-01** Auto-reply to new leads by email or WhatsApp link
+- [x] **P2-01** [Auto-reply to new leads by email or WhatsApp link](specs/lead-auto-reply/spec.md) — Verified local delivery is automatic email acknowledgement for newly accepted website enquiries only, with optional email, an encrypted database outbox, Redis/BullMQ and an independent SMTP worker. Manual/imported leads and WhatsApp are excluded. Backend 72-file/332-test check, frontend parity/lint/typecheck/440-unit-test checks, fresh migration/database checks, and final Edge browser coverage (23 passed, five expected skips) passed. Live SMTP, sender/reply-to authorization, account-wide quota allocation, production Redis/worker hosting, normal-database migration and deployment remain activation gates.
 - [x] **P2-02** [Notify the agent when a lead is assigned](specs/crm-notifications/spec.md) — Verified persistent inbox, read state and SSE assignment/reassignment delivery. The same delivered inbox also supports viewing changes, task reminders and staff inquiry alerts as supplemental slices. Email/WhatsApp auto-reply remains P2-01.
 - [x] **P2-03** [Suggest properties that fit a lead's budget and preferences](specs/property-matching/spec.md)
+
+**Shared transactional emails — locally verified (2026-11-20):** [Shared transactional emails](specs/transactional-emails/spec.md) uses one `transactional-emails` queue and worker for staff assignment, viewing, task and website-enquiry messages, plus customer viewing confirmation, reminder, reschedule and cancellation emails. Existing HTTP contracts and P2 checklist statuses are unchanged. Backend 348-test/75-file and frontend 440-test/62-file gates passed; 18 selected desktop/mobile browser cases are covered across an initial run and exact retry. The verified worker lifecycle follow-up passed backend checks with 350 tests in 76 files and a disposable migrated-database check: publication failures keep readiness unavailable until publication succeeds, while lost enqueue acknowledgements recover through a later healthy pass, and shutdown drains the active maintenance pass. No frontend runtime or browser re-run is claimed for that follow-up. Production migration, activation, sender/quota validation, live SMTP/inbox observation and deployment remain separate gates.
+
+**2026-11-23 email closeout:** The final backend gate passed with 350 tests in 76 files after a reviewed suppression-diagnostic correction; the focused regression was observed failing before the correction and passing afterward. The frontend gate passed API parity, lint, formatting, typecheck, 440 tests in 62 files and the production build. Fresh disposable migration, rerun and database checks passed. One clean captured-SMTP Edge run passed all 18 selected desktop/mobile public enquiry, assignment, viewing and task cases. Active frontend runtime inspection on `/properties` reported no configuration, session or browser errors. This does not claim external SMTP, normal-database migration, activation, deployment or inbox observation.
 
 **2026-11-10 notification delivery evidence:** Backend 173/173 tests (43 files), lint, typecheck, production build, disposable migrated database check and fresh/populated migration coverage passed. Frontend 306/306 tests (49 files), contract drift, lint, typecheck, isolated production Webpack build and contract-snapshot parity passed. A targeted Edge suite passed 4/4 desktop/mobile cases against disposable services, and reviewed screenshots plus active-page runtime inspection had no configuration/session errors. This verifies application behavior, not a deployed ingress, Redis fanout, email delivery or the full legacy browser suite.
 
@@ -283,7 +287,7 @@ Foundation smoke-test screenshots do not complete D-04: capture the delivered bu
 **Functional**
 
 - [ ] **Phase 1 release:** P1-01 through P1-30 are verified and the public website and CRM are deployed.
-- [ ] **Phase 2 initial release:** Two or three selected enhancements are specified, verified and live; unselected items remain tracked.
+- [ ] **Phase 2 initial release:** Selected locally verified enhancements are production-migrated, activated and live, with the documented operational gates satisfied; the remaining locally verified enhancements stay tracked for staged activation.
 - [ ] **Phase 3 delivery:** Each separately selected stretch feature has verified acceptance before being marked complete; optional unselected work remains unchecked.
 - [ ] **Demo delivery, if applicable:** D-01 through D-05 are verified for the portfolio/demo release.
 
@@ -357,7 +361,7 @@ Foundation smoke-test screenshots do not complete D-04: capture the delivered bu
 - **Staff access:** What can Managers and Agents create, edit, assign, archive or delete? Who manages staff accounts?
 - **Properties and leads:** Confirm sales/rentals scope, draft/publish behavior, delete/archive rules and how repeat inquiries or interest in multiple properties should be represented.
 - **Pipeline and reports:** What event means Won, how is conversion calculated, and what timestamps define agent response time?
-- **Phase 2 selection:** Which additional enhancements join the chatbot in the initial Phase 2 release? Does WhatsApp mean a user-opened link or an automated messaging integration?
+- **Phase 2 release:** Confirm the production activation order and owners for the locally verified features. WhatsApp remains excluded from P2-01; decide its scope only if it is separately prioritized.
 - **Later release scope:** Confirm production versus portfolio delivery, hosting, language needs, and the requirements for each selected Phase 3 feature when it is prioritized.
 
 - **2026-10-27 — Shared-code naming maintenance verified:** [Shared-code naming and ownership](specs/shared-code-naming/spec.md) moves common transaction, HTTP and search helpers out of property-owned modules, separates LoadingState from skyline artwork and explicitly names PropertyInquiryCard. All imports and current documentation are reconciled. Frontend API drift, lint, formatting, TypeScript, 199 tests in 34 files and isolated production build passed; backend complete quality checks passed with 94 tests in 23 files, production build and disposable database verification. Isolated desktop/mobile smoke coverage passed 11 tests with one intentional mobile skip. Fresh scoped review found no actionable findings. No roadmap checklist state or real-business publication gate changed.

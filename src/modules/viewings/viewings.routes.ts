@@ -11,6 +11,8 @@ import {
 } from '../../shared/http/middleware.js';
 import { createViewingService } from './viewings.service.js';
 import { createViewingController } from './viewings.controller.js';
+import { readProducerConfig } from '../email/email.config.js';
+import { createViewingEmailProducer } from './viewings.emails.js';
 export function mountViewings(
   app: Express,
   auth: StaffAuth,
@@ -18,9 +20,15 @@ export function mountViewings(
   database: Database,
   notifications: NotificationService,
 ) {
+  const emailConfig = readProducerConfig(env);
   const router = express.Router(),
     controller = createViewingController(
-      createViewingService(database, undefined, notifications),
+      createViewingService(
+        database,
+        undefined,
+        notifications,
+        emailConfig ? createViewingEmailProducer(emailConfig) : undefined,
+      ),
     );
   const live = requireStaff(auth),
     write = [

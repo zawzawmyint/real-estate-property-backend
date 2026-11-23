@@ -2,8 +2,10 @@ import request from 'supertest';
 import { randomUUID } from 'node:crypto';
 import { expect } from 'vitest';
 import { authFixture } from './auth-fixture.js';
-export async function leadFixture() {
-  const fixture = await authFixture();
+export async function leadFixture(
+  options: Parameters<typeof authFixture>[0] = {},
+) {
+  const fixture = await authFixture(options);
   const cookies: Record<string, string> = {},
     ids: Record<string, string> = {};
   for (const label of ['admin', 'manager', 'agent', 'other'] as const) {

@@ -1,3 +1,8 @@
+import { readProducerConfig } from '../email/email.config.js';
+import {
+  createEnquiryEmailProducer,
+  createLeadStaffEmailProducer,
+} from './leads.emails.js';
 import express, { type Express } from 'express';
 import type { Env } from '../../config/env.js';
 import type { StaffAuth } from '../auth/auth.js';
@@ -30,8 +35,18 @@ export function mountLeads(
   listPropertyMatches: ListPropertyMatches,
   notifications: NotificationService,
 ) {
+  const emailConfig = readProducerConfig(env);
   const controller = createLeadController(
-      createLeadService(database, notifications),
+      createLeadService(
+        database,
+        notifications,
+        emailConfig?.enquiryEnabled
+          ? createEnquiryEmailProducer(emailConfig)
+          : undefined,
+        emailConfig?.staffEnabled
+          ? createLeadStaffEmailProducer(emailConfig)
+          : undefined,
+      ),
       listPropertyMatches,
     ),
     staff = express.Router(),
