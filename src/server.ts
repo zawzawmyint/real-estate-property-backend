@@ -7,6 +7,8 @@ import { createLogger } from './shared/logger.js';
 import { scanDueTaskReminders } from './modules/tasks/tasks.reminders.js';
 import { readProducerConfig } from './modules/email/email.config.js';
 import { createTaskEmailReminderScanner } from './modules/tasks/tasks.emails.js';
+import { readNotificationTransportConfig } from './modules/notifications/notifications.config.js';
+import { startRedisNotificationTransport } from './modules/notifications/notifications.redis-transport.js';
 
 const env = parseEnv(process.env);
 const logger = createLogger(env.LOG_LEVEL);
@@ -20,8 +22,31 @@ try {
   );
   process.exit(1);
 }
-const auth = createStaffAuth(env, database);
-const app = createApp(env, auth, database);
+let notificationRuntime:
+  Awaited<ReturnType<typeof startRedisNotificationTransport>> | undefined;
+let app: ReturnType<typeof createApp>;
+try {
+  const auth = createStaffAuth(env, database);
+  const config = readNotificationTransportConfig(process.env);
+  if (config.mode === 'redis')
+    notificationRuntime = await startRedisNotificationTransport(config, logger);
+  app = createApp(
+    env,
+    auth,
+    database,
+    undefined,
+    undefined,
+    undefined,
+    notificationRuntime
+      ? { transport: notificationRuntime.transport }
+      : undefined,
+  );
+} catch {
+  await notificationRuntime?.close();
+  await database.$disconnect();
+  logger.fatal({ code: 'API_STARTUP_FAILED' }, 'API startup failed');
+  process.exit(1);
+}
 const scanTaskEmails = createTaskEmailReminderScanner(
   database,
   readProducerConfig(env),
@@ -52,7 +77,9 @@ function scanReminders() {
     });
 }
 
-const server = app.listen(env.PORT, env.HOST, () => {
+const server = app.listen(env.PORT, env.HOST, (error?: Error) => {
+  // Express 5 forwards listen errors to this callback as well as the error event.
+  if (error) return;
   logger.info({ host: env.HOST, port: env.PORT }, 'API listening');
   scanReminders();
   reminderTimer = setInterval(scanReminders, 60_000);
@@ -67,6 +94,7 @@ server.on('error', (error) => {
     'Server could not start',
   );
   process.exitCode = 1;
+  shutdown('listen-error');
 });
 
 function shutdown(signal: string) {
@@ -84,11 +112,17 @@ function shutdown(signal: string) {
 
   timeout.unref();
   server.close(async (error) => {
-    await reminderScan;
-    await database.$disconnect();
-    clearTimeout(timeout);
-
-    if (error) process.exitCode = 1;
+    try {
+      await reminderScan;
+      await notificationRuntime?.close();
+      await database.$disconnect();
+      if (error) process.exitCode = 1;
+    } catch {
+      process.exitCode = 1;
+      logger.warn({ code: 'API_SHUTDOWN_FAILED' }, 'API shutdown failed');
+    } finally {
+      clearTimeout(timeout);
+    }
   });
 }
 
