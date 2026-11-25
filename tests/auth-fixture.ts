@@ -1,4 +1,4 @@
-import { randomBytes } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import { backfillLeadPhoneCanonical } from '../src/modules/leads/lead-phone-backfill.js';
 import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -9,6 +9,9 @@ import { createStaffOperator } from '../src/modules/auth/staff-operator.js';
 import { createApp } from '../src/app.js';
 import { parseEnv } from '../src/config/env.js';
 import { preparePublicChatFixture } from './public-chat-fixture.js';
+import { readNotificationTransportConfig } from '../src/modules/notifications/notifications.config.js';
+import { startRedisNotificationTransport } from '../src/modules/notifications/notifications.redis-transport.js';
+import { createLogger } from '../src/shared/logger.js';
 
 export const testSecret = 'test-only-secret-for-authentication-integration';
 
@@ -17,6 +20,7 @@ export async function authFixture(
     publicChat?: boolean;
     email?: boolean;
     transactionalEmails?: boolean;
+    notificationRedis?: boolean;
   } = {},
 ) {
   const port = process.env.E2E_BACKEND_PORT;
@@ -33,6 +37,14 @@ export async function authFixture(
     NODE_ENV: 'test',
     INQUIRY_RELAY_SECRET: process.env.INQUIRY_RELAY_SECRET,
     LOG_LEVEL: 'silent',
+    ...(options.notificationRedis
+      ? {
+          NOTIFICATION_SIGNAL_TRANSPORT: 'redis',
+          REDIS_URL:
+            process.env.EMAIL_TEST_REDIS_URL ?? 'redis://127.0.0.1:6379',
+          NOTIFICATION_REDIS_CHANNEL: `notification-browser-${randomUUID()}`,
+        }
+      : {}),
     ...(options.email || options.transactionalEmails
       ? {
           EMAIL_ENQUIRY_NOTIFICATIONS_ENABLED: 'true',
@@ -88,6 +100,26 @@ export async function authFixture(
 
   await backfillLeadPhoneCanonical(database);
   const auth = createStaffAuth(env, database);
+  const config = readNotificationTransportConfig({
+    NOTIFICATION_SIGNAL_TRANSPORT: env.NOTIFICATION_SIGNAL_TRANSPORT,
+    NOTIFICATION_REDIS_CHANNEL: env.NOTIFICATION_REDIS_CHANNEL,
+    REDIS_URL: env.REDIS_URL,
+  });
+  const notificationRuntime =
+    config.mode === 'redis'
+      ? await startRedisNotificationTransport(config, createLogger('silent'))
+      : undefined;
+  const app = createApp(
+    env,
+    auth,
+    database,
+    undefined,
+    undefined,
+    chat?.fetch,
+    notificationRuntime
+      ? { transport: notificationRuntime.transport }
+      : undefined,
+  );
 
   return {
     directory,
@@ -95,9 +127,11 @@ export async function authFixture(
     database,
     auth,
     operator: createStaffOperator(auth, database),
-    app: createApp(env, auth, database, undefined, undefined, chat?.fetch),
+    app,
 
     async close() {
+      app.closeNotificationStreams();
+      await notificationRuntime?.close();
       await database.$disconnect();
       await rm(directory, { recursive: true, force: true });
     },

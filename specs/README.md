@@ -1,5 +1,9 @@
 # Feature specifications
 
+## Redis notification transport — implemented locally
+
+- [Redis notification Pub/Sub](notification-redis-pubsub/spec.md) and [implementation plan](../docs/superpowers/plans/2026-11-23-notification-redis-pubsub.md): locally verified opt-in cross-process refresh signals, memory fallback and acknowledged subscription recovery. Existing inbox/SSE contracts and P2-02 verification remain unchanged; production activation is not claimed.
+
 ## Shared transactional emails — implemented locally
 
 - [Shared transactional email notifications](transactional-emails/spec.md) and [implementation plan](../docs/superpowers/plans/2026-11-20-transactional-emails.md): locally verified shared delivery for staff assignment, viewing changes, task reminders and website enquiries, plus customer viewing confirmation, reminder, reschedule and cancellation. Existing HTTP contracts remain unchanged; production migration, activation, live SMTP/inbox observation and deployment remain separate.
@@ -49,7 +53,7 @@ Start with the [system design](../docs/shared/system-design.md) for the shared a
 
 ## Verified Phase 2 CRM enhancements
 
-- [CRM notifications](crm-notifications/spec.md): verified P2-02 assignment/reassignment notifications with a persistent inbox, unread/read state and SSE. Verified supplemental viewing, task-reminder and staff-inquiry alerts share the inbox. The [transactional email feature](transactional-emails/spec.md) now delivers the corresponding email extension locally; WhatsApp, Redis fanout and deployed-ingress verification remain follow-up work.
+- [CRM notifications](crm-notifications/spec.md): verified P2-02 assignment/reassignment notifications with a persistent inbox, unread/read state and SSE. Verified supplemental viewing, task-reminder and staff-inquiry alerts share the inbox. The [transactional email feature](transactional-emails/spec.md) now delivers the corresponding email extension locally; WhatsApp, deployed-ingress verification and production Redis activation remain follow-up work.
 - [CRM property matching](property-matching/spec.md): verified P2-03 backend-owned `listLeadPropertyMatches` route. It checks live staff and current lead access in the same SQLite transaction as the read-only, published-and-available public-listing search; it does not write data or call a provider. The operation is documented in [leads OpenAPI](../docs/api/leads.openapi.yaml) and represented by the companion frontend snapshot.
 
 ## Verified public property chatbot

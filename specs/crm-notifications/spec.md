@@ -29,9 +29,9 @@ Write notification rows and retire obsolete rows inside the business transaction
 
 ### Live signal transport
 
-Keep a small backend interface for publishing recipient IDs and subscribing to inbox changes. Wire one in-process implementation at startup. The notification service publishes committed changes through this interface, and the SSE handler uses it to refresh the affected recipients' connections. SQLite remains the source of truth for the inbox and unread state. Transport failures are logged and leave committed operations successful. A fresh inbox read recovers missed signals.
+Keep a small backend interface for publishing recipient IDs and subscribing to inbox changes. The notification service publishes committed changes through this interface, and the SSE handler uses it to refresh the affected recipients' connections. SQLite remains the source of truth for the inbox and unread state. Transport failures are logged and leave committed operations successful. A fresh inbox read recovers missed signals.
 
-If multiple API instances need to exchange live signals later, add a Redis Pub/Sub implementation at the same boundary. Keep the browser SSE contract, inbox records and workflow rules independent of that choice. Select the transport at startup when the second implementation exists.
+The startup-selected transport defaults to in-process memory. The locally verified opt-in Redis implementation at the same boundary uses dedicated publisher/subscriber clients and one configured channel to exchange recipient-only refresh hints between cooperating APIs. It does not change the browser SSE contract, inbox records or workflow rules; see [Redis notification Pub/Sub](../notification-redis-pubsub/spec.md) for its bounds and operational limits.
 
 ### Implemented backend-owned API
 
@@ -57,4 +57,6 @@ The backend passed 173 tests in 43 files with Node Vitest threads (`maxWorkers=2
 
 ## Risks and rollout
 
-Start with one long-running Express process. The first version uses an in-process signal fanout and a bounded scheduler; production ingress must preserve streaming. Revisit signal distribution before multi-instance deployment. Roll back application code while retaining the additive table. The lead assignment API and existing stored records remain compatible, with no notification backfill. Redis Pub/Sub remains deferred; shared email delivery and its separate rollout are documented in the linked specification.
+The [Redis Pub/Sub feature](../notification-redis-pubsub/spec.md) and [implementation plan](../../docs/superpowers/plans/2026-11-23-notification-redis-pubsub.md) record the locally verified cross-process transport follow-up. Memory remains the default; Redis activation is opt-in and does not change P2-02's original checklist status.
+
+Start with memory mode or configure every cooperating API consistently with the same supported database, TLS/authenticated Redis and one environment-specific channel. Production ingress must preserve streaming. Pub/Sub removes neither the SQLite nor other multi-instance constraints, and it is at-most-once: the inbox and reconnect refreshes recover subscriber gaps but not a commit-to-publish crash gap. Roll back by returning `NOTIFICATION_SIGNAL_TRANSPORT` to `memory` and restarting affected APIs; retain the additive table and do not flush Redis. The lead assignment API and existing stored records remain compatible, with no notification backfill. Shared email delivery and its separate rollout are documented in the linked specification.

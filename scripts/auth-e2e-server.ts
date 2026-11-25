@@ -24,6 +24,7 @@ const fixture = await authFixture({
   publicChat,
   email: process.env.STAFF_E2E_EMAIL === '1',
   transactionalEmails,
+  notificationRedis: process.env.STAFF_E2E_NOTIFICATION_REDIS === '1',
 });
 const closeEmailFixture =
   process.env.STAFF_E2E_EMAIL === '1' || transactionalEmails

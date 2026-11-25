@@ -1,4 +1,5 @@
 import { readProducerConfig } from '../modules/email/email.config.js';
+import { readNotificationTransportConfig } from '../modules/notifications/notifications.config.js';
 import { resolve } from 'node:path';
 import { z } from 'zod';
 
@@ -56,6 +57,11 @@ const schema = z
     EMAIL_PAYLOAD_ACTIVE_KEY_ID: z.string().optional(),
     EMAIL_BRAND_NAME: z.string().optional(),
     SMTP_REPLY_TO: z.string().optional(),
+    NOTIFICATION_SIGNAL_TRANSPORT: z
+      .enum(['memory', 'redis'])
+      .default('memory'),
+    NOTIFICATION_REDIS_CHANNEL: z.string().optional(),
+    REDIS_URL: z.string().optional(),
     PUBLIC_CHAT_ENABLED: z.stringbool().default(false),
     OPENROUTER_API_KEY: z.string().trim().optional(),
     OPENROUTER_CHAT_MODEL: z
@@ -112,6 +118,7 @@ export function parseEnv(input: Record<string, string | undefined>): Env {
     );
 
   readProducerConfig(result.data);
+  readNotificationTransportConfig(input);
 
   return {
     ...result.data,
