@@ -1,6 +1,7 @@
 import { serializeExport, decimalHundredths } from '../../shared/csv/export.js';
 import { createPropertyImportService } from './property-import.service.js';
 import { requireCurrentStaff } from '../auth/staff-actor.js';
+import { recordAuditChange } from '../audit-log/audit-log.events.js';
 import type { Actor } from '../leads/leads.repository.js';
 import {
   serializedTransaction,
@@ -80,6 +81,14 @@ export function createPropertyService(
   logger: Logger,
 ) {
   const repository = createPropertyRepository(database);
+
+  async function writer(identity: Actor, tx: Transaction, adminOnly = false) {
+    const actor = await requireCurrentStaff(identity, tx);
+    canWrite(actor.role);
+    if (adminOnly && actor.role !== 'admin')
+      throw new AppError(403, 'FORBIDDEN', 'Access denied');
+    return actor;
+  }
 
   async function locked(id: string, tx: Transaction) {
     await repository.lock(id, tx);
@@ -201,23 +210,27 @@ export function createPropertyService(
       return propertyDto(property, storage, role, true);
     },
 
-    async create(input: CreatePropertyInput, role: StaffRole) {
-      canWrite(role);
-
-      const property = await serializedTransaction(database, (tx) =>
-        repository.create(
+    async create(input: CreatePropertyInput, identity: Actor) {
+      return serializedTransaction(database, async (tx) => {
+        const actor = await writer(identity, tx);
+        const property = await repository.create(
           { ...toData(input), title: input.title, purpose: input.purpose },
           tx,
-        ),
-      );
-
-      return propertyDto(property, storage, role);
+        );
+        await recordAuditChange(tx, {
+          actor,
+          entityType: 'property',
+          entityId: property.id,
+          action: 'property.created',
+          after: property,
+        });
+        return propertyDto(property, storage, actor.role);
+      });
     },
 
-    async patch(id: string, input: PropertyInput, role: StaffRole) {
-      canWrite(role);
-
-      const property = await serializedTransaction(database, async (tx) => {
+    async patch(id: string, input: PropertyInput, identity: Actor) {
+      return serializedTransaction(database, async (tx) => {
+        const actor = await writer(identity, tx);
         const before = await locked(id, tx);
 
         if (
@@ -235,17 +248,22 @@ export function createPropertyService(
             before.publishingState !== 'published',
         );
 
-        return repository.update(id, data, tx);
+        const property = await repository.update(id, data, tx);
+        await recordAuditChange(tx, {
+          actor,
+          entityType: 'property',
+          entityId: id,
+          action: 'property.updated',
+          before,
+          after: property,
+        });
+        return propertyDto(property, storage, actor.role);
       });
-
-      return propertyDto(property, storage, role);
     },
 
-    async remove(id: string, role: StaffRole, requestId: string) {
-      if (role !== 'admin')
-        throw new AppError(403, 'FORBIDDEN', 'Access denied');
-
+    async remove(id: string, identity: Actor, requestId: string) {
       const keys = await serializedTransaction(database, async (tx) => {
+        const actor = await writer(identity, tx, true);
         const property = await locked(id, tx);
 
         if (property.publishingState !== 'archived')
@@ -257,6 +275,13 @@ export function createPropertyService(
           );
 
         await repository.remove(id, tx);
+        await recordAuditChange(tx, {
+          actor,
+          entityType: 'property',
+          entityId: id,
+          action: 'property.deleted',
+          before: property,
+        });
 
         return property.photos.map((photo) => photo.storageKey);
       });
@@ -264,11 +289,10 @@ export function createPropertyService(
       await cleanup(keys, requestId);
     },
 
-    async assertUpload(id: string, role: StaffRole) {
-      canWrite(role);
-
+    async assertUpload(id: string, identity: Actor) {
+      const actor = await requireCurrentStaff(identity, database);
+      canWrite(actor.role);
       const property = await repository.findInternal(id);
-
       if (!property) throw notFound();
       editable(property);
       if (property.photos.length >= 12)
@@ -278,17 +302,18 @@ export function createPropertyService(
     async attachPhoto(
       id: string,
       image: { data: Buffer; width: number; height: number },
-      role: StaffRole,
+      identity: Actor,
       requestId: string,
     ) {
-      canWrite(role);
-
       const key = await storage.save(image.data, '.webp');
       let property: PropertyRecord;
+      let role = identity.role;
 
       try {
         property = await serializedTransaction(database, async (tx) => {
+          const actor = await writer(identity, tx);
           const before = await locked(id, tx);
+          role = actor.role;
 
           editable(before);
           if (before.photos.length >= 12)
@@ -305,7 +330,17 @@ export function createPropertyService(
             tx,
           );
 
-          return (await repository.findInternal(id, tx))!;
+          const after = (await repository.findInternal(id, tx))!;
+          await recordAuditChange(tx, {
+            actor,
+            entityType: 'property',
+            entityId: id,
+            label: after.title,
+            action: 'property.photo_added',
+            before: { photoIds: before.photos.map((photo) => photo.id) },
+            after: { photoIds: after.photos.map((photo) => photo.id) },
+          });
+          return after;
         });
       } catch (error) {
         // A commit can succeed even when the client sees a rejection. Never
@@ -326,10 +361,9 @@ export function createPropertyService(
       return propertyDto(property, storage, role);
     },
 
-    async orderPhotos(id: string, ids: string[], role: StaffRole) {
-      canWrite(role);
-
-      const property = await serializedTransaction(database, async (tx) => {
+    async orderPhotos(id: string, ids: string[], identity: Actor) {
+      return serializedTransaction(database, async (tx) => {
+        const actor = await writer(identity, tx);
         const before = await locked(id, tx);
 
         editable(before);
@@ -347,23 +381,30 @@ export function createPropertyService(
         for (const [position, photoId] of ids.entries())
           await repository.setPosition(photoId, position, tx);
 
-        return (await repository.findInternal(id, tx))!;
+        const after = (await repository.findInternal(id, tx))!;
+        await recordAuditChange(tx, {
+          actor,
+          entityType: 'property',
+          entityId: id,
+          label: after.title,
+          action: 'property.photos_reordered',
+          before: { photoIds: before.photos.map((photo) => photo.id) },
+          after: { photoIds: after.photos.map((photo) => photo.id) },
+        });
+        return propertyDto(after, storage, actor.role);
       });
-
-      return propertyDto(property, storage, role);
     },
 
     async removePhoto(
       id: string,
       photoId: string,
-      role: StaffRole,
+      identity: Actor,
       requestId: string,
     ) {
-      canWrite(role);
-
-      const { property, key } = await serializedTransaction(
+      const { property, key, role } = await serializedTransaction(
         database,
         async (tx) => {
+          const actor = await writer(identity, tx);
           const before = await locked(id, tx);
 
           editable(before);
@@ -385,9 +426,20 @@ export function createPropertyService(
           for (const [position, item] of remaining.entries())
             await repository.setPosition(item.id, position, tx);
 
+          const after = (await repository.findInternal(id, tx))!;
+          await recordAuditChange(tx, {
+            actor,
+            entityType: 'property',
+            entityId: id,
+            label: after.title,
+            action: 'property.photo_removed',
+            before: { photoIds: before.photos.map((photo) => photo.id) },
+            after: { photoIds: after.photos.map((photo) => photo.id) },
+          });
           return {
-            property: (await repository.findInternal(id, tx))!,
+            property: after,
             key: photo.storageKey,
+            role: actor.role,
           };
         },
       );

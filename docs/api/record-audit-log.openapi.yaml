@@ -1,0 +1,434 @@
+openapi: 3.1.0
+info:
+  title: Record audit log
+  version: 1.0.0
+paths:
+  /api/v1/staff/audit-log:
+    get:
+      operationId: listAuditEvents
+      description: Current Admin and Manager only. Inclusive from and exclusive to span at most 93 days. actorId excludes actorKind. entityId requires entityType and action must match a supplied entityType. All filters intersect. Ordering is occurredAt then id descending.
+      security: [{ StaffCookie: [] }]
+      parameters:
+        - {
+            'in': 'query',
+            'name': 'from',
+            'required': true,
+            'schema': { 'type': 'string', 'format': 'date-time' },
+          }
+        - {
+            'in': 'query',
+            'name': 'to',
+            'required': true,
+            'schema': { 'type': 'string', 'format': 'date-time' },
+          }
+        - {
+            'in': 'query',
+            'name': 'actorId',
+            'required': false,
+            'schema': { 'type': 'string', 'minLength': 1, 'maxLength': 128 },
+          }
+        - {
+            'in': 'query',
+            'name': 'actorKind',
+            'required': false,
+            'schema':
+              { 'type': 'string', 'enum': ['staff', 'website', 'system'] },
+          }
+        - {
+            'in': 'query',
+            'name': 'entityType',
+            'required': false,
+            'schema':
+              {
+                'type': 'string',
+                'enum': ['property', 'lead', 'viewing', 'task', 'import'],
+              },
+          }
+        - {
+            'in': 'query',
+            'name': 'entityId',
+            'required': false,
+            'schema': { 'type': 'string', 'format': 'uuid' },
+          }
+        - {
+            'in': 'query',
+            'name': 'action',
+            'required': false,
+            'schema': { '$ref': '#/components/schemas/AuditAction' },
+          }
+        - {
+            'in': 'query',
+            'name': 'importId',
+            'required': false,
+            'schema': { 'type': 'string', 'format': 'uuid' },
+          }
+        - {
+            'in': 'query',
+            'name': 'page',
+            'required': false,
+            'schema': { 'type': 'integer', 'minimum': 1, 'default': 1 },
+          }
+        - {
+            'in': 'query',
+            'name': 'pageSize',
+            'required': false,
+            'schema':
+              {
+                'type': 'integer',
+                'minimum': 1,
+                'maximum': 100,
+                'default': 20,
+              },
+          }
+      responses:
+        '200':
+          description: Success
+          headers:
+            { Cache-Control: { schema: { type: string, const: no-store } } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuditPage' }
+        '400':
+          description: Invalid filters
+          headers:
+            { Cache-Control: { schema: { type: string, const: no-store } } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuditError' }
+        '401':
+          description: Staff sign-in required
+          headers:
+            { Cache-Control: { schema: { type: string, const: no-store } } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuditError' }
+        '403':
+          description: Access denied
+          headers:
+            { Cache-Control: { schema: { type: string, const: no-store } } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuditError' }
+        '500':
+          description: Unexpected failure
+          headers:
+            { Cache-Control: { schema: { type: string, const: no-store } } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuditError' }
+  /api/v1/staff/audit-log/actors:
+    get:
+      operationId: listAuditActors
+      description: Current Admin and Manager only. Latest historical staff snapshots per identity. Search is a trimmed literal substring of that snapshot name. Sort by name then id ascending.
+      security: [{ StaffCookie: [] }]
+      parameters:
+        - {
+            'in': 'query',
+            'name': 'q',
+            'required': false,
+            'schema': { 'type': 'string', 'maxLength': 100 },
+          }
+        - {
+            'in': 'query',
+            'name': 'page',
+            'required': false,
+            'schema': { 'type': 'integer', 'minimum': 1, 'default': 1 },
+          }
+        - {
+            'in': 'query',
+            'name': 'pageSize',
+            'required': false,
+            'schema':
+              {
+                'type': 'integer',
+                'minimum': 1,
+                'maximum': 100,
+                'default': 20,
+              },
+          }
+      responses:
+        '200':
+          description: Success
+          headers:
+            { Cache-Control: { schema: { type: string, const: no-store } } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuditActorPage' }
+        '400':
+          description: Invalid filters
+          headers:
+            { Cache-Control: { schema: { type: string, const: no-store } } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuditError' }
+        '401':
+          description: Staff sign-in required
+          headers:
+            { Cache-Control: { schema: { type: string, const: no-store } } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuditError' }
+        '403':
+          description: Access denied
+          headers:
+            { Cache-Control: { schema: { type: string, const: no-store } } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuditError' }
+        '500':
+          description: Unexpected failure
+          headers:
+            { Cache-Control: { schema: { type: string, const: no-store } } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuditError' }
+components:
+  securitySchemes:
+    StaffCookie: { type: apiKey, in: cookie, name: agency.session }
+  schemas:
+    AuditAction:
+      {
+        'type': 'string',
+        'enum':
+          [
+            'property.created',
+            'property.updated',
+            'property.deleted',
+            'property.photo_added',
+            'property.photo_removed',
+            'property.photos_reordered',
+            'lead.created',
+            'lead.updated',
+            'lead.assigned',
+            'lead.stage_changed',
+            'lead.temperature_changed',
+            'lead.note_added',
+            'lead.call_logged',
+            'viewing.created',
+            'viewing.rescheduled',
+            'viewing.cancelled',
+            'viewing.completed',
+            'task.created',
+            'task.updated',
+            'task.completed',
+            'task.cancelled',
+            'import.completed',
+          ],
+      }
+    AuditEntityType:
+      {
+        'type': 'string',
+        'enum': ['property', 'lead', 'viewing', 'task', 'import'],
+      }
+    AuditActorKind: { 'type': 'string', 'enum': ['staff', 'website', 'system'] }
+    AuditValue:
+      {
+        'anyOf':
+          [
+            { 'type': 'null' },
+            { 'type': 'boolean' },
+            { 'type': 'number' },
+            { 'type': 'string' },
+            {
+              'type': 'array',
+              'items': { 'type': 'string', 'format': 'uuid' },
+            },
+          ],
+      }
+    AuditChange:
+      {
+        'oneOf':
+          [
+            {
+              'type': 'object',
+              'additionalProperties': false,
+              'required': ['field', 'redacted'],
+              'properties':
+                {
+                  'field': { 'type': 'string' },
+                  'redacted': { 'type': 'boolean', 'const': true },
+                },
+            },
+            {
+              'type': 'object',
+              'additionalProperties': false,
+              'required': ['field', 'redacted', 'before', 'after'],
+              'properties':
+                {
+                  'field': { 'type': 'string' },
+                  'redacted': { 'type': 'boolean', 'const': false },
+                  'before': { '$ref': '#/components/schemas/AuditValue' },
+                  'after': { '$ref': '#/components/schemas/AuditValue' },
+                },
+            },
+          ],
+      }
+    AuditActor:
+      {
+        'type': 'object',
+        'additionalProperties': false,
+        'required': ['kind', 'id', 'name', 'role'],
+        'properties':
+          {
+            'kind':
+              { 'type': 'string', 'enum': ['staff', 'website', 'system'] },
+            'id': { 'anyOf': [{ 'type': 'string' }, { 'type': 'null' }] },
+            'name': { 'anyOf': [{ 'type': 'string' }, { 'type': 'null' }] },
+            'role':
+              {
+                'anyOf':
+                  [
+                    { 'type': 'string', 'enum': ['admin', 'manager', 'agent'] },
+                    { 'type': 'null' },
+                  ],
+              },
+          },
+      }
+    AuditActorOption:
+      {
+        'type': 'object',
+        'additionalProperties': false,
+        'required': ['id', 'name', 'role'],
+        'properties':
+          {
+            'id': { 'type': 'string' },
+            'name': { 'type': 'string' },
+            'role': { 'type': 'string', 'enum': ['admin', 'manager', 'agent'] },
+          },
+      }
+    AuditEntity:
+      {
+        'type': 'object',
+        'additionalProperties': false,
+        'required': ['type', 'id', 'label', 'available'],
+        'properties':
+          {
+            'type':
+              {
+                'type': 'string',
+                'enum': ['property', 'lead', 'viewing', 'task', 'import'],
+              },
+            'id': { 'type': 'string', 'format': 'uuid' },
+            'label': { 'type': 'string' },
+            'available': { 'type': 'boolean' },
+          },
+      }
+    AuditImport:
+      {
+        'type': 'object',
+        'additionalProperties': false,
+        'required': ['id', 'kind', 'createdCount'],
+        'properties':
+          {
+            'id': { 'type': 'string', 'format': 'uuid' },
+            'kind': { 'type': 'string', 'enum': ['property', 'lead'] },
+            'createdCount':
+              { 'anyOf': [{ 'type': 'integer' }, { 'type': 'null' }] },
+          },
+      }
+    AuditCoverage:
+      {
+        'type': 'object',
+        'additionalProperties': false,
+        'required': ['startedAt', 'version', 'historicalBackfill'],
+        'properties':
+          {
+            'startedAt': { 'type': 'string', 'format': 'date-time' },
+            'version': { 'type': 'integer', 'const': 1 },
+            'historicalBackfill': { 'type': 'boolean', 'const': false },
+          },
+      }
+    AuditEvent:
+      {
+        'type': 'object',
+        'additionalProperties': false,
+        'required':
+          [
+            'id',
+            'schemaVersion',
+            'occurredAt',
+            'actor',
+            'entity',
+            'action',
+            'changes',
+            'import',
+          ],
+        'properties':
+          {
+            'id': { 'type': 'string', 'format': 'uuid' },
+            'schemaVersion': { 'type': 'integer', 'const': 1 },
+            'occurredAt': { 'type': 'string', 'format': 'date-time' },
+            'actor': { '$ref': '#/components/schemas/AuditActor' },
+            'entity': { '$ref': '#/components/schemas/AuditEntity' },
+            'action': { '$ref': '#/components/schemas/AuditAction' },
+            'changes':
+              {
+                'type': 'array',
+                'items': { '$ref': '#/components/schemas/AuditChange' },
+              },
+            'import':
+              {
+                'anyOf':
+                  [
+                    { '$ref': '#/components/schemas/AuditImport' },
+                    { 'type': 'null' },
+                  ],
+              },
+          },
+      }
+    AuditPage:
+      {
+        'type': 'object',
+        'additionalProperties': false,
+        'required': ['items', 'page', 'pageSize', 'total', 'coverage'],
+        'properties':
+          {
+            'items':
+              {
+                'type': 'array',
+                'items': { '$ref': '#/components/schemas/AuditEvent' },
+              },
+            'page': { 'type': 'integer' },
+            'pageSize': { 'type': 'integer' },
+            'total': { 'type': 'integer' },
+            'coverage': { '$ref': '#/components/schemas/AuditCoverage' },
+          },
+      }
+    AuditActorPage:
+      {
+        'type': 'object',
+        'additionalProperties': false,
+        'required': ['items', 'page', 'pageSize', 'total'],
+        'properties':
+          {
+            'items':
+              {
+                'type': 'array',
+                'items': { '$ref': '#/components/schemas/AuditActorOption' },
+              },
+            'page': { 'type': 'integer' },
+            'pageSize': { 'type': 'integer' },
+            'total': { 'type': 'integer' },
+          },
+      }
+    AuditError:
+      {
+        'type': 'object',
+        'additionalProperties': false,
+        'required': ['error'],
+        'properties':
+          {
+            'error':
+              {
+                'type': 'object',
+                'additionalProperties': false,
+                'required': ['code', 'message', 'requestId'],
+                'properties':
+                  {
+                    'code': { 'type': 'string' },
+                    'message': { 'type': 'string' },
+                    'requestId': { 'type': 'string' },
+                  },
+              },
+          },
+      }

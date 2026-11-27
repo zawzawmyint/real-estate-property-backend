@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { serializeExport } from '../../shared/csv/export.js';
 import { AppError } from '../../shared/errors/app-error.js';
 import {
@@ -6,6 +7,10 @@ import {
   type Transaction,
 } from '../../infrastructure/database/transaction.js';
 import { requireCurrentStaff } from '../auth/staff-actor.js';
+import {
+  recordAuditChange,
+  appendImportCompleted,
+} from '../audit-log/audit-log.events.js';
 import type { Actor } from '../leads/leads.repository.js';
 import { toData } from './properties.schema.js';
 import {
@@ -83,6 +88,7 @@ export function createPropertyImportService(database: Database) {
           };
         }
 
+        const auditImportId = randomUUID();
         const propertyIds: string[] = [];
         for (const row of result.inputs) {
           const property = await repository.create(
@@ -97,6 +103,14 @@ export function createPropertyImportService(database: Database) {
             },
             tx,
           );
+          await recordAuditChange(tx, {
+            actor,
+            entityType: 'property',
+            entityId: property.id,
+            action: 'property.created',
+            after: property,
+            import: { id: auditImportId, kind: 'property' },
+          });
           propertyIds.push(property.id);
         }
 
@@ -112,6 +126,12 @@ export function createPropertyImportService(database: Database) {
           tx,
         );
 
+        await appendImportCompleted(tx, {
+          actor,
+          id: auditImportId,
+          kind: 'property',
+          createdCount: propertyIds.length,
+        });
         return {
           submissionId: input.submissionId,
           createdCount: propertyIds.length,

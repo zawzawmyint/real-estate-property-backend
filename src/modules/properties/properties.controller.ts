@@ -47,7 +47,7 @@ export function createPropertyController(service: PropertyService) {
     async create(req: Request, res: Response) {
       const property = await service.create(
         parse(createSchema, req.body),
-        role(res),
+        res.locals.staff,
       );
 
       res
@@ -61,7 +61,7 @@ export function createPropertyController(service: PropertyService) {
         await service.patch(
           parseId(req.params.id),
           parse(patchSchema, req.body),
-          role(res),
+          res.locals.staff,
         ),
       );
     },
@@ -69,7 +69,7 @@ export function createPropertyController(service: PropertyService) {
     async remove(req: Request, res: Response) {
       await service.remove(
         parseId(req.params.id),
-        role(res),
+        res.locals.staff,
         res.locals.requestId,
       );
       res.status(204).end();
@@ -87,7 +87,7 @@ export function createPropertyController(service: PropertyService) {
           await service.attachPhoto(
             parseId(req.params.id),
             image,
-            role(res),
+            res.locals.staff,
             res.locals.requestId,
           ),
         );
@@ -98,7 +98,7 @@ export function createPropertyController(service: PropertyService) {
         await service.orderPhotos(
           parseId(req.params.id),
           parse(orderSchema, req.body).photoIds,
-          role(res),
+          res.locals.staff,
         ),
       );
     },
@@ -108,7 +108,7 @@ export function createPropertyController(service: PropertyService) {
         await service.removePhoto(
           parseId(req.params.id),
           parseId(req.params.photoId),
-          role(res),
+          res.locals.staff,
           res.locals.requestId,
         ),
       );

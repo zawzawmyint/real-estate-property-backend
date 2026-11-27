@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import {
   importDuplicateReview,
   DuplicateReviewRequired,
@@ -11,6 +12,10 @@ import {
   type Transaction,
 } from '../../infrastructure/database/transaction.js';
 import { requireCurrentStaff } from '../auth/staff-actor.js';
+import {
+  recordAuditChange,
+  appendImportCompleted,
+} from '../audit-log/audit-log.events.js';
 import type { Actor } from './leads.repository.js';
 import {
   importColumns,
@@ -116,9 +121,18 @@ export function createLeadImportService(database: Database) {
           input.duplicateAcknowledgement?.reviewToken !== review.reviewToken
         )
           throw new DuplicateReviewRequired(review, true);
+        const auditImportId = randomUUID();
         const leadIds: string[] = [];
         for (const row of result.inputs) {
           const lead = await repository.create(row, actor, tx);
+          await recordAuditChange(tx, {
+            actor,
+            entityType: 'lead',
+            entityId: lead.id,
+            action: 'lead.created',
+            after: lead,
+            import: { id: auditImportId, kind: 'lead' },
+          });
           await repository.activity(lead.id, actor, tx);
           leadIds.push(lead.id);
         }
@@ -131,6 +145,12 @@ export function createLeadImportService(database: Database) {
           },
           tx,
         );
+        await appendImportCompleted(tx, {
+          actor,
+          id: auditImportId,
+          kind: 'lead',
+          createdCount: leadIds.length,
+        });
         return {
           submissionId: input.submissionId,
           createdCount: leadIds.length,

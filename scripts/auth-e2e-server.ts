@@ -64,6 +64,7 @@ for (const project of ['desktop', 'mobile'])
 
 // Data-tool suites keep real sign-in quotas independent of property workflows.
 for (const namespace of [
+  'activity-log',
   'csv-export',
   'lead-import',
   'property-import',

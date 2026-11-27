@@ -6,6 +6,7 @@ import {
   type Transaction,
 } from '../../infrastructure/database/transaction.js';
 import { requireCurrentStaff } from '../auth/staff-actor.js';
+import { recordAuditChange } from '../audit-log/audit-log.events.js';
 import { createLeadRepository, type Actor } from '../leads/leads.repository.js';
 import { eligibleAgent } from '../leads/leads.dto.js';
 import { createNotificationService } from '../notifications/notifications.service.js';
@@ -73,9 +74,10 @@ export function createTaskService(
   ) {
     if ((await repository.update(id, expected, actor, data, tx)).count !== 1)
       throw conflict();
+    const row = await owned(id, actor, tx);
     return {
-      task: taskDto(await owned(id, actor, tx), asOf),
-      asOf: asOf.toISOString(),
+      row,
+      result: { task: taskDto(row, asOf), asOf: asOf.toISOString() },
     };
   }
 
@@ -150,6 +152,13 @@ export function createTaskService(
           },
           tx,
         );
+        await recordAuditChange(tx, {
+          actor,
+          entityType: 'task',
+          entityId: row.id,
+          action: 'task.created',
+          after: row,
+        });
         return {
           replay: false,
           task: taskDto(row, asOf),
@@ -171,7 +180,7 @@ export function createTaskService(
         const dueAt = new Date(input.dueAt),
           dueChanged = dueAt.getTime() !== row.dueAt.getTime();
         if (dueChanged) future(dueAt, asOf);
-        const result = await persist(
+        const { row: updated, result } = await persist(
           id,
           input.expectedVersion,
           actor,
@@ -179,6 +188,14 @@ export function createTaskService(
           asOf,
           tx,
         );
+        await recordAuditChange(tx, {
+          actor,
+          entityType: 'task',
+          entityId: id,
+          action: 'task.updated',
+          before: row,
+          after: updated,
+        });
         if (dueChanged)
           recipientIds.push(
             ...(await notifications.retireNotifications({ taskId: id }, tx)),
@@ -196,7 +213,7 @@ export function createTaskService(
           asOf = clock();
         if (row.version !== input.expectedVersion || row.status !== 'open')
           throw conflict();
-        const result = await persist(
+        const { row: updated, result } = await persist(
           id,
           input.expectedVersion,
           actor,
@@ -209,6 +226,15 @@ export function createTaskService(
           asOf,
           tx,
         );
+        await recordAuditChange(tx, {
+          actor,
+          entityType: 'task',
+          entityId: id,
+          action:
+            input.status === 'completed' ? 'task.completed' : 'task.cancelled',
+          before: row,
+          after: updated,
+        });
         recipientIds.push(
           ...(await notifications.retireNotifications({ taskId: id }, tx)),
         );

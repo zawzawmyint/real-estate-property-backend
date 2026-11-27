@@ -363,3 +363,33 @@ model EmailNotification {
   @@index([leadId])
   @@index([viewingId, kind, scheduledStartsAt, scheduledEndsAt, status])
 }
+
+model RecordAuditEvent {
+  id            String   @id @default(uuid())
+  schemaVersion Int      @default(1)
+  occurredAt    DateTime @default(now())
+  actorKind     String
+  actorId       String?
+  actorName     String?
+  actorRole     String?
+  entityType    String
+  entityId      String
+  entityLabel   String
+  action        String
+  changesJson   String
+  importId      String?
+  importKind    String?
+  createdCount  Int?
+
+  @@index([occurredAt, id])
+  @@index([entityType, entityId, occurredAt, id])
+  @@index([actorId, occurredAt, id])
+  @@index([action, occurredAt, id])
+  @@index([importId, occurredAt, id])
+}
+
+model RecordAuditCoverage {
+  id              Int      @id
+  startedAt       DateTime @default(now())
+  coverageVersion Int      @default(1)
+}

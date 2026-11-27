@@ -1,5 +1,9 @@
 # Feature specifications
 
+## Record activity log — verified locally
+
+- [P3-04 record activity log](record-audit-log/spec.md), [backend-owned contract](record-audit-log/contract.md) and [implementation plan](../docs/superpowers/plans/2026-11-26-record-audit-log.md): locally verified atomic business-change events and Admin/Manager agency-wide reads, including Admin actions. Deployment and normal-database migration are not claimed.
+
 ## Redis notification transport — implemented locally
 
 - [Redis notification Pub/Sub](notification-redis-pubsub/spec.md) and [implementation plan](../docs/superpowers/plans/2026-11-23-notification-redis-pubsub.md): locally verified opt-in cross-process refresh signals, memory fallback and acknowledged subscription recovery. Existing inbox/SSE contracts and P2-02 verification remain unchanged; production activation is not claimed.

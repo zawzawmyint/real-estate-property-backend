@@ -374,6 +374,10 @@ paths:
     $ref: './public-chat.openapi.yaml#/paths/~1api~1v1~1public~1chat'
   /api/v1/staff/dashboard:
     $ref: './dashboard.openapi.yaml#/paths/~1api~1v1~1staff~1dashboard'
+  /api/v1/staff/audit-log:
+    $ref: './record-audit-log.openapi.yaml#/paths/~1api~1v1~1staff~1audit-log'
+  /api/v1/staff/audit-log/actors:
+    $ref: './record-audit-log.openapi.yaml#/paths/~1api~1v1~1staff~1audit-log~1actors'
   /api/v1/staff/reports/agent-performance:
     $ref: './agent-performance.openapi.yaml#/paths/~1api~1v1~1staff~1reports~1agent-performance'
   /api/v1/staff/leads/{id}/property-matches:
@@ -2860,6 +2864,34 @@ components:
           },
       }
   schemas:
+    AuditAction:
+      $ref: './record-audit-log.openapi.yaml#/components/schemas/AuditAction'
+    AuditEntityType:
+      $ref: './record-audit-log.openapi.yaml#/components/schemas/AuditEntityType'
+    AuditActorKind:
+      $ref: './record-audit-log.openapi.yaml#/components/schemas/AuditActorKind'
+    AuditValue:
+      $ref: './record-audit-log.openapi.yaml#/components/schemas/AuditValue'
+    AuditChange:
+      $ref: './record-audit-log.openapi.yaml#/components/schemas/AuditChange'
+    AuditActor:
+      $ref: './record-audit-log.openapi.yaml#/components/schemas/AuditActor'
+    AuditActorOption:
+      $ref: './record-audit-log.openapi.yaml#/components/schemas/AuditActorOption'
+    AuditEntity:
+      $ref: './record-audit-log.openapi.yaml#/components/schemas/AuditEntity'
+    AuditImport:
+      $ref: './record-audit-log.openapi.yaml#/components/schemas/AuditImport'
+    AuditCoverage:
+      $ref: './record-audit-log.openapi.yaml#/components/schemas/AuditCoverage'
+    AuditEvent:
+      $ref: './record-audit-log.openapi.yaml#/components/schemas/AuditEvent'
+    AuditPage:
+      $ref: './record-audit-log.openapi.yaml#/components/schemas/AuditPage'
+    AuditActorPage:
+      $ref: './record-audit-log.openapi.yaml#/components/schemas/AuditActorPage'
+    AuditError:
+      $ref: './record-audit-log.openapi.yaml#/components/schemas/AuditError'
     PropertyImportIssue:
       type: object
       additionalProperties: false

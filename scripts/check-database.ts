@@ -37,6 +37,8 @@ try {
     db.task.count(),
     db.notification.count(),
     db.emailNotification.count(),
+    db.recordAuditEvent.count(),
+    db.recordAuditCoverage.findUniqueOrThrow({ where: { id: 1 } }),
     db.emailNotification.findFirst({
       select: {
         recipientUserId: true,

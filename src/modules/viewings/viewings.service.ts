@@ -6,6 +6,7 @@ import {
   type Transaction,
 } from '../../infrastructure/database/transaction.js';
 import { requireCurrentStaff } from '../auth/staff-actor.js';
+import { recordAuditChange } from '../audit-log/audit-log.events.js';
 import { createLeadRepository, type Actor } from '../leads/leads.repository.js';
 import { eligibleAgent } from '../leads/leads.dto.js';
 import { createNotificationService } from '../notifications/notifications.service.js';
@@ -187,6 +188,13 @@ export function createViewingService(
 
           tx,
         );
+        await recordAuditChange(tx, {
+          actor,
+          entityType: 'viewing',
+          entityId: row.id,
+          action: 'viewing.created',
+          after: row,
+        });
         await recordEmail?.(tx, row.id, 'confirmed', actor.id);
         return { replay: false, viewing: viewingDto(row) };
       });
@@ -214,6 +222,14 @@ export function createViewingService(
           dates,
           tx,
         );
+        await recordAuditChange(tx, {
+          actor,
+          entityType: 'viewing',
+          entityId: id,
+          action: 'viewing.rescheduled',
+          before: row,
+          after: viewing,
+        });
         if (
           dates.startsAt.getTime() !== row.startsAt.getTime() ||
           dates.endsAt.getTime() !== row.endsAt.getTime()
@@ -250,6 +266,17 @@ export function createViewingService(
 
           tx,
         );
+        await recordAuditChange(tx, {
+          actor,
+          entityType: 'viewing',
+          entityId: id,
+          action:
+            input.status === 'completed'
+              ? 'viewing.completed'
+              : 'viewing.cancelled',
+          before: row,
+          after: viewing,
+        });
         await suppressViewingEmails(tx, viewing.id, clock());
         if (input.status === 'cancelled') {
           await recordEmail?.(tx, viewing.id, 'cancelled', actor.id);
