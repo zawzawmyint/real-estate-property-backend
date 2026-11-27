@@ -8,9 +8,11 @@ export const leadImportRepository = {
   lock(id: string, tx: Transaction) {
     return tx.$executeRaw`UPDATE LeadImportReceipt SET id=id WHERE id=${id}`;
   },
+
   receipt(id: string, tx: Transaction) {
     return tx.leadImportReceipt.findUnique({ where: { id } });
   },
+
   create(row: ImportLead, actor: Actor, tx: Transaction) {
     const data = {
       name: row.name,
@@ -32,9 +34,26 @@ export const leadImportRepository = {
     };
     return tx.lead.create({
       data: { ...data, ...leadSearch(data) },
-      select: { id: true },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        email: true,
+        originalMessage: true,
+        purpose: true,
+        budgetFils: true,
+        source: true,
+        propertyId: true,
+        assignedAgentId: true,
+        stage: true,
+        temperature: true,
+        propertyTitleSnapshot: true,
+        propertyLocationSnapshot: true,
+        assignedAgentNameSnapshot: true,
+      },
     });
   },
+
   activity(leadId: string, actor: Actor, tx: Transaction) {
     return tx.leadActivity.create({
       data: {
@@ -43,9 +62,11 @@ export const leadImportRepository = {
         actorNameSnapshot: actor.name,
         type: 'created',
       },
+
       select: { id: true },
     });
   },
+
   saveReceipt(
     input: {
       id: string;
@@ -53,6 +74,7 @@ export const leadImportRepository = {
       contentDigest: string;
       leadIds: string[];
     },
+
     tx: Transaction,
   ) {
     return tx.leadImportReceipt.create({

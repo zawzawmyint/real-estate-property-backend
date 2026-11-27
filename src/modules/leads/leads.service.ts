@@ -12,6 +12,7 @@ import type { ExportQuery } from './leads.schema.js';
 import { createHash } from 'node:crypto';
 import { AppError } from '../../shared/errors/app-error.js';
 import { requireCurrentStaff } from '../auth/staff-actor.js';
+import { recordAuditChange } from '../audit-log/audit-log.events.js';
 import {
   serializedTransaction,
   type Database,
@@ -194,6 +195,14 @@ export function createLeadService(
             : null,
       });
     }
+    await recordAuditChange(tx, {
+      actor: null,
+      source: 'website',
+      entityType: 'lead',
+      entityId: lead.id,
+      action: 'lead.created',
+      after: lead,
+    });
     await event(lead.id, 'created', null, {}, tx);
     await repository.saveReceipt(
       {
@@ -562,6 +571,13 @@ export function createLeadService(
           { ...data, ...leadSearch(data) },
           tx,
         );
+        await recordAuditChange(tx, {
+          actor,
+          entityType: 'lead',
+          entityId: lead.id,
+          action: 'lead.created',
+          after: lead,
+        });
         await event(
           lead.id,
           'created',
@@ -671,6 +687,14 @@ export function createLeadService(
           { ...data, ...leadSearch(data) },
           tx,
         );
+        await recordAuditChange(tx, {
+          actor,
+          entityType: 'lead',
+          entityId: id,
+          action: 'lead.updated',
+          before,
+          after: lead,
+        });
         if (merged.email !== before.email)
           await suppressCustomerContactEmails(tx, id, new Date());
         await event(
@@ -715,6 +739,14 @@ export function createLeadService(
           },
           tx,
         );
+        await recordAuditChange(tx, {
+          actor,
+          entityType: 'lead',
+          entityId: id,
+          action: 'lead.assigned',
+          before,
+          after: lead,
+        });
         await event(
           id,
           target ? 'assigned' : 'unassigned',
@@ -775,6 +807,14 @@ export function createLeadService(
         version(before, input.expectedVersion);
         if (input.stage === before.stage) return dto(before, actor, tx);
         const lead = await update(before, actor, { stage: input.stage }, tx);
+        await recordAuditChange(tx, {
+          actor,
+          entityType: 'lead',
+          entityId: id,
+          action: 'lead.stage_changed',
+          before,
+          after: lead,
+        });
         await event(
           id,
           'stage_changed',
@@ -800,6 +840,14 @@ export function createLeadService(
           { temperature: input.temperature },
           tx,
         );
+        await recordAuditChange(tx, {
+          actor,
+          entityType: 'lead',
+          entityId: id,
+          action: 'lead.temperature_changed',
+          before,
+          after: lead,
+        });
         await event(
           id,
           'temperature_changed',
@@ -852,6 +900,13 @@ export function createLeadService(
           },
           tx,
         );
+        await recordAuditChange(tx, {
+          actor,
+          entityType: 'lead',
+          entityId: id,
+          action:
+            input.kind === 'call' ? 'lead.call_logged' : 'lead.note_added',
+        });
         const activity = await event(
           id,
           input.kind === 'call' ? 'call_logged' : 'note_added',

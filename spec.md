@@ -2,6 +2,10 @@
 
 Status: Project overview. Foundation, staff authentication/roles, property management, public discovery APIs and demo data are verified.
 
+## Verified locally P3-04 — record activity log
+
+[Feature specification](specs/record-audit-log/spec.md), [backend-owned contract](specs/record-audit-log/contract.md) and [implementation plan](docs/superpowers/plans/2026-11-26-record-audit-log.md) verify atomic business-change events and full agency reads for Admin/Manager, including Admin actions. Backend `bun run check` passed lint, format, typecheck, build and 390 tests in 89 files; fresh/populated disposable migrations and `db:check` passed. Deployment, normal-database migration, production retention/backup decisions and earlier roadmap release gates remain separate.
+
 ## Verified P2-07
 
 The [agent performance reporting specification](specs/agent-performance-reporting/spec.md), [backend-owned contract](specs/agent-performance-reporting/contract.md) and [implementation plan](docs/superpowers/plans/2026-11-18-agent-performance-reporting.md) verify the read-only `GET /api/v1/staff/reports/agent-performance` report. It uses Dubai date windows, role-scoped historical aggregates, provable assignment attribution, first-ever Won credit, recorded follow-up cohorts and explicit coverage limits. Backend quality gates passed with 310 tests in 65 files; frontend quality gates passed API parity, lint, format, typecheck, 440 tests in 62 files and build. Separate clean serial desktop/mobile projects accounted for all 508 discovered browser cases with zero failures; a separate dashboard fixture passed 16/16. No deployment, normal-database migration or native Safari verification is claimed.

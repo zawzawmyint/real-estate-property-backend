@@ -1,3 +1,4 @@
+import { mountAuditLog } from './modules/audit-log/audit-log.routes.js';
 import { mountDashboard } from './modules/dashboard/dashboard.routes.js';
 import { mountAgentPerformance } from './modules/reports/agent-performance/agent-performance.routes.js';
 import { mountTasks } from './modules/tasks/tasks.routes.js';
@@ -98,6 +99,7 @@ export function createApp(
   mountTasks(app, auth, env, database, notifications);
   mountNotifications(app, auth, env, notifications, streams);
   mountDashboard(app, auth, database);
+  mountAuditLog(app, auth, database);
   mountAgentPerformance(app, auth, database);
   mountAgency(app, readAgencyCatalog);
   mountProperties(app, auth, env, properties);

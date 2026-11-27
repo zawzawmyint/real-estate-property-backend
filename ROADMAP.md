@@ -8,7 +8,7 @@
 
 Track every Phase 1, 2 and 3 feature from the original **Real Estate CRM Checklist**, without treating project setup as completed business functionality.
 
-**Current baseline:** Foundation is complete; 28 Phase 1 and eight Phase 2 checklist items are verified; 7 Phase 1–3 checklist items remain pending. The original five portfolio delivery items are retained separately. This roadmap is the workspace-wide source of truth for feature progress; repository-local specifications define implementation and acceptance.
+**Current baseline:** Foundation is complete; 28 Phase 1, eight Phase 2 and one Phase 3 checklist items are locally verified; 6 Phase 1–3 checklist items remain pending. The original five portfolio delivery items are retained separately. This roadmap is the workspace-wide source of truth for feature progress; repository-local specifications define implementation and acceptance.
 
 **November 5 Git delivery:** Frontend implementation commit `655587e6dc10ea467223c1b1c06c4984f86bba1b` and backend implementation commit `5086b6507f0c12e99a5e309ef6313429a7509c9f` were pushed to their existing working branches after user authorization. The [review remediation](specs/phase-one-review-remediation/spec.md) Git-evidence item F08 is complete. P1-14/P1-18 remain open at 28/30; the later property-form pre-hydration defect was resolved on November 6 in the frontend property-management maintenance evidence. No deployment occurred.
 
@@ -254,7 +254,9 @@ The chatbot can reuse public listing filters. P2-03 separately tracks matching p
 
 ### Phase 3 — Optional stretch features
 
-**Release rule:** Consider these only after Phases 1 and the selected Phase 2 features are live. No stretch feature is currently selected for implementation.
+**Release rule:** Consider these only after Phases 1 and the selected Phase 2 features are live. P3-04 is locally verified, but no stretch deployment is authorized or verified by that local delivery.
+
+**P3-04 — Verified locally (2026-11-26):** [Record activity log](specs/record-audit-log/spec.md), its [backend-owned contract](specs/record-audit-log/contract.md) and [implementation plan](docs/superpowers/plans/2026-11-26-record-audit-log.md) cover manager investigation of successful property/lead/viewing/task changes and committed imports. Admin and Manager have identical agency-wide read access, including Admin actions; Agents retain existing lead timelines. The feature uses explicit sensitive-field redaction and coverage start, with no historical backfill. Backend and frontend quality gates, disposable migrations/database checks, API parity and dedicated browser checks passed. Deployment, normal-database migration and production retention/backup decisions remain pending; earlier release gates remain unchanged.
 
 #### Extras
 
@@ -263,7 +265,7 @@ The chatbot can reuse public listing filters. P2-03 separately tracks matching p
 - [ ] **P3-01** Client portal: saved properties and viewing status
 - [ ] **P3-02** Document uploads (contracts, IDs)
 - [ ] **P3-03** Commission tracking per deal
-- [ ] **P3-04** Activity log of who changed what
+- [x] **P3-04** [Activity log of who changed what](specs/record-audit-log/spec.md)
 - [ ] **P3-05** Arabic and English support
 
 Client access must be scoped to the client's own information. Contracts and IDs need private, authorized delivery rather than the existing public-image storage route. Arabic support requires translated content and right-to-left UI acceptance checks.
